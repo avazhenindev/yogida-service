@@ -1,0 +1,59 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-profile-table
+      author: meditation-app
+      comment: Create PROFILE table for user settings including 2FA
+      changes:
+        - createTable:
+            tableName: profile
+            columns:
+              - column:
+                  name: profile_id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_profile
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: two_factor_enabled
+                  type: number(1)
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: notification_preferences
+                  type: varchar(255)
+              - column:
+                  name: theme_preference
+                  type: varchar(50)
+              - column:
+                  name: language
+                  type: varchar(50)
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseColumnNames: user_id
+            baseTableName: profile
+            constraintName: fk_profile_user
+            onDelete: CASCADE
+            referencedColumnNames: user_id
+            referencedTableName: app_user
+
+
+
