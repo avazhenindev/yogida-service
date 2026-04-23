@@ -16,4 +16,3 @@ public interface SubscriptionApi {
 
     void delete(Long id);
 }
-

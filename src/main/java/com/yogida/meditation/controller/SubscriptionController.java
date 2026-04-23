@@ -42,4 +42,3 @@ public class SubscriptionController implements SubscriptionControllerApi {
         return ResponseEntity.noContent().build();
     }
 }
-

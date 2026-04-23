@@ -11,4 +11,6 @@ databaseChangeLog:
       file: db/changelog/changes/005-create-favourite-table.yaml
   - include:
       file: db/changelog/changes/006-create-media-subscription-table.yaml
+  - include:
+      file: db/changelog/changes/007-refactor-subscription-tables.yaml
 
