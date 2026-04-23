@@ -1,0 +1,40 @@
+databaseChangeLog:
+
+  - changeSet:
+      id: 008-1
+      author: migration
+      comment: "Add nullable name column to subscription catalog table"
+      changes:
+        - addColumn:
+            tableName: subscription
+            columns:
+              - column:
+                  name: name
+                  type: varchar(100)
+                  constraints:
+                    nullable: true
+
+  - changeSet:
+      id: 008-2
+      author: migration
+      comment: "Backfill dummy name values for existing rows"
+      changes:
+        - update:
+            tableName: subscription
+            columns:
+              - column:
+                  name: name
+                  value: "Default"
+            where: name IS NULL
+
+  - changeSet:
+      id: 008-3
+      author: migration
+      comment: "Apply NOT NULL constraint on subscription.name"
+      changes:
+        - addNotNullConstraint:
+            tableName: subscription
+            columnName: name
+            columnDataType: varchar(100)
+
+

@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class SubscriptionDto {
     private Long subscriptionId;
+    private String name;
     private String status;
     private Integer periodDays;
     private String details;
