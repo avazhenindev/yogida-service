@@ -9,9 +9,12 @@ import org.mapstruct.NullValuePropertyMappingStrategy;
 
 import java.util.List;
 
-@Mapper(componentModel = "spring", nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+@Mapper(componentModel = "spring",
+        uses = UserSubscriptionMapper.class,
+        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
 public interface AppUserMapper {
 
+    @Mapping(source = "subscriptions", target = "subscriptions")
     AppUserDto toDto(AppUserEntity entity);
 
     AppUserEntity toEntity(AppUserDto dto);
@@ -20,8 +23,9 @@ public interface AppUserMapper {
 
     List<AppUserEntity> toEntityList(List<AppUserDto> dtos);
 
-    /** Merges non-null DTO fields into the existing entity. Skips server-managed timestamps. */
+    /** Merges non-null DTO fields into the existing entity. Skips server-managed timestamps and subscriptions. */
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "subscriptions", ignore = true)
     void updateEntity(AppUserDto dto, @MappingTarget AppUserEntity entity);
 }
