@@ -26,8 +26,6 @@ public class UserSubscriptionEntity {
     @JoinColumn(name = "subscription_id", nullable = false, foreignKey = @ForeignKey(name = "fk_user_subscription_subscription"))
     private SubscriptionEntity subscription;
 
-    @Column(name = "plan_type", nullable = false, length = 50)
-    private String planType;
 
     @Column(name = "status", nullable = false, length = 20)
     private String status;

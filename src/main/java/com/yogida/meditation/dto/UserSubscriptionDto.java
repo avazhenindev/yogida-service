@@ -13,7 +13,6 @@ public class UserSubscriptionDto {
     private Long userSubscriptionId;
     private Long userId;
     private Long subscriptionId;
-    private String planType;
     private String status;
     private LocalDate startDate;
     private LocalDate endDate;
