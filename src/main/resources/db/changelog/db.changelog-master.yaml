@@ -15,4 +15,6 @@ databaseChangeLog:
       file: db/changelog/changes/007-refactor-subscription-tables.yaml
   - include:
       file: db/changelog/changes/008-add-name-to-subscription.yaml
+  - include:
+      file: db/changelog/changes/009-add-price-to-subscription.yaml
 

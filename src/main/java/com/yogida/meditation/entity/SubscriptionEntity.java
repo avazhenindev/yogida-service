@@ -3,6 +3,8 @@ package com.yogida.meditation.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 /**
  * Catalog entity representing a reusable subscription plan definition.
  */
@@ -27,4 +29,11 @@ public class SubscriptionEntity {
 
     @Column(name = "details", length = 1000)
     private String details;
+
+    @Column(name = "price", nullable = false, precision = 10, scale = 2)
+    private BigDecimal price;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "currency", nullable = false, length = 10)
+    private Currency currency = Currency.USD;
 }
