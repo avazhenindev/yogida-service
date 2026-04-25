@@ -17,6 +17,4 @@ databaseChangeLog:
       file: db/changelog/changes/008-add-name-to-subscription.yaml
   - include:
       file: db/changelog/changes/009-add-price-to-subscription.yaml
-  - include:
-      file: db/changelog/changes/010-drop-plan-type-from-user-subscription.yaml
 

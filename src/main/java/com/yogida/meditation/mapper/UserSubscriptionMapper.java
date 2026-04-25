@@ -12,11 +12,13 @@ import org.mapstruct.NullValuePropertyMappingStrategy;
 
 import java.util.List;
 
-@Mapper(componentModel = "spring", nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+@Mapper(componentModel = "spring", uses = SubscriptionMapper.class,
+        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
 public interface UserSubscriptionMapper {
 
     @Mapping(source = "user.userId", target = "userId")
     @Mapping(source = "subscription.subscriptionId", target = "subscriptionId")
+    @Mapping(source = "subscription", target = "subscription")
     UserSubscriptionDto toDto(UserSubscriptionEntity entity);
 
     @Mapping(source = "userId", target = "user", qualifiedByName = "userIdToUser")
