@@ -6,11 +6,13 @@ import com.yogida.meditation.entity.SubscriptionEntity;
 import com.yogida.meditation.entity.UserSubscriptionEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 import org.mapstruct.Named;
+import org.mapstruct.NullValuePropertyMappingStrategy;
 
 import java.util.List;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
 public interface UserSubscriptionMapper {
 
     @Mapping(source = "user.userId", target = "userId")
@@ -22,6 +24,11 @@ public interface UserSubscriptionMapper {
     UserSubscriptionEntity toEntity(UserSubscriptionDto dto);
 
     List<UserSubscriptionDto> toDtoList(List<UserSubscriptionEntity> entities);
+
+    /** Merges non-null DTO fields into the existing entity. */
+    @Mapping(source = "userId", target = "user", qualifiedByName = "userIdToUser")
+    @Mapping(source = "subscriptionId", target = "subscription", qualifiedByName = "subscriptionIdToSubscription")
+    void updateEntity(UserSubscriptionDto dto, @MappingTarget UserSubscriptionEntity entity);
 
     @Named("userIdToUser")
     default AppUserEntity userIdToUser(Long userId) {
@@ -39,4 +46,3 @@ public interface UserSubscriptionMapper {
         return subscription;
     }
 }
-

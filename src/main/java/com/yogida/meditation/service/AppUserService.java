@@ -48,10 +48,7 @@ public class AppUserService implements AppUserApi {
     public AppUserDto update(Long id, AppUserDto dto) {
         AppUserEntity existing = appUserRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("AppUser", id));
-        existing.setKeycloakUserId(dto.getKeycloakUserId());
-        existing.setBearerToken(dto.getBearerToken());
-        existing.setEmail(dto.getEmail());
-        existing.setLastLogin(dto.getLastLogin());
+        appUserMapper.updateEntity(dto, existing);
         existing.setUpdatedAt(LocalDateTime.now());
         AppUserEntity saved = appUserRepository.save(existing);
         log.info("AppUserService > Updated user with id: {}", saved.getUserId());

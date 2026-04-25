@@ -50,9 +50,7 @@ public class SubscriptionService implements SubscriptionApi {
     public SubscriptionDto update(Long id, SubscriptionDto dto) {
         SubscriptionEntity existing = subscriptionRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Subscription", id));
-        existing.setStatus(dto.getStatus());
-        existing.setPeriodDays(dto.getPeriodDays());
-        existing.setDetails(dto.getDetails());
+        subscriptionMapper.updateEntity(dto, existing);
         SubscriptionEntity saved = subscriptionRepository.save(existing);
         log.info("SubscriptionService > Updated subscription plan with id: {}", saved.getSubscriptionId());
         return subscriptionMapper.toDto(saved);

@@ -58,17 +58,11 @@ public class UserSubscriptionService implements UserSubscriptionApi {
                 .orElseThrow(() -> new EntityNotFoundException("UserSubscription", id));
         if (dto.getUserId() != null) {
             validateUserExists(dto.getUserId());
-            existing.setUser(userSubscriptionMapper.toEntity(dto).getUser());
         }
         if (dto.getSubscriptionId() != null) {
             validateSubscriptionExists(dto.getSubscriptionId());
-            existing.setSubscription(userSubscriptionMapper.toEntity(dto).getSubscription());
         }
-        existing.setPlanType(dto.getPlanType());
-        existing.setStatus(dto.getStatus());
-        existing.setStartDate(dto.getStartDate());
-        existing.setEndDate(dto.getEndDate());
-        existing.setAutoRenew(dto.getAutoRenew());
+        userSubscriptionMapper.updateEntity(dto, existing);
         UserSubscriptionEntity saved = userSubscriptionRepository.save(existing);
         log.info("UserSubscriptionService > Updated user subscription with id: {}", saved.getUserSubscriptionId());
         return userSubscriptionMapper.toDto(saved);
