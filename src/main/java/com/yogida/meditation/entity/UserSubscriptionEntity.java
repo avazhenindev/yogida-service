@@ -1,5 +1,6 @@
 package com.yogida.meditation.entity;
 
+import com.yogida.meditation.enums.SubscriptionStatus;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -27,8 +28,9 @@ public class UserSubscriptionEntity {
     private SubscriptionEntity subscription;
 
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
-    private String status;
+    private SubscriptionStatus status;
 
     @Column(name = "start_date", nullable = false)
     private LocalDate startDate;
