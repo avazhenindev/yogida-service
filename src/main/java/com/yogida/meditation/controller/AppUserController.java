@@ -27,6 +27,11 @@ public class AppUserController implements AppUserControllerApi {
     }
 
     @Override
+    public ResponseEntity<AppUserDto> getByEmail(String email) {
+        return ResponseEntity.ok(appUserService.findByEmail(email));
+    }
+
+    @Override
     public ResponseEntity<AppUserDto> create(AppUserDto dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(appUserService.create(dto));
     }

@@ -21,8 +21,6 @@ public class AppUserEntity {
     @Column(name = "keycloak_user_id", nullable = false, unique = true, length = 100)
     private String keycloakUserId;
 
-    @Column(name = "bearer_token")
-    private String bearerToken;
 
     @Column(name = "email", length = 100)
     private String email;

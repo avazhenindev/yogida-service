@@ -29,6 +29,15 @@ public interface AppUserControllerApi {
     ResponseEntity<AppUserDto> getById(
             @Parameter(description = "User ID", required = true) @PathVariable Long id);
 
+    @Operation(summary = "Find user by email", description = "Returns a single user matching the given email address.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "User found"),
+            @ApiResponse(responseCode = "404", description = "User not found")
+    })
+    @GetMapping("/search")
+    ResponseEntity<AppUserDto> getByEmail(
+            @Parameter(description = "User email", required = true) @RequestParam String email);
+
     @Operation(summary = "Create a new user", description = "Registers a new application user.")
     @ApiResponses(@ApiResponse(responseCode = "201", description = "User created successfully"))
     @PostMapping

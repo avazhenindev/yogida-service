@@ -9,6 +9,7 @@ import com.yogida.meditation.service.api.AppUserApi;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -62,6 +63,14 @@ public class AppUserService implements AppUserApi {
         }
         appUserRepository.deleteById(id);
         log.info("AppUserService > Deleted user with id: {}", id);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public AppUserDto findByEmail(String email) {
+        return appUserRepository.findByEmail(email)
+                .map(appUserMapper::toDto)
+                .orElseThrow(() -> new EntityNotFoundException("AppUser with email " + email + " not found"));
     }
 }
 

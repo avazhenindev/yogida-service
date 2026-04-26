@@ -13,7 +13,6 @@ import java.util.List;
 public class AppUserDto {
     private Long userId;
     private String keycloakUserId;
-    private String bearerToken;
     private String email;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
