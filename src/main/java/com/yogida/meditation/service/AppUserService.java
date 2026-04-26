@@ -23,11 +23,13 @@ public class AppUserService implements AppUserApi {
     private final AppUserMapper appUserMapper;
 
     @Override
+    @Transactional(readOnly = true)
     public List<AppUserDto> findAll() {
         return appUserRepository.findAll().stream().map(appUserMapper::toDto).toList();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public AppUserDto findById(Long id) {
         return appUserRepository.findById(id)
                 .map(appUserMapper::toDto)
