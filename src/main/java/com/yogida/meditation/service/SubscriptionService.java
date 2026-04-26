@@ -29,6 +29,14 @@ public class SubscriptionService implements SubscriptionApi {
 
     @Override
     @Transactional(readOnly = true)
+    public SubscriptionDto findByName(String name) {
+        return subscriptionRepository.findByName(name)
+                .map(subscriptionMapper::toDto)
+                .orElseThrow(() -> new EntityNotFoundException("Subscription with name '" + name + "' not found"));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public SubscriptionDto findById(Long id) {
         return subscriptionRepository.findById(id)
                 .map(subscriptionMapper::toDto)

@@ -20,6 +20,15 @@ public interface SubscriptionControllerApi {
     @GetMapping
     ResponseEntity<List<SubscriptionDto>> getAll();
 
+    @Operation(summary = "Find subscription plan by name")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Subscription plan found"),
+            @ApiResponse(responseCode = "404", description = "Subscription plan not found")
+    })
+    @GetMapping("/search")
+    ResponseEntity<SubscriptionDto> getByName(
+            @Parameter(description = "Subscription name", required = true) @RequestParam String name);
+
     @Operation(summary = "Get subscription plan by ID")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Subscription plan found"),

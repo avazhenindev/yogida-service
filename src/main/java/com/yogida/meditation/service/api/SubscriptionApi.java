@@ -8,6 +8,8 @@ public interface SubscriptionApi {
 
     List<SubscriptionDto> findAll();
 
+    SubscriptionDto findByName(String name);
+
     SubscriptionDto findById(Long id);
 
     SubscriptionDto create(SubscriptionDto dto);
