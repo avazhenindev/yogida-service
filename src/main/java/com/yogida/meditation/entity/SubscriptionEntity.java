@@ -1,5 +1,6 @@
 package com.yogida.meditation.entity;
 
+import com.yogida.meditation.enums.Currency;
 import jakarta.persistence.*;
 import lombok.Data;
 

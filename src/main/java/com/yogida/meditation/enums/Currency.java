@@ -1,4 +1,4 @@
-package com.yogida.meditation.entity;
+package com.yogida.meditation.enums;
 
 /**
  * Supported billing currencies for subscription plans.

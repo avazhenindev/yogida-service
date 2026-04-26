@@ -1,6 +1,6 @@
 package com.yogida.meditation.dto;
 
-import com.yogida.meditation.entity.Currency;
+import com.yogida.meditation.enums.Currency;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
