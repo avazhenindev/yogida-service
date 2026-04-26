@@ -18,7 +18,7 @@ public class SubscriptionEntity {
     @Column(name = "subscription_id")
     private Long subscriptionId;
 
-    @Column(name = "name", nullable = false, length = 100)
+    @Column(name = "name", nullable = false, unique = true, length = 100)
     private String name;
 
     @Column(name = "status", nullable = false, length = 20)

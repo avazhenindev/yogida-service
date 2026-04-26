@@ -1,0 +1,16 @@
+databaseChangeLog:
+
+  - changeSet:
+      id: 012-1
+      author: migration
+      comment: "Add unique constraint on subscription.name"
+      changes:
+        - addUniqueConstraint:
+            tableName: subscription
+            columnNames: name
+            constraintName: uq_subscription_name
+      rollback:
+        - dropUniqueConstraint:
+            tableName: subscription
+            constraintName: uq_subscription_name
+

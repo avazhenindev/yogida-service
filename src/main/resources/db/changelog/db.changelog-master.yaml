@@ -19,3 +19,5 @@ databaseChangeLog:
       file: db/changelog/changes/009-add-price-to-subscription.yaml
   - include:
       file: db/changelog/changes/011-insert-free-subscription.yaml
+  - include:
+      file: db/changelog/changes/012-add-unique-constraint-subscription-name.yaml
