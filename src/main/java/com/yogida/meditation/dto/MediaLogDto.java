@@ -1,6 +1,6 @@
 package com.yogida.meditation.dto;
 
-import com.yogida.meditation.enums.MediaStatus;
+import com.yogida.meditation.enums.MediaLogAction;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -10,13 +10,12 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class MediaDto {
+public class MediaLogDto {
     private Long id;
-    private String name;
-    private String s3Url;
-    private MediaStatus status;
-    private String description;
-    private String category;
+    private Long mediaId;
+    private String mediaName;
+    private MediaLogAction action;
+    private String message;
     private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
 }
+

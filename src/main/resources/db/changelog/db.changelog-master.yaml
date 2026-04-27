@@ -25,3 +25,7 @@ databaseChangeLog:
       file: db/changelog/changes/012-add-unique-constraint-subscription-name.yaml
   - include:
       file: db/changelog/changes/013-fix-auto-renew-column-type.yaml
+  - include:
+      file: db/changelog/changes/014-add-s3url-status-to-media.yaml
+  - include:
+      file: db/changelog/changes/015-create-media-log-table.yaml

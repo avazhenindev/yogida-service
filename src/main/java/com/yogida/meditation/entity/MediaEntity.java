@@ -1,5 +1,6 @@
 package com.yogida.meditation.entity;
 
+import com.yogida.meditation.enums.MediaStatus;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -18,8 +19,12 @@ public class MediaEntity {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "bucket_name", nullable = false)
-    private String bucketName;
+    @Column(name = "s3_url", nullable = false)
+    private String s3Url;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 20)
+    private MediaStatus status;
 
     @Column(name = "description")
     private String description;
@@ -35,4 +40,7 @@ public class MediaEntity {
 
     @OneToMany(mappedBy = "media", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<MediaSubscriptionEntity> mediaSubscriptions;
+
+    @OneToMany(mappedBy = "media", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<MediaLogEntity> mediaLogs;
 }
