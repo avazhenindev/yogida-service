@@ -6,6 +6,7 @@ import com.yogida.meditation.dto.MediaLogDto;
 import com.yogida.meditation.dto.MediaUpdateRequest;
 import com.yogida.meditation.exception.EntityNotFoundException;
 import com.yogida.meditation.service.api.MediaApi;
+import com.yogida.meditation.service.api.MediaFacadeApi;
 import com.yogida.meditation.service.api.MediaLogApi;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -19,6 +20,7 @@ import java.util.List;
 public class AdminMediaController implements AdminMediaControllerApi {
 
     private final MediaApi mediaApi;
+    private final MediaFacadeApi mediaFacadeApi;
     private final MediaLogApi mediaLogApi;
 
     @Override
@@ -35,17 +37,17 @@ public class AdminMediaController implements AdminMediaControllerApi {
 
     @Override
     public ResponseEntity<MediaDto> create(MediaUpdateRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(mediaApi.create(request));
+        return ResponseEntity.status(HttpStatus.CREATED).body(mediaFacadeApi.create(request));
     }
 
     @Override
     public ResponseEntity<MediaDto> update(Long id, MediaUpdateRequest request) {
-        return ResponseEntity.ok(mediaApi.update(id, request));
+        return ResponseEntity.ok(mediaFacadeApi.update(id, request));
     }
 
     @Override
     public ResponseEntity<Void> delete(Long id) {
-        mediaApi.delete(id);
+        mediaFacadeApi.delete(id);
         return ResponseEntity.noContent().build();
     }
 
