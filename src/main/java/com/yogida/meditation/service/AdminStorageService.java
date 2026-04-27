@@ -76,7 +76,7 @@ public class AdminStorageService implements AdminStorageApi {
                             .contentType(file.getContentType())
                             .contentLength(file.getSize())
                             .build(),
-                    RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
+                    RequestBody.fromBytes(file.getBytes()));
 
             HeadObjectResponse head = s3Client.headObject(
                     HeadObjectRequest.builder().bucket(bucketName).key(objectKey).build());
