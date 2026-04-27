@@ -1,9 +1,7 @@
 package com.yogida.meditation.controller;
 
 import com.yogida.meditation.controller.api.AdminMediaControllerApi;
-import com.yogida.meditation.dto.MediaDto;
-import com.yogida.meditation.dto.MediaLogDto;
-import com.yogida.meditation.dto.MediaUpdateRequest;
+import com.yogida.meditation.dto.*;
 import com.yogida.meditation.exception.EntityNotFoundException;
 import com.yogida.meditation.service.api.MediaApi;
 import com.yogida.meditation.service.api.MediaFacadeApi;
@@ -36,12 +34,12 @@ public class AdminMediaController implements AdminMediaControllerApi {
     }
 
     @Override
-    public ResponseEntity<MediaDto> create(MediaUpdateRequest request) {
+    public ResponseEntity<MediaDto> create(MediaCreateRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(mediaFacadeApi.create(request));
     }
 
     @Override
-    public ResponseEntity<MediaDto> update(Long id, MediaUpdateRequest request) {
+    public ResponseEntity<MediaDto> update(Long id, MediaFileUpdateRequest request) {
         return ResponseEntity.ok(mediaFacadeApi.update(id, request));
     }
 
@@ -52,8 +50,13 @@ public class AdminMediaController implements AdminMediaControllerApi {
     }
 
     @Override
+    public ResponseEntity<Void> bulkDelete(MediaBulkDeleteRequest request) {
+        mediaFacadeApi.bulkDelete(request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Override
     public ResponseEntity<List<MediaLogDto>> getLogs(Long id) {
         return ResponseEntity.ok(mediaLogApi.findByMediaId(id));
     }
 }
-

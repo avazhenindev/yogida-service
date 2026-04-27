@@ -91,12 +91,8 @@ public class R2StorageService implements R2StorageApi {
         return keys;
     }
 
-    /**
-     * Parses an S3 URL of the form
-     * {@code https://{accountId}.r2.cloudflarestorage.com/{bucket}/{key}}
-     * and returns {@code [bucket, key]}.
-     */
-    private String[] parseS3Url(String s3Url) {
+    @Override
+    public String[] parseS3Url(String s3Url) {
         String path = URI.create(s3Url).getPath(); // /{bucket}/{key}
         String stripped = path.startsWith("/") ? path.substring(1) : path;
         int slash = stripped.indexOf('/');
