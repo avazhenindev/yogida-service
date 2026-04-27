@@ -48,6 +48,7 @@ public class MediaService implements MediaApi {
     public MediaDto create(MediaUpdateRequest request) {
         MediaEntity entity = new MediaEntity();
         entity.setName(request.name());
+        entity.setBucketName(request.bucketName());
         entity.setS3Url(request.s3Url());
         entity.setDescription(request.description());
         entity.setCategory(request.category());
@@ -61,6 +62,7 @@ public class MediaService implements MediaApi {
     public MediaDto update(Long id, MediaUpdateRequest request) {
         MediaEntity entity = findEntityById(id);
         entity.setName(request.name());
+        entity.setBucketName(request.bucketName());
         entity.setS3Url(request.s3Url());
         entity.setDescription(request.description());
         entity.setCategory(request.category());

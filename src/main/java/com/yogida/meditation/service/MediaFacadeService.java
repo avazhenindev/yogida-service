@@ -31,10 +31,10 @@ public class MediaFacadeService implements MediaFacadeApi {
     @Transactional
     public MediaDto create(MediaCreateRequest request) {
         ObjectMetadataDto uploaded = adminStorageApi.uploadObject(
-                request.bucketName(), request.objectKey(), request.file());
+            request.bucketName(), request.objectKey(), request.file());
 
         MediaUpdateRequest mediaRequest = new MediaUpdateRequest(
-                request.name(), uploaded.s3Url(), request.description(), request.category(), request.status());
+            request.name(), uploaded.s3Url(), request.bucketName(), request.description(), request.category(), request.status());
 
         MediaDto dto = mediaApi.create(mediaRequest);
         MediaEntity entity = resolveEntity(dto.getId());
@@ -46,7 +46,7 @@ public class MediaFacadeService implements MediaFacadeApi {
     @Transactional
     public MediaDto update(Long id, MediaFileUpdateRequest request) {
         MediaDto existing = mediaApi.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Media", id));
+            .orElseThrow(() -> new EntityNotFoundException("Media", id));
         String oldS3Url = existing.getS3Url();
 
         String newS3Url = oldS3Url;
@@ -54,13 +54,13 @@ public class MediaFacadeService implements MediaFacadeApi {
             String oldKey = r2StorageApi.parseS3Url(oldS3Url)[1];
             if (!request.objectKey().equals(oldKey)) {
                 ObjectMetadataDto uploaded = adminStorageApi.uploadObject(
-                        request.bucketName(), request.objectKey(), request.file());
+                    request.bucketName(), request.objectKey(), request.file());
                 newS3Url = uploaded.s3Url();
             }
         }
 
         MediaUpdateRequest mediaRequest = new MediaUpdateRequest(
-                request.name(), newS3Url, request.description(), request.category(), request.status());
+            request.name(), newS3Url, request.bucketName(), request.description(), request.category(), request.status());
         MediaDto dto = mediaApi.update(id, mediaRequest);
 
         if (!newS3Url.equals(oldS3Url)) {
@@ -69,7 +69,7 @@ public class MediaFacadeService implements MediaFacadeApi {
                 adminStorageApi.deleteObject(oldParts[0], oldParts[1]);
             } catch (Exception e) {
                 log.warn("Failed to delete old S3 object [bucket={}, key={}]: {}",
-                        oldParts[0], oldParts[1], e.getMessage());
+                    oldParts[0], oldParts[1], e.getMessage());
             }
         }
 
@@ -93,7 +93,7 @@ public class MediaFacadeService implements MediaFacadeApi {
             adminStorageApi.deleteObject(parts[0], parts[1]);
         } catch (Exception e) {
             log.warn("Failed to delete S3 object after media deletion [bucket={}, key={}]: {}",
-                    parts[0], parts[1], e.getMessage());
+                parts[0], parts[1], e.getMessage());
         }
     }
 
@@ -115,13 +115,13 @@ public class MediaFacadeService implements MediaFacadeApi {
                 adminStorageApi.bulkDeleteObjects(bucket, keys);
             } catch (Exception e) {
                 log.warn("Failed to bulk-delete S3 objects [bucket={}, keys={}]: {}",
-                        bucket, keys, e.getMessage());
+                    bucket, keys, e.getMessage());
             }
         });
     }
 
     private MediaEntity resolveEntity(Long id) {
         return mediaRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Media", id));
+            .orElseThrow(() -> new EntityNotFoundException("Media", id));
     }
 }

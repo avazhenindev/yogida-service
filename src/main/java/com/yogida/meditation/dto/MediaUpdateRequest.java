@@ -10,6 +10,7 @@ import jakarta.validation.constraints.NotBlank;
 public record MediaUpdateRequest(
         @NotBlank String name,
         @NotBlank String s3Url,
+        @NotBlank String bucketName,
         String description,
         String category,
         MediaStatus status
