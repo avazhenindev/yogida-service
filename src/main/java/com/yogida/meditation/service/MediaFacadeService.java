@@ -34,7 +34,7 @@ public class MediaFacadeService implements MediaFacadeApi {
                 request.bucketName(), request.objectKey(), request.file());
 
         MediaUpdateRequest mediaRequest = new MediaUpdateRequest(
-                request.name(), uploaded.s3Url(), request.description(), request.category());
+                request.name(), uploaded.s3Url(), request.description(), request.category(), request.status());
 
         MediaDto dto = mediaApi.create(mediaRequest);
         MediaEntity entity = resolveEntity(dto.getId());
@@ -60,7 +60,7 @@ public class MediaFacadeService implements MediaFacadeApi {
         }
 
         MediaUpdateRequest mediaRequest = new MediaUpdateRequest(
-                request.name(), newS3Url, request.description(), request.category());
+                request.name(), newS3Url, request.description(), request.category(), request.status());
         MediaDto dto = mediaApi.update(id, mediaRequest);
 
         if (!newS3Url.equals(oldS3Url)) {
