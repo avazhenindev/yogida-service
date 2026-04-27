@@ -93,7 +93,19 @@ public class R2StorageService implements R2StorageApi {
 
     @Override
     public String[] parseS3Url(String s3Url) {
-        String path = URI.create(s3Url).getPath(); // /{bucket}/{key}
+        // URI.create rejects unencoded spaces/apostrophes — strip scheme+host manually
+        String path;
+        try {
+            // Try standard parse first (works for already-encoded URLs)
+            path = URI.create(s3Url.replace(" ", "%20")).getPath();
+            // Decode percent-encoding so the raw key is returned to callers
+            path = java.net.URLDecoder.decode(path, java.nio.charset.StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException e) {
+            // Fallback: strip "https://host" prefix by finding third slash
+            int schemeEnd = s3Url.indexOf("://");
+            int pathStart = schemeEnd < 0 ? 0 : s3Url.indexOf('/', schemeEnd + 3);
+            path = pathStart < 0 ? s3Url : s3Url.substring(pathStart);
+        }
         String stripped = path.startsWith("/") ? path.substring(1) : path;
         int slash = stripped.indexOf('/');
         if (slash < 0) {
