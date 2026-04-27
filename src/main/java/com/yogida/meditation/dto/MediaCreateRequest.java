@@ -15,7 +15,7 @@ public record MediaCreateRequest(
         @NotBlank String objectKey,
         @NotNull MultipartFile file,
         String description,
-        String category,
+        Long categoryId,
         MediaStatus status
 ) {}
 

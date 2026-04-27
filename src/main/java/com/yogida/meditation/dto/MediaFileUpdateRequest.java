@@ -16,7 +16,7 @@ public record MediaFileUpdateRequest(
         @NotBlank String objectKey,
         MultipartFile file,
         String description,
-        String category,
+        Long categoryId,
         MediaStatus status
 ) {}
 

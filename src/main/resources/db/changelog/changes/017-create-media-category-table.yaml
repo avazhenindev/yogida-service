@@ -1,0 +1,27 @@
+databaseChangeLog:
+  - changeSet:
+      id: 017-create-media-category-table
+      author: yogida
+      changes:
+        - createTable:
+            tableName: media_category
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_media_category
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+                    unique: true
+                    uniqueConstraintName: uq_media_category_name
+              - column:
+                  name: description
+                  type: varchar(255)
+

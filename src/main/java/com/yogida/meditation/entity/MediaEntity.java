@@ -32,8 +32,9 @@ public class MediaEntity {
     @Column(name = "description")
     private String description;
 
-    @Column(name = "category")
-    private String category;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private MediaCategoryEntity category;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

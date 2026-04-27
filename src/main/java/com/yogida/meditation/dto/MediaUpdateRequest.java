@@ -12,7 +12,7 @@ public record MediaUpdateRequest(
         @NotBlank String s3Url,
         @NotBlank String bucketName,
         String description,
-        String category,
+        Long categoryId,
         MediaStatus status
 ) {}
 

@@ -2,10 +2,12 @@ package com.yogida.meditation.service;
 
 import com.yogida.meditation.dto.MediaDto;
 import com.yogida.meditation.dto.MediaUpdateRequest;
+import com.yogida.meditation.entity.MediaCategoryEntity;
 import com.yogida.meditation.entity.MediaEntity;
 import com.yogida.meditation.enums.MediaStatus;
 import com.yogida.meditation.exception.EntityNotFoundException;
 import com.yogida.meditation.mapper.MediaMapper;
+import com.yogida.meditation.repository.MediaCategoryRepository;
 import com.yogida.meditation.repository.MediaRepository;
 import com.yogida.meditation.service.api.MediaApi;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +25,7 @@ import java.util.Optional;
 public class MediaService implements MediaApi {
 
     private final MediaRepository mediaRepository;
+    private final MediaCategoryRepository mediaCategoryRepository;
     private final MediaMapper mediaMapper;
 
     @Override
@@ -51,7 +54,7 @@ public class MediaService implements MediaApi {
         entity.setBucketName(request.bucketName());
         entity.setS3Url(request.s3Url());
         entity.setDescription(request.description());
-        entity.setCategory(request.category());
+        entity.setCategory(resolveCategory(request.categoryId()));
         entity.setStatus(request.status() != null ? request.status() : MediaStatus.ACTIVE);
         entity.setCreatedAt(LocalDateTime.now());
         return mediaMapper.toDto(mediaRepository.save(entity));
@@ -65,7 +68,7 @@ public class MediaService implements MediaApi {
         entity.setBucketName(request.bucketName());
         entity.setS3Url(request.s3Url());
         entity.setDescription(request.description());
-        entity.setCategory(request.category());
+        entity.setCategory(resolveCategory(request.categoryId()));
         if (request.status() != null) {
             entity.setStatus(request.status());
         }
@@ -101,5 +104,13 @@ public class MediaService implements MediaApi {
     private MediaEntity findEntityById(Long id) {
         return mediaRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Media", id));
+    }
+
+    private MediaCategoryEntity resolveCategory(Long categoryId) {
+        if (categoryId == null) {
+            return null;
+        }
+        return mediaCategoryRepository.findById(categoryId)
+                .orElseThrow(() -> new EntityNotFoundException("MediaCategory", categoryId));
     }
 }
