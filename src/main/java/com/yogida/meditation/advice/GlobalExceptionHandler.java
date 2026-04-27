@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -14,11 +15,29 @@ import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 
 @Log4j2
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException ex,
+                                                                 HttpServletRequest request) {
+        List<String> errors = ex.getBindingResult().getFieldErrors().stream()
+                .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
+                .toList();
+        log.warn("Validation failed on [{} {}]: {}", request.getMethod(), request.getRequestURI(), errors);
+        Map<String, Object> body = Map.of(
+                "timestamp", LocalDateTime.now().toString(),
+                "status", HttpStatus.BAD_REQUEST.value(),
+                "error", "Validation Failed",
+                "errors", errors,
+                "path", request.getRequestURI()
+        );
+        return ResponseEntity.badRequest().body(body);
+    }
 
     @ExceptionHandler(S3Exception.class)
     public ResponseEntity<Map<String, Object>> handleS3Exception(S3Exception ex, HttpServletRequest request) {
