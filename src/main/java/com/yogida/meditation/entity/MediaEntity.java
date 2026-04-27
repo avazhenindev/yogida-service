@@ -19,6 +19,9 @@ public class MediaEntity {
     @Column(name = "name", nullable = false)
     private String name;
 
+    @Column(name = "bucket_name", nullable = false)
+    private String bucketName;
+
     @Column(name = "s3_url", nullable = false)
     private String s3Url;
 

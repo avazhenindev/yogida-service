@@ -14,6 +14,7 @@ import java.util.List;
 public class MediaDto {
     private Long id;
     private String name;
+    private String bucketName;
     private String s3Url;
     private MediaStatus status;
     private String description;

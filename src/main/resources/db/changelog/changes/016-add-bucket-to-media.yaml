@@ -1,0 +1,18 @@
+databaseChangeLog:
+  - changeSet:
+      id: 016-add-bucket-to-media
+      author: yogida
+      comment: "Add bucket_name column to media table"
+      changes:
+        - addColumn:
+            tableName: media
+            columns:
+              - column:
+                  name: bucket_name
+                  type: varchar(255)
+                  constraints:
+                    nullable: true
+      rollback:
+        - dropColumn:
+            tableName: media
+            columnName: bucket_name
