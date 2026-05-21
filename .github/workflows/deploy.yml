@@ -1,0 +1,176 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+env:
+  DEPLOY_PATH: ${{ vars.LINODE_DEPLOY_PATH || '/home/yogida/meditation-service' }}
+
+jobs:
+  test:
+    name: Maven verify
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: meditation
+          POSTGRES_USER: backend
+          POSTGRES_PASSWORD: backend
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U backend -d meditation"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/meditation
+      SPRING_DATASOURCE_USERNAME: backend
+      SPRING_DATASOURCE_PASSWORD: backend
+      CLOUDFLARE_R2_ACCOUNT_ID: test-account
+      CLOUDFLARE_R2_ACCESS_KEY_ID: test-access-key
+      CLOUDFLARE_R2_SECRET_ACCESS_KEY: test-secret-key
+      CLOUDFLARE_R2_BUCKET: test-bucket
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Make Maven wrapper executable
+        run: chmod +x ./mvnw
+
+      - name: Verify
+        run: ./mvnw -B -ntp verify
+
+  build-and-push:
+    name: Build and push image
+    runs-on: ubuntu-latest
+    needs: test
+    outputs:
+      image: ${{ steps.image.outputs.image }}
+      tag: ${{ github.sha }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve image name
+        id: image
+        shell: bash
+        run: echo "image=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ steps.image.outputs.image }}:${{ github.sha }}
+            ${{ steps.image.outputs.image }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to Linode
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure SSH
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.LINODE_SSH_KEY }}" > ~/.ssh/linode
+          chmod 600 ~/.ssh/linode
+          printf '%s\n' "${{ secrets.LINODE_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Prepare remote directory
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/linode "${{ secrets.LINODE_USER }}@${{ secrets.LINODE_HOST }}" \
+            "mkdir -p '${DEPLOY_PATH}'"
+
+      - name: Upload Compose file
+        shell: bash
+        run: |
+          set -euo pipefail
+          scp -i ~/.ssh/linode deploy/docker-compose.prod.yml \
+            "${{ secrets.LINODE_USER }}@${{ secrets.LINODE_HOST }}:${DEPLOY_PATH}/docker-compose.yml"
+
+      - name: Log remote Docker in to GHCR
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s' "${{ secrets.GITHUB_TOKEN }}" | ssh -i ~/.ssh/linode \
+            "${{ secrets.LINODE_USER }}@${{ secrets.LINODE_HOST }}" \
+            "docker login ghcr.io -u '${{ github.actor }}' --password-stdin"
+
+      - name: Pull and restart service
+        shell: bash
+        env:
+          APP_IMAGE: ${{ needs.build-and-push.outputs.image }}:${{ needs.build-and-push.outputs.tag }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/linode "${{ secrets.LINODE_USER }}@${{ secrets.LINODE_HOST }}" \
+            "cd '${DEPLOY_PATH}' \
+            && printf 'APP_IMAGE=%s\n' '${APP_IMAGE}' > .deployment.env \
+            && docker compose --env-file .deployment.env -f docker-compose.yml pull app \
+            && docker compose --env-file .deployment.env -f docker-compose.yml up -d --remove-orphans \
+            && docker logout ghcr.io \
+            && docker image prune -f --filter 'until=168h' \
+            && docker compose --env-file .deployment.env -f docker-compose.yml ps"
+
+      - name: Wait for healthy container
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/linode "${{ secrets.LINODE_USER }}@${{ secrets.LINODE_HOST }}" \
+            "set -euo pipefail; \
+            for i in \$(seq 1 30); do \
+              status=\$(docker inspect --format='{{.State.Health.Status}}' meditation-service 2>/dev/null || true); \
+              if [ \"\$status\" = healthy ]; then exit 0; fi; \
+              if [ \"\$status\" = unhealthy ]; then docker logs --tail=100 meditation-service; exit 1; fi; \
+              sleep 5; \
+            done; \
+            docker logs --tail=100 meditation-service; \
+            exit 1"
+
+
