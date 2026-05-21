@@ -31,4 +31,4 @@ services:
 networks:
   yogida:
     external: true
-    name: yogida
+    name: yogida_yogida
