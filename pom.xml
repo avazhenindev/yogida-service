@@ -41,6 +41,12 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
+        <!-- Runtime health endpoint for container and deployment checks -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
         <!-- @ConfigurationProperties validation, @Valid, etc. -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

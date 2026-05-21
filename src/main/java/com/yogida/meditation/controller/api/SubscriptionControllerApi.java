@@ -11,46 +11,54 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@Tag(name = "Subscriptions", description = "CRUD endpoints for user subscriptions")
+@Tag(name = "Subscriptions", description = "CRUD endpoints for subscription plan catalog")
 @RequestMapping("/subscriptions")
 public interface SubscriptionControllerApi {
 
-    @Operation(summary = "Get all subscriptions", description = "Returns a list of all subscriptions.")
-    @ApiResponses(@ApiResponse(responseCode = "200", description = "Subscriptions retrieved successfully"))
+    @Operation(summary = "Get all subscription plans")
+    @ApiResponses(@ApiResponse(responseCode = "200", description = "Subscription plans retrieved successfully"))
     @GetMapping
     ResponseEntity<List<SubscriptionDto>> getAll();
 
-    @Operation(summary = "Get subscription by ID", description = "Returns a single subscription by its ID.")
+    @Operation(summary = "Find subscription plan by name")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Subscription found"),
-            @ApiResponse(responseCode = "404", description = "Subscription not found")
+            @ApiResponse(responseCode = "200", description = "Subscription plan found"),
+            @ApiResponse(responseCode = "404", description = "Subscription plan not found")
+    })
+    @GetMapping("/search")
+    ResponseEntity<SubscriptionDto> getByName(
+            @Parameter(description = "Subscription name", required = true) @RequestParam String name);
+
+    @Operation(summary = "Get subscription plan by ID")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Subscription plan found"),
+            @ApiResponse(responseCode = "404", description = "Subscription plan not found")
     })
     @GetMapping("/{id}")
     ResponseEntity<SubscriptionDto> getById(
             @Parameter(description = "Subscription ID", required = true) @PathVariable Long id);
 
-    @Operation(summary = "Create a new subscription", description = "Creates a new user subscription.")
-    @ApiResponses(@ApiResponse(responseCode = "201", description = "Subscription created successfully"))
+    @Operation(summary = "Create a new subscription plan")
+    @ApiResponses(@ApiResponse(responseCode = "201", description = "Subscription plan created successfully"))
     @PostMapping
     ResponseEntity<SubscriptionDto> create(@RequestBody SubscriptionDto dto);
 
-    @Operation(summary = "Update an existing subscription", description = "Updates subscription details by ID.")
+    @Operation(summary = "Update an existing subscription plan")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Subscription updated successfully"),
-            @ApiResponse(responseCode = "404", description = "Subscription not found")
+            @ApiResponse(responseCode = "200", description = "Subscription plan updated successfully"),
+            @ApiResponse(responseCode = "404", description = "Subscription plan not found")
     })
     @PutMapping("/{id}")
     ResponseEntity<SubscriptionDto> update(
             @Parameter(description = "Subscription ID", required = true) @PathVariable Long id,
             @RequestBody SubscriptionDto dto);
 
-    @Operation(summary = "Delete a subscription", description = "Removes a subscription by ID.")
+    @Operation(summary = "Delete a subscription plan")
     @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Subscription deleted successfully"),
-            @ApiResponse(responseCode = "404", description = "Subscription not found")
+            @ApiResponse(responseCode = "204", description = "Subscription plan deleted successfully"),
+            @ApiResponse(responseCode = "404", description = "Subscription plan not found")
     })
     @DeleteMapping("/{id}")
     ResponseEntity<Void> delete(
             @Parameter(description = "Subscription ID", required = true) @PathVariable Long id);
 }
-

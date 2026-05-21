@@ -1,0 +1,52 @@
+databaseChangeLog:
+  - changeSet:
+      id: 014-add-s3url-status-to-media
+      author: yogida
+      comment: "Replace bucket_name with s3_url and add status column to media table"
+      changes:
+        - addColumn:
+            tableName: media
+            columns:
+              - column:
+                  name: s3_url
+                  type: varchar(1000)
+                  constraints:
+                    nullable: true   # temporarily nullable for data migration
+              - column:
+                  name: status
+                  type: varchar(20)
+                  defaultValue: ACTIVE
+                  constraints:
+                    nullable: false
+
+        # Backfill s3_url from existing bucket_name + name values
+        - sql:
+            sql: >
+              UPDATE media SET s3_url = CONCAT('migration-placeholder/', bucket_name, '/', name)
+              WHERE s3_url IS NULL;
+
+        # Now enforce NOT NULL on s3_url
+        - addNotNullConstraint:
+            tableName: media
+            columnName: s3_url
+            columnDataType: varchar(1000)
+
+        - dropColumn:
+            tableName: media
+            columnName: bucket_name
+      rollback:
+        - addColumn:
+            tableName: media
+            columns:
+              - column:
+                  name: bucket_name
+                  type: varchar(255)
+                  constraints:
+                    nullable: true
+        - dropColumn:
+            tableName: media
+            columnName: s3_url
+        - dropColumn:
+            tableName: media
+            columnName: status
+

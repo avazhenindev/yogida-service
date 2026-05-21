@@ -22,6 +22,11 @@ public class SubscriptionController implements SubscriptionControllerApi {
     }
 
     @Override
+    public ResponseEntity<SubscriptionDto> getByName(String name) {
+        return ResponseEntity.ok(subscriptionService.findByName(name));
+    }
+
+    @Override
     public ResponseEntity<SubscriptionDto> getById(Long id) {
         return ResponseEntity.ok(subscriptionService.findById(id));
     }
@@ -42,4 +47,3 @@ public class SubscriptionController implements SubscriptionControllerApi {
         return ResponseEntity.noContent().build();
     }
 }
-

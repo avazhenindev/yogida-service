@@ -1,0 +1,65 @@
+databaseChangeLog:
+
+  - changeSet:
+      id: 009-1
+      author: migration
+      comment: "Add nullable price column to subscription catalog table"
+      changes:
+        - addColumn:
+            tableName: subscription
+            columns:
+              - column:
+                  name: price
+                  type: numeric(10,2)
+                  constraints:
+                    nullable: true
+
+  - changeSet:
+      id: 009-2
+      author: migration
+      comment: "Add nullable currency column to subscription catalog table"
+      changes:
+        - addColumn:
+            tableName: subscription
+            columns:
+              - column:
+                  name: currency
+                  type: varchar(10)
+                  defaultValue: "USD"
+                  constraints:
+                    nullable: true
+
+  - changeSet:
+      id: 009-3
+      author: migration
+      comment: "Backfill price and currency for existing rows"
+      changes:
+        - update:
+            tableName: subscription
+            columns:
+              - column:
+                  name: price
+                  valueNumeric: 0.00
+            where: price IS NULL
+        - update:
+            tableName: subscription
+            columns:
+              - column:
+                  name: currency
+                  value: "USD"
+            where: currency IS NULL
+
+  - changeSet:
+      id: 009-4
+      author: migration
+      comment: "Apply NOT NULL constraints on price and currency"
+      changes:
+        - addNotNullConstraint:
+            tableName: subscription
+            columnName: price
+            columnDataType: numeric(10,2)
+        - addNotNullConstraint:
+            tableName: subscription
+            columnName: currency
+            columnDataType: varchar(10)
+

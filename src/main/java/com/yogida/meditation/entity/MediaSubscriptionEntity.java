@@ -5,10 +5,14 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
+/*
+ * Junction entity to map media with subscription ManyToMany relationship.
+ * This allows us to track which media items are associated with which subscriptions.
+ * */
 @Data
 @Entity
 @Table(name = "media_subscription", uniqueConstraints = {
-        @UniqueConstraint(name = "uk_media_subscription", columnNames = {"media_id", "subscription_id"})
+    @UniqueConstraint(name = "uk_media_subscription", columnNames = {"media_id", "subscription_id"})
 })
 public class MediaSubscriptionEntity {
 
@@ -25,7 +29,6 @@ public class MediaSubscriptionEntity {
     @JoinColumn(name = "subscription_id", nullable = false, foreignKey = @ForeignKey(name = "fk_media_subscription_subscription"))
     private SubscriptionEntity subscription;
 
-    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 }
 

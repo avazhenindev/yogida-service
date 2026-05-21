@@ -6,11 +6,13 @@ import com.yogida.meditation.entity.MediaSubscriptionEntity;
 import com.yogida.meditation.entity.SubscriptionEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 import org.mapstruct.Named;
+import org.mapstruct.NullValuePropertyMappingStrategy;
 
 import java.util.List;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
 public interface MediaSubscriptionMapper {
 
     @Mapping(source = "media.id", target = "mediaId")
@@ -23,11 +25,15 @@ public interface MediaSubscriptionMapper {
 
     List<MediaSubscriptionDto> toDtoList(List<MediaSubscriptionEntity> entities);
 
+    /** Merges non-null DTO fields into the existing entity. Skips server-managed timestamps. */
+    @Mapping(source = "mediaId", target = "media", qualifiedByName = "mediaIdToMedia")
+    @Mapping(source = "subscriptionId", target = "subscription", qualifiedByName = "subscriptionIdToSubscription")
+    @Mapping(target = "createdAt", ignore = true)
+    void updateEntity(MediaSubscriptionDto dto, @MappingTarget MediaSubscriptionEntity entity);
+
     @Named("mediaIdToMedia")
     default MediaEntity mediaIdToMedia(Long mediaId) {
-        if (mediaId == null) {
-            return null;
-        }
+        if (mediaId == null) return null;
         MediaEntity media = new MediaEntity();
         media.setId(mediaId);
         return media;
@@ -35,12 +41,9 @@ public interface MediaSubscriptionMapper {
 
     @Named("subscriptionIdToSubscription")
     default SubscriptionEntity subscriptionIdToSubscription(Long subscriptionId) {
-        if (subscriptionId == null) {
-            return null;
-        }
+        if (subscriptionId == null) return null;
         SubscriptionEntity subscription = new SubscriptionEntity();
         subscription.setSubscriptionId(subscriptionId);
         return subscription;
     }
 }
-

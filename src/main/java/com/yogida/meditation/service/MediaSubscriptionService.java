@@ -56,12 +56,11 @@ public class MediaSubscriptionService implements MediaSubscriptionApi {
                 .orElseThrow(() -> new EntityNotFoundException("MediaSubscription", id));
         if (dto.getMediaId() != null) {
             validateMediaExists(dto.getMediaId());
-            existing.setMedia(mediaSubscriptionMapper.toEntity(dto).getMedia());
         }
         if (dto.getSubscriptionId() != null) {
             validateSubscriptionExists(dto.getSubscriptionId());
-            existing.setSubscription(mediaSubscriptionMapper.toEntity(dto).getSubscription());
         }
+        mediaSubscriptionMapper.updateEntity(dto, existing);
         MediaSubscriptionEntity saved = mediaSubscriptionRepository.save(existing);
         log.info("MediaSubscriptionService > Updated media-subscription with id: {}", saved.getMediaSubscriptionId());
         return mediaSubscriptionMapper.toDto(saved);

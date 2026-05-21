@@ -1,6 +1,9 @@
 HELP.md
 target/
 .mvn/wrapper/maven-wrapper.jar
+.env
+.env.*
+!.env.example
 !**/src/main/**/target/
 !**/src/test/**/target/
 
@@ -31,3 +34,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### GitHub local customization ###
+.github/*
+!.github/workflows/
+!.github/workflows/**

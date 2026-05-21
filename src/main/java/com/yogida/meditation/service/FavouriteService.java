@@ -52,10 +52,8 @@ public class FavouriteService implements FavouriteApi {
                 .orElseThrow(() -> new EntityNotFoundException("Favourite", id));
         if (dto.getUserId() != null) {
             validateUserExists(dto.getUserId());
-            existing.setUser(favouriteMapper.toEntity(dto).getUser());
         }
-        existing.setContentType(dto.getContentType());
-        existing.setContentId(dto.getContentId());
+        favouriteMapper.updateEntity(dto, existing);
         FavouriteEntity saved = favouriteRepository.save(existing);
         log.info("FavouriteService > Updated favourite with id: {}", saved.getFavouriteId());
         return favouriteMapper.toDto(saved);

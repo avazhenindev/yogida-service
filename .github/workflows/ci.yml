@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Maven verify
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: meditation
+          POSTGRES_USER: backend
+          POSTGRES_PASSWORD: backend
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U backend -d meditation"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/meditation
+      SPRING_DATASOURCE_USERNAME: backend
+      SPRING_DATASOURCE_PASSWORD: backend
+      CLOUDFLARE_R2_ACCOUNT_ID: test-account
+      CLOUDFLARE_R2_ACCESS_KEY_ID: test-access-key
+      CLOUDFLARE_R2_SECRET_ACCESS_KEY: test-secret-key
+      CLOUDFLARE_R2_BUCKET: test-bucket
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Make Maven wrapper executable
+        run: chmod +x ./mvnw
+
+      - name: Verify
+        run: ./mvnw -B -ntp verify
+

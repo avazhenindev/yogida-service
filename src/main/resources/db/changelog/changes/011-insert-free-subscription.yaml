@@ -1,0 +1,33 @@
+databaseChangeLog:
+
+  - changeSet:
+      id: 011-1
+      author: migration
+      comment: "Insert base FREE subscription record into subscription catalog"
+      changes:
+        - insert:
+            tableName: subscription
+            columns:
+              - column:
+                  name: name
+                  value: "FREE"
+              - column:
+                  name: status
+                  value: "ACTIVE"
+              - column:
+                  name: period_days
+                  valueNumeric: 0
+              - column:
+                  name: price
+                  valueNumeric: 0.00
+              - column:
+                  name: currency
+                  value: "USD"
+              - column:
+                  name: details
+                  value: "Base free subscription with no cost"
+      rollback:
+        - delete:
+            tableName: subscription
+            where: name = 'FREE' AND price = 0 AND currency = 'USD'
+

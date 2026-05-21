@@ -1,0 +1,17 @@
+databaseChangeLog:
+  - changeSet:
+      id: 013-fix-auto-renew-column-type
+      author: migration
+      comment: "Change auto_renew column type from numeric(1) to boolean in user_subscription"
+      changes:
+        - sql:
+            sql: >
+              ALTER TABLE user_subscription ALTER COLUMN auto_renew DROP DEFAULT;
+              ALTER TABLE user_subscription ALTER COLUMN auto_renew TYPE boolean USING (auto_renew != 0);
+              ALTER TABLE user_subscription ALTER COLUMN auto_renew SET DEFAULT false;
+      rollback:
+        - sql:
+            sql: >
+              ALTER TABLE user_subscription ALTER COLUMN auto_renew DROP DEFAULT;
+              ALTER TABLE user_subscription ALTER COLUMN auto_renew TYPE numeric(1) USING (auto_renew::int);
+              ALTER TABLE user_subscription ALTER COLUMN auto_renew SET DEFAULT 0;

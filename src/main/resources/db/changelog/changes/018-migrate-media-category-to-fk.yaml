@@ -1,0 +1,43 @@
+databaseChangeLog:
+  - changeSet:
+      id: 018-migrate-media-category-to-fk
+      author: yogida
+      changes:
+        # 1. Add nullable FK column
+        - addColumn:
+            tableName: media
+            columns:
+              - column:
+                  name: category_id
+                  type: bigint
+
+        # 2. Migrate distinct existing category strings into media_category
+        - sql:
+            sql: >
+              INSERT INTO media_category (name)
+              SELECT DISTINCT category FROM media
+              WHERE category IS NOT NULL AND category <> ''
+              ON CONFLICT (name) DO NOTHING;
+
+        # 3. Back-fill category_id from the new dictionary
+        - sql:
+            sql: >
+              UPDATE media m
+              SET category_id = mc.id
+              FROM media_category mc
+              WHERE m.category = mc.name;
+
+        # 4. Drop old string column
+        - dropColumn:
+            tableName: media
+            columnName: category
+
+        # 5. Add FK constraint
+        - addForeignKeyConstraint:
+            baseTableName: media
+            baseColumnNames: category_id
+            referencedTableName: media_category
+            referencedColumnNames: id
+            constraintName: fk_media_category_id
+            onDelete: SET NULL
+

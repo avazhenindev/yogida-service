@@ -1,0 +1,123 @@
+databaseChangeLog:
+
+  - changeSet:
+      id: 007-1
+      author: migration
+      comment: "Drop FK from media_subscription to subscription before table rename"
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: media_subscription
+            constraintName: fk_media_subscription_subscription
+
+  - changeSet:
+      id: 007-2
+      author: migration
+      comment: "Drop FK from subscription to app_user before table rename"
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: subscription
+            constraintName: fk_subscription_user
+
+  - changeSet:
+      id: 007-3
+      author: migration
+      comment: "Rename subscription table to user_subscription"
+      changes:
+        - renameTable:
+            oldTableName: subscription
+            newTableName: user_subscription
+
+  - changeSet:
+      id: 007-4
+      author: migration
+      comment: "Drop primary key on user_subscription (was pk_subscription)"
+      changes:
+        - dropPrimaryKey:
+            tableName: user_subscription
+            constraintName: pk_subscription
+
+  - changeSet:
+      id: 007-5
+      author: migration
+      comment: "Add new surrogate PK user_subscription_id"
+      changes:
+        - addColumn:
+            tableName: user_subscription
+            columns:
+              - column:
+                  name: user_subscription_id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_user_subscription
+
+  - changeSet:
+      id: 007-6
+      author: migration
+      comment: "Restore FK from user_subscription to app_user"
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: user_subscription
+            baseColumnNames: user_id
+            referencedTableName: app_user
+            referencedColumnNames: user_id
+            constraintName: fk_user_subscription_user
+            onDelete: CASCADE
+
+  - changeSet:
+      id: 007-7
+      author: migration
+      comment: "Create new subscription catalog table"
+      changes:
+        - createTable:
+            tableName: subscription
+            columns:
+              - column:
+                  name: subscription_id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_subscription
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: period_days
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: details
+                  type: varchar(1000)
+
+  - changeSet:
+      id: 007-8
+      author: migration
+      comment: "Add FK from user_subscription.subscription_id to subscription catalog"
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: user_subscription
+            baseColumnNames: subscription_id
+            referencedTableName: subscription
+            referencedColumnNames: subscription_id
+            constraintName: fk_user_subscription_subscription
+
+  - changeSet:
+      id: 007-9
+      author: migration
+      comment: "Re-add FK from media_subscription.subscription_id to subscription catalog"
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: media_subscription
+            baseColumnNames: subscription_id
+            referencedTableName: subscription
+            referencedColumnNames: subscription_id
+            constraintName: fk_media_subscription_subscription
+            onDelete: CASCADE
+

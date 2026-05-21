@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -12,10 +13,10 @@ import java.time.LocalDateTime;
 public class AppUserDto {
     private Long userId;
     private String keycloakUserId;
-    private String bearerToken;
     private String email;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime lastLogin;
+    private List<UserSubscriptionDto> subscriptions;
 }
 

@@ -9,6 +9,7 @@ import com.yogida.meditation.service.api.AppUserApi;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -22,11 +23,13 @@ public class AppUserService implements AppUserApi {
     private final AppUserMapper appUserMapper;
 
     @Override
+    @Transactional(readOnly = true)
     public List<AppUserDto> findAll() {
         return appUserRepository.findAll().stream().map(appUserMapper::toDto).toList();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public AppUserDto findById(Long id) {
         return appUserRepository.findById(id)
                 .map(appUserMapper::toDto)
@@ -48,10 +51,7 @@ public class AppUserService implements AppUserApi {
     public AppUserDto update(Long id, AppUserDto dto) {
         AppUserEntity existing = appUserRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("AppUser", id));
-        existing.setKeycloakUserId(dto.getKeycloakUserId());
-        existing.setBearerToken(dto.getBearerToken());
-        existing.setEmail(dto.getEmail());
-        existing.setLastLogin(dto.getLastLogin());
+        appUserMapper.updateEntity(dto, existing);
         existing.setUpdatedAt(LocalDateTime.now());
         AppUserEntity saved = appUserRepository.save(existing);
         log.info("AppUserService > Updated user with id: {}", saved.getUserId());
@@ -65,6 +65,14 @@ public class AppUserService implements AppUserApi {
         }
         appUserRepository.deleteById(id);
         log.info("AppUserService > Deleted user with id: {}", id);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public AppUserDto findByEmail(String email) {
+        return appUserRepository.findByEmail(email)
+                .map(appUserMapper::toDto)
+                .orElseThrow(() -> new EntityNotFoundException("AppUser with email " + email + " not found"));
     }
 }
 

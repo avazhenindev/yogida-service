@@ -15,5 +15,7 @@ public interface AppUserApi {
     AppUserDto update(Long id, AppUserDto dto);
 
     void delete(Long id);
+
+    AppUserDto findByEmail(String email);
 }
 

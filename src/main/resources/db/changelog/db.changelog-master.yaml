@@ -11,4 +11,27 @@ databaseChangeLog:
       file: db/changelog/changes/005-create-favourite-table.yaml
   - include:
       file: db/changelog/changes/006-create-media-subscription-table.yaml
-
+  - include:
+      file: db/changelog/changes/007-refactor-subscription-tables.yaml
+  - include:
+      file: db/changelog/changes/008-add-name-to-subscription.yaml
+  - include:
+      file: db/changelog/changes/009-add-price-to-subscription.yaml
+  - include:
+      file: db/changelog/changes/010-drop-plan-type-from-user-subscription.yaml
+  - include:
+      file: db/changelog/changes/011-insert-free-subscription.yaml
+  - include:
+      file: db/changelog/changes/012-add-unique-constraint-subscription-name.yaml
+  - include:
+      file: db/changelog/changes/013-fix-auto-renew-column-type.yaml
+  - include:
+      file: db/changelog/changes/014-add-s3url-status-to-media.yaml
+  - include:
+      file: db/changelog/changes/015-create-media-log-table.yaml
+  - include:
+      file: db/changelog/changes/016-add-bucket-to-media.yaml
+  - include:
+      file: db/changelog/changes/017-create-media-category-table.yaml
+  - include:
+      file: db/changelog/changes/018-migrate-media-category-to-fk.yaml

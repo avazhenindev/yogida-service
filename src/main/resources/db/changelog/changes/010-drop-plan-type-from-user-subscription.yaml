@@ -1,0 +1,19 @@
+databaseChangeLog:
+  - changeSet:
+      id: 010-drop-plan-type-from-user-subscription
+      author: migration
+      comment: "Drop legacy plan_type column from user_subscription table"
+      changes:
+        - dropColumn:
+            tableName: user_subscription
+            columnName: plan_type
+      rollback:
+        - addColumn:
+            tableName: user_subscription
+            columns:
+              - column:
+                  name: plan_type
+                  type: varchar(50)
+                  constraints:
+                    nullable: true
+

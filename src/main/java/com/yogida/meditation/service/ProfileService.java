@@ -54,10 +54,7 @@ public class ProfileService implements ProfileApi {
         if (dto.getUserId() != null) {
             validateUserExists(dto.getUserId());
         }
-        existing.setTwoFactorEnabled(dto.getTwoFactorEnabled());
-        existing.setNotificationPreferences(dto.getNotificationPreferences());
-        existing.setThemePreference(dto.getThemePreference());
-        existing.setLanguage(dto.getLanguage());
+        profileMapper.updateEntity(dto, existing);
         existing.setUpdatedAt(LocalDateTime.now());
         ProfileEntity saved = profileRepository.save(existing);
         log.info("ProfileService > Updated profile with id: {}", saved.getProfileId());
