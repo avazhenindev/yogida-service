@@ -118,13 +118,12 @@ jobs:
           mkdir -p ~/.ssh
           printf '%s\n' "${{ secrets.LINODE_SSH_KEY }}" > ~/.ssh/linode
           chmod 600 ~/.ssh/linode
-          printf '%s\n' "${{ secrets.LINODE_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          printf '%s\n' "${{ secrets.LINODE_HOST }}" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
 
       - name: Prepare remote directory
         shell: bash
         run: |
-          set -euo pipefail
           ssh -i ~/.ssh/linode "${{ secrets.LINODE_USER }}@${{ secrets.LINODE_HOST }}" \
             "mkdir -p '${DEPLOY_PATH}'"
 
