@@ -25,4 +25,8 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-
+    networks:
+      - yogida
+networks:
+  yogida:
+    external: true
