@@ -29,4 +29,4 @@ services:
       - yogida
 networks:
   yogida:
-    external: true
+    driver: bridge
