@@ -17,18 +17,21 @@ CLOUDFLARE_R2_BUCKET=test-bucket \
 ./mvnw -B verify
 ```
 
-Build the container image locally:
+Build the executable JAR locally:
 
 ```bash
-docker build -t meditation-service:local .
+./mvnw -B -DskipTests package
 ```
 
-Run the container with a local environment file:
+Run the JAR locally with an environment file:
 
 ```bash
 cp .env.example .env.local
 # Edit .env.local before running.
-docker run --rm --env-file .env.local -p 8080:8080 meditation-service:local
+set -a
+source .env.local
+set +a
+java -jar target/meditation-service-0.0.1-SNAPSHOT.jar
 ```
 
 Health endpoint after startup:
@@ -39,14 +42,15 @@ curl http://localhost:8080/api/actuator/health
 
 ## CI/CD approach
 
-This repository uses GitHub Actions with an immutable Docker image deployment flow:
+This repository uses a simple GitHub Actions JAR-copy deployment flow:
 
 1. `CI` workflow runs `./mvnw verify` on pull requests and pushes to `main`.
-2. `Deploy` workflow runs tests, builds a Docker image, and pushes it to GitHub Container Registry (GHCR).
+2. `Deploy` workflow builds the Spring Boot executable JAR.
 3. The deploy job connects to the Linode/Akamai host by SSH.
-4. The host pulls the exact commit-tagged image and restarts the service with Docker Compose.
+4. The deploy job copies `app.jar` and `docker-compose.yml` to the host.
+5. The host restarts the service with Docker Compose using a stock Java 21 runtime image.
 
-This keeps production secrets on the host, avoids copying JARs manually, and enables rollback by redeploying a previous image tag.
+This keeps production secrets on the host and avoids a custom application Docker image or container registry.
 
 ## Required GitHub configuration
 
@@ -59,13 +63,12 @@ Repository or environment secrets:
 | `LINODE_HOST` | Hostname or IP address of the Linode/Akamai VM. |
 | `LINODE_USER` | SSH deploy user on the VM. |
 | `LINODE_SSH_KEY` | Private SSH key for the deploy user. |
-| `LINODE_KNOWN_HOSTS` | SSH known_hosts entry for the VM. Generate with `ssh-keyscan`. |
 
-Optional repository/environment variable:
+Optional repository/environment variables:
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `LINODE_DEPLOY_PATH` | `/home/yogida/meditation-service` | Directory on the VM that contains `docker-compose.yml`, `.env`, and `.deployment.env`. |
+| `LINODE_DEPLOY_PATH` | `/home/yogida/meditation-service` | Directory on the VM that contains `docker-compose.yml`, `.env`, `app.jar`, and `app.jar.previous`. |
 
 ## First-time Linode/Akamai host setup
 
@@ -88,13 +91,8 @@ cp .env.example /home/yogida/meditation-service/.env
 nano /home/yogida/meditation-service/.env
 ```
 
-Generate the host fingerprint for `LINODE_KNOWN_HOSTS`:
 
-```bash
-ssh-keyscan -H your-linode-host.example.com
-```
-
-The deploy workflow uploads `deploy/docker-compose.prod.yml` as `/home/yogida/meditation-service/docker-compose.yml` automatically.
+The deploy workflow uploads `deploy/docker-compose.prod.yml` as `/home/yogida/meditation-service/docker-compose.yml` and the built Spring Boot JAR as `/home/yogida/meditation-service/app.jar` automatically.
 
 ## Security notes
 
@@ -106,13 +104,13 @@ The deploy workflow uploads `deploy/docker-compose.prod.yml` as `/home/yogida/me
 
 ## Rollback
 
-Images are tagged with the commit SHA. To roll back manually on the VM:
+The deploy workflow keeps one previous JAR as `app.jar.previous`. To roll back manually on the VM:
 
 ```bash
 cd /home/yogida/meditation-service
-printf 'APP_IMAGE=%s\n' 'ghcr.io/<owner>/<repo>:<previous-sha>' > .deployment.env
-docker compose --env-file .deployment.env -f docker-compose.yml pull app
-docker compose --env-file .deployment.env -f docker-compose.yml up -d
+cp app.jar app.jar.failed
+cp app.jar.previous app.jar
+docker compose -f docker-compose.yml up -d --force-recreate --remove-orphans
 ```
 
 

@@ -1,8 +1,9 @@
 services:
   app:
-    image: ${APP_IMAGE:?APP_IMAGE is required}
+    image: eclipse-temurin:21-jre-alpine
     container_name: meditation-service
     restart: unless-stopped
+    working_dir: /app
     env_file:
       - .env
     ports:
@@ -10,6 +11,9 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
       JAVA_TOOL_OPTIONS: ${JAVA_TOOL_OPTIONS:--XX:MaxRAMPercentage=75.0}
+    volumes:
+      - ./app.jar:/app/app.jar:ro
+    command: ["java", "-jar", "/app/app.jar"]
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8080/api/actuator/health || exit 1"]
       interval: 30s
