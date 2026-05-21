@@ -27,6 +27,8 @@ services:
         max-file: "3"
     networks:
       - yogida
+
 networks:
   yogida:
-    driver: bridge
+    external: true
+    name: yogida
