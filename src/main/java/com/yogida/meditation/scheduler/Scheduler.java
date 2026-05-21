@@ -13,7 +13,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
-import java.net.URI;
 import java.util.List;
 
 /**
@@ -38,7 +37,7 @@ public class Scheduler {
 
         for (MediaEntity media : allMedia) {
             try {
-                String[] parts = parseS3Url(media.getS3Url());
+                String[] parts = r2StorageApi.parseS3Url(media.getS3Url());
                 String bucket = parts[0];
                 String key = parts[1];
 
@@ -75,16 +74,5 @@ public class Scheduler {
         log.info("Scheduler > S3 health check complete");
     }
 
-    /**
-     * Parses {@code https://{host}/{bucket}/{key}} and returns {@code [bucket, key]}.
-     */
-    private String[] parseS3Url(String s3Url) {
-        String path = URI.create(s3Url).getPath();
-        String stripped = path.startsWith("/") ? path.substring(1) : path;
-        int slash = stripped.indexOf('/');
-        if (slash < 0) {
-            throw new IllegalArgumentException("Cannot parse bucket/key from S3 URL: " + s3Url);
-        }
-        return new String[]{stripped.substring(0, slash), stripped.substring(slash + 1)};
-    }
+
 }
