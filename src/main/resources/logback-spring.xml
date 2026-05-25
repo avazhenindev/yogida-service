@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <springProperty name="LOG_FILE_NAME" source="logging.file.name" defaultValue="logs/meditation-service.log"/>
+    <springProperty name="LOG_FILE_PATTERN" source="logging.logback.rollingpolicy.file-name-pattern" defaultValue="logs/archive/meditation-service.%d{yyyy-MM-dd}.%i.log.gz"/>
+    <springProperty name="LOG_FILE_MAX_SIZE" source="logging.logback.rollingpolicy.max-file-size" defaultValue="10MB"/>
+    <springProperty name="LOG_FILE_MAX_HISTORY" source="logging.logback.rollingpolicy.max-history" defaultValue="14"/>
+    <springProperty name="LOG_FILE_TOTAL_SIZE_CAP" source="logging.logback.rollingpolicy.total-size-cap" defaultValue="1GB"/>
+    <springProperty name="ROOT_LOG_LEVEL" source="logging.level.root" defaultValue="INFO"/>
+
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+
+    <appender name="ROLLING_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_FILE_NAME}</file>
+        <encoder>
+            <pattern>${FILE_LOG_PATTERN}</pattern>
+            <charset>${FILE_LOG_CHARSET}</charset>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_FILE_PATTERN}</fileNamePattern>
+            <maxFileSize>${LOG_FILE_MAX_SIZE}</maxFileSize>
+            <maxHistory>${LOG_FILE_MAX_HISTORY}</maxHistory>
+            <totalSizeCap>${LOG_FILE_TOTAL_SIZE_CAP}</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <root level="${ROOT_LOG_LEVEL}">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ROLLING_FILE"/>
+    </root>
+</configuration>
+
