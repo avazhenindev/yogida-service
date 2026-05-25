@@ -3,7 +3,6 @@ package com.yogida.meditation.controller;
 import com.yogida.meditation.controller.api.AdminMediaControllerApi;
 import com.yogida.meditation.dto.*;
 import com.yogida.meditation.exception.EntityNotFoundException;
-import com.yogida.meditation.service.api.MediaApi;
 import com.yogida.meditation.service.api.MediaFacadeApi;
 import com.yogida.meditation.service.api.MediaLogApi;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +18,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AdminMediaController implements AdminMediaControllerApi {
 
-    private final MediaApi mediaApi;
     private final MediaFacadeApi mediaFacadeApi;
     private final MediaLogApi mediaLogApi;
 
@@ -28,12 +26,12 @@ public class AdminMediaController implements AdminMediaControllerApi {
 
     @Override
     public ResponseEntity<List<MediaDto>> getAll() {
-        return ResponseEntity.ok(mediaApi.findAll());
+        return ResponseEntity.ok(mediaFacadeApi.findAll());
     }
 
     @Override
     public ResponseEntity<MediaDto> getById(Long id) {
-        return mediaApi.findById(id)
+        return mediaFacadeApi.findById(id)
                 .map(ResponseEntity::ok)
                 .orElseThrow(() -> new EntityNotFoundException("Media", id));
     }

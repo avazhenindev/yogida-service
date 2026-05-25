@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @Log4j2
@@ -37,6 +38,24 @@ public class MediaFacadeService implements MediaFacadeApi {
 
     @Value("${app.media.max-picture-size-bytes:512000}")
     private long maxPictureSizeBytes;
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MediaDto> findAll() {
+        return mediaApi.findAll();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MediaDto> findAllActive() {
+        return mediaApi.findAllActive();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<MediaDto> findById(Long id) {
+        return mediaApi.findById(id);
+    }
 
     @Override
     @Transactional
