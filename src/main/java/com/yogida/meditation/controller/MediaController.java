@@ -35,7 +35,10 @@ public class MediaController implements MediaControllerApi {
     public ResponseEntity<Map<String, String>> getStreamUrl(Long id) {
         MediaDto media = mediaFacadeApi.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Media", id));
-        String url = r2StorageApi.generateStreamingUrlFromS3Url(media.getS3Url());
+        String url = r2StorageApi.generateStreamingUrl(
+                media.getMediaObject().getBucketName(),
+                media.getMediaObject().getObjectUri()
+        );
         return ResponseEntity.ok(Map.of("url", url));
     }
 }

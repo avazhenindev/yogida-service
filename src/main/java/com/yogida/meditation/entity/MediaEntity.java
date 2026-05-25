@@ -22,8 +22,9 @@ public class MediaEntity {
     @Column(name = "bucket_name", nullable = false)
     private String bucketName;
 
-    @Column(name = "s3_url", nullable = false)
-    private String s3Url;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "media_object_id", nullable = false)
+    private S3ObjectEntity mediaObject;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
@@ -32,8 +33,9 @@ public class MediaEntity {
     @Column(name = "description")
     private String description;
 
-    @Column(name = "picture", length = 2048)
-    private String picture;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "picture_object_id")
+    private S3ObjectEntity pictureObject;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")

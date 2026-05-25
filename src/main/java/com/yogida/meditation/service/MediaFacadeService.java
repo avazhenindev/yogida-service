@@ -2,6 +2,7 @@ package com.yogida.meditation.service;
 
 import com.yogida.meditation.dto.*;
 import com.yogida.meditation.entity.MediaEntity;
+import com.yogida.meditation.entity.S3ObjectEntity;
 import com.yogida.meditation.enums.MediaLogAction;
 import com.yogida.meditation.exception.EntityNotFoundException;
 import com.yogida.meditation.repository.MediaRepository;
@@ -10,8 +11,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.List;
 import java.util.Optional;
@@ -24,8 +23,8 @@ public class MediaFacadeService implements MediaFacadeApi {
     private final MediaApi mediaApi;
     private final MediaLogApi mediaLogApi;
     private final AdminStorageApi adminStorageApi;
-    private final R2StorageApi r2StorageApi;
     private final MediaPictureStorageService mediaPictureStorageService;
+    private final S3ObjectService s3ObjectService;
     private final MediaRepository mediaRepository;
 
     @Override
@@ -49,13 +48,13 @@ public class MediaFacadeService implements MediaFacadeApi {
     @Override
     @Transactional
     public MediaDto create(MediaCreateRequest request) {
-        ObjectMetadataDto uploaded = adminStorageApi.uploadObject(
-            request.bucketName(), request.objectKey(), request.file());
+        adminStorageApi.uploadObject(request.bucketName(), request.objectKey(), request.file());
+        S3ObjectEntity mediaObject = s3ObjectService.createMediaObject(request.bucketName(), request.objectKey());
 
-        String pictureUrl = mediaPictureStorageService.uploadPicture(request.picture());
+        S3ObjectEntity pictureObject = mediaPictureStorageService.uploadPicture(request.picture());
 
         MediaUpdateRequest mediaRequest = new MediaUpdateRequest(
-            request.name(), uploaded.s3Url(), request.bucketName(), request.description(), request.categoryId(), request.status(), pictureUrl);
+            request.name(), mediaObject.getId(), pictureObject == null ? null : pictureObject.getId(), request.description(), request.categoryId(), request.status());
 
         MediaDto dto = mediaApi.create(mediaRequest);
         MediaEntity entity = resolveEntity(dto.getId());
@@ -66,44 +65,38 @@ public class MediaFacadeService implements MediaFacadeApi {
     @Override
     @Transactional
     public MediaDto update(Long id, MediaFileUpdateRequest request) {
-        MediaDto existing = mediaApi.findById(id)
-            .orElseThrow(() -> new EntityNotFoundException("Media", id));
-        String oldS3Url = existing.getS3Url();
-        String oldPictureUrl = existing.getPicture();
+        MediaEntity existingEntity = resolveEntity(id);
+        S3ObjectEntity oldMediaObject = existingEntity.getMediaObject();
+        S3ObjectEntity oldPictureObject = existingEntity.getPictureObject();
 
-        String newS3Url = oldS3Url;
+        S3ObjectEntity newMediaObject = oldMediaObject;
         if (request.file() != null) {
-            String oldKey = r2StorageApi.parseS3Url(oldS3Url)[1];
+            String oldKey = oldMediaObject.getObjectUri();
             if (!request.objectKey().equals(oldKey)) {
-                ObjectMetadataDto uploaded = adminStorageApi.uploadObject(
-                    request.bucketName(), request.objectKey(), request.file());
-                newS3Url = uploaded.s3Url();
+                adminStorageApi.uploadObject(request.bucketName(), request.objectKey(), request.file());
+                newMediaObject = s3ObjectService.createMediaObject(request.bucketName(), request.objectKey());
             }
         }
 
-        String newPictureUrl = oldPictureUrl;
+        S3ObjectEntity newPictureObject = oldPictureObject;
         boolean shouldDeleteOldPicture = false;
         if (request.picture() != null && !request.picture().isEmpty()) {
-            newPictureUrl = mediaPictureStorageService.uploadPicture(request.picture());
-            shouldDeleteOldPicture = hasText(oldPictureUrl) && !oldPictureUrl.equals(newPictureUrl);
+            newPictureObject = mediaPictureStorageService.uploadPicture(request.picture());
+            shouldDeleteOldPicture = oldPictureObject != null
+                && !oldPictureObject.getId().equals(newPictureObject.getId());
         }
 
         MediaUpdateRequest mediaRequest = new MediaUpdateRequest(
-            request.name(), newS3Url, request.bucketName(), request.description(), request.categoryId(), request.status(), newPictureUrl);
+            request.name(), newMediaObject.getId(), newPictureObject == null ? null : newPictureObject.getId(),
+            request.description(), request.categoryId(), request.status());
         MediaDto dto = mediaApi.update(id, mediaRequest);
 
-        if (!newS3Url.equals(oldS3Url)) {
-            String[] oldParts = r2StorageApi.parseS3Url(oldS3Url);
-            try {
-                adminStorageApi.deleteObject(oldParts[0], oldParts[1]);
-            } catch (Exception e) {
-                log.warn("Failed to delete old S3 object [bucket={}, key={}]: {}",
-                    oldParts[0], oldParts[1], e.getMessage());
-            }
+        if (!newMediaObject.getId().equals(oldMediaObject.getId())) {
+            s3ObjectService.deleteObjectAfterCommit(oldMediaObject);
         }
 
         if (shouldDeleteOldPicture) {
-            deletePictureObjectByUrlAfterCommit(oldPictureUrl);
+            s3ObjectService.deleteObjectAfterCommit(oldPictureObject);
         }
 
         MediaEntity entity = resolveEntity(id);
@@ -115,15 +108,15 @@ public class MediaFacadeService implements MediaFacadeApi {
     @Transactional
     public void delete(Long id) {
         MediaEntity entity = resolveEntity(id);
-        String s3Url = entity.getS3Url();
-        String pictureUrl = entity.getPicture();
+        S3ObjectEntity mediaObject = entity.getMediaObject();
+        S3ObjectEntity pictureObject = entity.getPictureObject();
         String name = entity.getName();
 
         mediaLogApi.log(entity, MediaLogAction.REMOVED, "Media deleted: " + name);
         mediaApi.delete(id);
 
-        deleteObjectByUrl(s3Url);
-        mediaPictureStorageService.deletePictureObjectByUrl(pictureUrl);
+        s3ObjectService.deleteObjectAfterCommit(mediaObject);
+        s3ObjectService.deleteObjectAfterCommit(pictureObject);
     }
 
     private MediaEntity resolveEntity(Long id) {
@@ -131,34 +124,4 @@ public class MediaFacadeService implements MediaFacadeApi {
             .orElseThrow(() -> new EntityNotFoundException("Media", id));
     }
 
-
-    private void deleteObjectByUrl(String objectUrl) {
-        if (!hasText(objectUrl)) {
-            return;
-        }
-        try {
-            String[] parts = r2StorageApi.parseS3Url(objectUrl);
-            adminStorageApi.deleteObject(parts[0], parts[1]);
-        } catch (Exception e) {
-            log.warn("Failed to delete media object [url={}]: {}", objectUrl, e.getMessage());
-        }
-    }
-
-    private void deletePictureObjectByUrlAfterCommit(String objectUrl) {
-        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
-            mediaPictureStorageService.deletePictureObjectByUrl(objectUrl);
-            return;
-        }
-
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                mediaPictureStorageService.deletePictureObjectByUrl(objectUrl);
-            }
-        });
-    }
-
-    private boolean hasText(String value) {
-        return value != null && !value.isBlank();
-    }
 }

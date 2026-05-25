@@ -3,6 +3,8 @@ databaseChangeLog:
       id: 020-change-media-picture-to-url
       author: yogida
       comment: "No-op: picture column remains bytea for binary storage"
+      validCheckSum:
+        - ANY
       changes:
         - sql:
             sql: "SELECT 1"
