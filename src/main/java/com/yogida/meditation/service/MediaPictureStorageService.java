@@ -1,5 +1,6 @@
 package com.yogida.meditation.service;
 
+import com.yogida.meditation.constants.BucketNames;
 import com.yogida.meditation.entity.S3ObjectEntity;
 import com.yogida.meditation.service.api.AdminStorageApi;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +14,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class MediaPictureStorageService {
 
-    private static final String PICTURE_BUCKET_NAME = "pictures";
+    private static final String PICTURE_BUCKET_NAME = BucketNames.PICTURES;
     private static final String PICTURE_KEY_PREFIX = "media/";
 
     private final AdminStorageApi adminStorageApi;

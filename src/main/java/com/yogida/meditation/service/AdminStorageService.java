@@ -1,6 +1,7 @@
 package com.yogida.meditation.service;
 
 import com.yogida.meditation.config.r2.R2Properties;
+import com.yogida.meditation.constants.BucketNames;
 import com.yogida.meditation.dto.*;
 import com.yogida.meditation.service.api.AdminStorageApi;
 import com.yogida.meditation.service.api.R2StorageApi;
@@ -25,6 +26,7 @@ public class AdminStorageService implements AdminStorageApi {
     @Override
     public List<BucketDto> listBuckets() {
         return s3Client.listBuckets().buckets().stream()
+                .filter(b -> !b.name().equals(BucketNames.PICTURES))
                 .map(b -> new BucketDto(b.name(), b.creationDate()))
                 .toList();
     }
