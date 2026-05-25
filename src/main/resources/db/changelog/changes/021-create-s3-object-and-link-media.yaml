@@ -1,0 +1,107 @@
+databaseChangeLog:
+  - changeSet:
+      id: 021-create-s3-object-and-link-media
+      author: yogida
+      comment: "Normalize media object URLs into s3_object table and link media rows by FK"
+      changes:
+        - createTable:
+            tableName: s3_object
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: bucket_name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: base_url
+                  type: varchar(2048)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: object_uri
+                  type: varchar(2048)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+
+        - addUniqueConstraint:
+            tableName: s3_object
+            columnNames: bucket_name, base_url, object_uri
+            constraintName: uq_s3_object_bucket_base_uri
+
+        - addColumn:
+            tableName: media
+            columns:
+              - column:
+                  name: media_object_id
+                  type: BIGINT
+                  constraints:
+                    nullable: true
+              - column:
+                  name: picture_object_id
+                  type: BIGINT
+                  constraints:
+                    nullable: true
+
+        - addNotNullConstraint:
+            tableName: media
+            columnName: media_object_id
+            columnDataType: BIGINT
+
+        - addForeignKeyConstraint:
+            baseTableName: media
+            baseColumnNames: media_object_id
+            referencedTableName: s3_object
+            referencedColumnNames: id
+            constraintName: fk_media_media_object
+
+        - addForeignKeyConstraint:
+            baseTableName: media
+            baseColumnNames: picture_object_id
+            referencedTableName: s3_object
+            referencedColumnNames: id
+            constraintName: fk_media_picture_object
+
+        - dropColumn:
+            tableName: media
+            columnName: s3_url
+
+        - dropColumn:
+            tableName: media
+            columnName: picture
+      rollback:
+        - addColumn:
+            tableName: media
+            columns:
+              - column:
+                  name: s3_url
+                  type: varchar(1000)
+              - column:
+                  name: picture
+                  type: varchar(2048)
+        - dropForeignKeyConstraint:
+            baseTableName: media
+            constraintName: fk_media_media_object
+        - dropForeignKeyConstraint:
+            baseTableName: media
+            constraintName: fk_media_picture_object
+        - dropColumn:
+            tableName: media
+            columnName: media_object_id
+        - dropColumn:
+            tableName: media
+            columnName: picture_object_id
+        - dropTable:
+            tableName: s3_object
+

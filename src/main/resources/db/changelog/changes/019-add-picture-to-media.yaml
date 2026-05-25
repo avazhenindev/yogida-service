@@ -1,0 +1,20 @@
+databaseChangeLog:
+  - changeSet:
+      id: 019-add-picture-to-media
+      author: yogida
+      comment: "Add picture column to media table"
+      validCheckSum:
+        - ANY
+      changes:
+        - addColumn:
+            tableName: media
+            columns:
+              - column:
+                  name: picture
+                  type: bytea
+                  constraints:
+                    nullable: true
+      rollback:
+        - dropColumn:
+            tableName: media
+            columnName: picture

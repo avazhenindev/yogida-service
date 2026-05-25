@@ -3,13 +3,14 @@ package com.yogida.meditation.controller;
 import com.yogida.meditation.controller.api.AdminMediaControllerApi;
 import com.yogida.meditation.dto.*;
 import com.yogida.meditation.exception.EntityNotFoundException;
-import com.yogida.meditation.service.api.MediaApi;
 import com.yogida.meditation.service.api.MediaFacadeApi;
 import com.yogida.meditation.service.api.MediaLogApi;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -17,29 +18,33 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AdminMediaController implements AdminMediaControllerApi {
 
-    private final MediaApi mediaApi;
     private final MediaFacadeApi mediaFacadeApi;
     private final MediaLogApi mediaLogApi;
 
+    @Value("${app.media.max-picture-size-bytes:512000}")
+    private long maxPictureSizeBytes;
+
     @Override
     public ResponseEntity<List<MediaDto>> getAll() {
-        return ResponseEntity.ok(mediaApi.findAll());
+        return ResponseEntity.ok(mediaFacadeApi.findAll());
     }
 
     @Override
     public ResponseEntity<MediaDto> getById(Long id) {
-        return mediaApi.findById(id)
+        return mediaFacadeApi.findById(id)
                 .map(ResponseEntity::ok)
                 .orElseThrow(() -> new EntityNotFoundException("Media", id));
     }
 
     @Override
     public ResponseEntity<MediaDto> create(MediaCreateRequest request) {
+        validatePictureSize(request.picture());
         return ResponseEntity.status(HttpStatus.CREATED).body(mediaFacadeApi.create(request));
     }
 
     @Override
     public ResponseEntity<MediaDto> update(Long id, MediaFileUpdateRequest request) {
+        validatePictureSize(request.picture());
         return ResponseEntity.ok(mediaFacadeApi.update(id, request));
     }
 
@@ -49,14 +54,17 @@ public class AdminMediaController implements AdminMediaControllerApi {
         return ResponseEntity.noContent().build();
     }
 
-    @Override
-    public ResponseEntity<Void> bulkDelete(MediaBulkDeleteRequest request) {
-        mediaFacadeApi.bulkDelete(request);
-        return ResponseEntity.noContent().build();
-    }
 
     @Override
     public ResponseEntity<List<MediaLogDto>> getLogs(Long id) {
         return ResponseEntity.ok(mediaLogApi.findByMediaId(id));
+    }
+
+    private void validatePictureSize(MultipartFile picture) {
+        if (picture != null && picture.getSize() > maxPictureSizeBytes) {
+            throw new IllegalArgumentException(
+                String.format("Picture size exceeds maximum allowed size of %d bytes", maxPictureSizeBytes)
+            );
+        }
     }
 }

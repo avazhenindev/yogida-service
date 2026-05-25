@@ -22,7 +22,6 @@ public interface AdminStorageApi {
 
     void deleteObject(String bucketName, String objectKey);
 
-    void bulkDeleteObjects(String bucketName, List<String> keys);
 
     String generatePresignedUrl(String bucketName, String objectKey);
 }

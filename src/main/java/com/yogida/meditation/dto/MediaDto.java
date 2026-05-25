@@ -15,9 +15,10 @@ public class MediaDto {
     private Long id;
     private String name;
     private String bucketName;
-    private String s3Url;
+    private S3ObjectDto mediaObject;
     private MediaStatus status;
     private String description;
+    private S3ObjectDto pictureObject;
     private MediaCategoryDto category;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

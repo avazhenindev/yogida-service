@@ -1,6 +1,7 @@
 package com.yogida.meditation.scheduler;
 
 import com.yogida.meditation.entity.MediaEntity;
+import com.yogida.meditation.entity.S3ObjectEntity;
 import com.yogida.meditation.enums.MediaLogAction;
 import com.yogida.meditation.enums.MediaStatus;
 import com.yogida.meditation.service.MediaLogService;
@@ -37,9 +38,10 @@ public class Scheduler {
 
         for (MediaEntity media : allMedia) {
             try {
-                String[] parts = r2StorageApi.parseS3Url(media.getS3Url());
-                String bucket = parts[0];
-                String key = parts[1];
+                S3ObjectEntity mediaObject = media.getMediaObject();
+                String bucket = mediaObject.getBucketName();
+                String key = mediaObject.getObjectUri();
+                String mediaUrl = mediaObject.getFullUrl();
 
                 boolean exists = r2StorageApi.objectExists(bucket, key);
 
@@ -47,14 +49,14 @@ public class Scheduler {
                     if (media.getStatus() != MediaStatus.ERROR) {
                         mediaService.updateStatus(media.getId(), MediaStatus.ERROR);
                         mediaLogService.log(media, MediaLogAction.ERROR,
-                                "Object not found in S3: " + media.getS3Url());
-                        log.warn("Scheduler > Object not found — marked ERROR: id={} s3Url={}", media.getId(), media.getS3Url());
+                                "Object not found in S3: " + mediaUrl);
+                        log.warn("Scheduler > Object not found — marked ERROR: id={} s3Url={}", media.getId(), mediaUrl);
                     }
                 } else {
                     if (media.getStatus() == MediaStatus.ERROR) {
                         mediaService.updateStatus(media.getId(), MediaStatus.ACTIVE);
                         mediaLogService.log(media, MediaLogAction.UPDATED,
-                                "Object recovered in S3: " + media.getS3Url());
+                                "Object recovered in S3: " + mediaUrl);
                         log.info("Scheduler > Object recovered — restored ACTIVE: id={}", media.getId());
                     }
                 }
@@ -67,7 +69,7 @@ public class Scheduler {
                             "S3 error during health check: " + e.getMessage());
                 }
             } catch (IllegalArgumentException e) {
-                log.error("Scheduler > Cannot parse s3Url for media id={}: {}", media.getId(), e.getMessage());
+                log.error("Scheduler > Cannot resolve media object for media id={}: {}", media.getId(), e.getMessage());
             }
         }
 

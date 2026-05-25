@@ -26,7 +26,7 @@ public class OpenApiConfig {
                     .name("Yogida Team")
                     .url("https://github.com/yogida")))
             .servers(List.of(
-                new Server().url("/").description("Current environment")));
+                new Server().url("/api").description("Current environment")));
     }
 }
 

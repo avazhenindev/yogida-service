@@ -4,11 +4,13 @@ import com.yogida.meditation.dto.MediaDto;
 import com.yogida.meditation.dto.MediaUpdateRequest;
 import com.yogida.meditation.entity.MediaCategoryEntity;
 import com.yogida.meditation.entity.MediaEntity;
+import com.yogida.meditation.entity.S3ObjectEntity;
 import com.yogida.meditation.enums.MediaStatus;
 import com.yogida.meditation.exception.EntityNotFoundException;
 import com.yogida.meditation.mapper.MediaMapper;
 import com.yogida.meditation.repository.MediaCategoryRepository;
 import com.yogida.meditation.repository.MediaRepository;
+import com.yogida.meditation.repository.S3ObjectRepository;
 import com.yogida.meditation.service.api.MediaApi;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -26,6 +28,7 @@ public class MediaService implements MediaApi {
 
     private final MediaRepository mediaRepository;
     private final MediaCategoryRepository mediaCategoryRepository;
+    private final S3ObjectRepository s3ObjectRepository;
     private final MediaMapper mediaMapper;
 
     @Override
@@ -51,9 +54,11 @@ public class MediaService implements MediaApi {
     public MediaDto create(MediaUpdateRequest request) {
         MediaEntity entity = new MediaEntity();
         entity.setName(request.name());
-        entity.setBucketName(request.bucketName());
-        entity.setS3Url(request.s3Url());
+        S3ObjectEntity mediaObject = resolveS3Object(request.mediaObjectId());
+        entity.setMediaObject(mediaObject);
+        entity.setBucketName(mediaObject.getBucketName());
         entity.setDescription(request.description());
+        entity.setPictureObject(resolveS3ObjectOrNull(request.pictureObjectId()));
         entity.setCategory(resolveCategory(request.categoryId()));
         entity.setStatus(request.status() != null ? request.status() : MediaStatus.ACTIVE);
         entity.setCreatedAt(LocalDateTime.now());
@@ -65,9 +70,11 @@ public class MediaService implements MediaApi {
     public MediaDto update(Long id, MediaUpdateRequest request) {
         MediaEntity entity = findEntityById(id);
         entity.setName(request.name());
-        entity.setBucketName(request.bucketName());
-        entity.setS3Url(request.s3Url());
+        S3ObjectEntity mediaObject = resolveS3Object(request.mediaObjectId());
+        entity.setMediaObject(mediaObject);
+        entity.setBucketName(mediaObject.getBucketName());
         entity.setDescription(request.description());
+        entity.setPictureObject(resolveS3ObjectOrNull(request.pictureObjectId()));
         entity.setCategory(resolveCategory(request.categoryId()));
         if (request.status() != null) {
             entity.setStatus(request.status());
@@ -98,7 +105,7 @@ public class MediaService implements MediaApi {
     /** Package-visible helper used by the scheduler. */
     @Transactional(readOnly = true)
     public List<MediaEntity> findAllEntities() {
-        return mediaRepository.findAll();
+        return mediaRepository.findAllWithMediaObjectBy();
     }
 
     private MediaEntity findEntityById(Long id) {
@@ -112,5 +119,17 @@ public class MediaService implements MediaApi {
         }
         return mediaCategoryRepository.findById(categoryId)
                 .orElseThrow(() -> new EntityNotFoundException("MediaCategory", categoryId));
+    }
+
+    private S3ObjectEntity resolveS3Object(Long s3ObjectId) {
+        return s3ObjectRepository.findById(s3ObjectId)
+                .orElseThrow(() -> new EntityNotFoundException("S3Object", s3ObjectId));
+    }
+
+    private S3ObjectEntity resolveS3ObjectOrNull(Long s3ObjectId) {
+        if (s3ObjectId == null) {
+            return null;
+        }
+        return resolveS3Object(s3ObjectId);
     }
 }
