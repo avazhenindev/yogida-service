@@ -41,5 +41,3 @@ databaseChangeLog:
      file: db/changelog/changes/020-change-media-picture-to-url.yaml
   - include:
      file: db/changelog/changes/021-create-s3-object-and-link-media.yaml
-  - include:
-     file: db/changelog/changes/022-grant-media-privileges.yaml
