@@ -18,6 +18,7 @@ public class MediaDto {
     private String s3Url;
     private MediaStatus status;
     private String description;
+    private String picture;
     private MediaCategoryDto category;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

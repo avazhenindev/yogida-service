@@ -54,6 +54,7 @@ public class MediaService implements MediaApi {
         entity.setBucketName(request.bucketName());
         entity.setS3Url(request.s3Url());
         entity.setDescription(request.description());
+        entity.setPicture(request.picture());
         entity.setCategory(resolveCategory(request.categoryId()));
         entity.setStatus(request.status() != null ? request.status() : MediaStatus.ACTIVE);
         entity.setCreatedAt(LocalDateTime.now());
@@ -68,6 +69,7 @@ public class MediaService implements MediaApi {
         entity.setBucketName(request.bucketName());
         entity.setS3Url(request.s3Url());
         entity.setDescription(request.description());
+        entity.setPicture(request.picture());
         entity.setCategory(resolveCategory(request.categoryId()));
         if (request.status() != null) {
             entity.setStatus(request.status());

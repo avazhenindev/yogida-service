@@ -32,6 +32,9 @@ public class MediaEntity {
     @Column(name = "description")
     private String description;
 
+    @Column(name = "picture", length = 2048)
+    private String picture;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
     private MediaCategoryEntity category;
