@@ -9,7 +9,8 @@ import org.springframework.web.multipart.MultipartFile;
  * If {@code file} is non-null and {@code objectKey} differs from the existing one,
  * a new S3 object is uploaded and the old one is deleted.
  * If {@code status} is {@code null}, the existing status is preserved.
- * If {@code picture} is provided, it replaces the existing Cloudflare R2 picture object.
+ * If {@code picture} is provided, it replaces the existing picture object and stores
+ * the configured public picture URL when available.
  */
 public record MediaFileUpdateRequest(
         @NotBlank String name,

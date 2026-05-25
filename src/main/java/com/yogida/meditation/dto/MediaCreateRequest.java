@@ -8,7 +8,8 @@ import org.springframework.web.multipart.MultipartFile;
 /**
  * Multipart request for creating a new media catalog entry and uploading its S3 object in one step.
  * If {@code status} is {@code null}, defaults to {@link MediaStatus#ACTIVE}.
- * If {@code picture} is provided, it is uploaded to the Cloudflare R2 picture bucket.
+ * If {@code picture} is provided, it is uploaded to the Cloudflare R2 picture bucket
+ * and stored as a public URL when a public picture base URL is configured.
  */
 public record MediaCreateRequest(
         @NotBlank String name,
