@@ -12,7 +12,6 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.List;
 
 @Service
@@ -101,17 +100,6 @@ public class AdminStorageService implements AdminStorageApi {
                 .build());
     }
 
-    @Override
-    public void bulkDeleteObjects(String bucketName, List<String> keys) {
-        List<ObjectIdentifier> identifiers = keys.stream()
-                .map(k -> ObjectIdentifier.builder().key(k).build())
-                .toList();
-
-        s3Client.deleteObjects(DeleteObjectsRequest.builder()
-                .bucket(bucketName)
-                .delete(Delete.builder().objects(identifiers).build())
-                .build());
-    }
 
     @Override
     public String generatePresignedUrl(String bucketName, String objectKey) {

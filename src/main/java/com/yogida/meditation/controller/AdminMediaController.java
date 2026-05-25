@@ -54,11 +54,6 @@ public class AdminMediaController implements AdminMediaControllerApi {
         return ResponseEntity.noContent().build();
     }
 
-    @Override
-    public ResponseEntity<Void> bulkDelete(MediaBulkDeleteRequest request) {
-        mediaFacadeApi.bulkDelete(request);
-        return ResponseEntity.noContent().build();
-    }
 
     @Override
     public ResponseEntity<List<MediaLogDto>> getLogs(Long id) {

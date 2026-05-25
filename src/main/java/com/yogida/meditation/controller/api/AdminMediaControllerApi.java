@@ -61,14 +61,6 @@ public interface AdminMediaControllerApi {
     ResponseEntity<Void> delete(
             @Parameter(description = "Media ID", required = true) @PathVariable Long id);
 
-    @Operation(summary = "Bulk delete media records and their S3 objects",
-               description = "Deletes multiple media records and their associated S3 objects. S3 deletion is grouped by bucket.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Media deleted"),
-            @ApiResponse(responseCode = "400", description = "Invalid request")
-    })
-    @DeleteMapping("/bulk")
-    ResponseEntity<Void> bulkDelete(@Valid @RequestBody MediaBulkDeleteRequest request);
 
     @Operation(summary = "Get audit log for a media item")
     @ApiResponses(@ApiResponse(responseCode = "200", description = "Log entries retrieved"))
