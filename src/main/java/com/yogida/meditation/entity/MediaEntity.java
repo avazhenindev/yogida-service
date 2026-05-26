@@ -52,4 +52,8 @@ public class MediaEntity {
 
     @OneToMany(mappedBy = "media", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<MediaLogEntity> mediaLogs;
+
+    //TODO add int duration column to store audio or video media duration length
+
+    // TODO add @Transient int rating column to store average user rating for the media, and a separate table to store individual user ratings (Long Id, int user_id, int media_id, int rating)
 }
