@@ -5,12 +5,14 @@ import com.yogida.meditation.dto.MediaUpdateRequest;
 import com.yogida.meditation.entity.MediaCategoryEntity;
 import com.yogida.meditation.entity.MediaEntity;
 import com.yogida.meditation.entity.S3ObjectEntity;
+import com.yogida.meditation.entity.TagEntity;
 import com.yogida.meditation.enums.MediaStatus;
 import com.yogida.meditation.exception.EntityNotFoundException;
 import com.yogida.meditation.mapper.MediaMapper;
 import com.yogida.meditation.repository.MediaCategoryRepository;
 import com.yogida.meditation.repository.MediaRepository;
 import com.yogida.meditation.repository.S3ObjectRepository;
+import com.yogida.meditation.repository.TagRepository;
 import com.yogida.meditation.service.api.MediaApi;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -18,8 +20,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Log4j2
 @Service
@@ -29,6 +34,7 @@ public class MediaService implements MediaApi {
     private final MediaRepository mediaRepository;
     private final MediaCategoryRepository mediaCategoryRepository;
     private final S3ObjectRepository s3ObjectRepository;
+    private final TagRepository tagRepository;
     private final MediaMapper mediaMapper;
 
     @Override
@@ -61,6 +67,9 @@ public class MediaService implements MediaApi {
         entity.setPictureObject(resolveS3ObjectOrNull(request.pictureObjectId()));
         entity.setCategory(resolveCategory(request.categoryId()));
         entity.setStatus(request.status() != null ? request.status() : MediaStatus.ACTIVE);
+        entity.setDurationSeconds(request.durationSeconds());
+        entity.setIsPremium(request.isPremium() != null ? request.isPremium() : false);
+        entity.setTags(resolveTags(request.tagIds()));
         entity.setCreatedAt(LocalDateTime.now());
         return mediaMapper.toDto(mediaRepository.save(entity));
     }
@@ -78,6 +87,13 @@ public class MediaService implements MediaApi {
         entity.setCategory(resolveCategory(request.categoryId()));
         if (request.status() != null) {
             entity.setStatus(request.status());
+        }
+        entity.setDurationSeconds(request.durationSeconds());
+        if (request.isPremium() != null) {
+            entity.setIsPremium(request.isPremium());
+        }
+        if (request.tagIds() != null) {
+            entity.setTags(resolveTags(request.tagIds()));
         }
         entity.setUpdatedAt(LocalDateTime.now());
         return mediaMapper.toDto(mediaRepository.save(entity));
@@ -131,5 +147,17 @@ public class MediaService implements MediaApi {
             return null;
         }
         return resolveS3Object(s3ObjectId);
+    }
+
+    private Set<TagEntity> resolveTags(List<Long> tagIds) {
+        if (tagIds == null || tagIds.isEmpty()) {
+            return Collections.emptySet();
+        }
+        Set<TagEntity> resolved = new HashSet<>();
+        for (Long tagId : tagIds) {
+            resolved.add(tagRepository.findById(tagId)
+                    .orElseThrow(() -> new EntityNotFoundException("Tag", tagId)));
+        }
+        return resolved;
     }
 }

@@ -41,3 +41,9 @@ databaseChangeLog:
      file: db/changelog/changes/020-change-media-picture-to-url.yaml
   - include:
      file: db/changelog/changes/021-create-s3-object-and-link-media.yaml
+  - include:
+      file: db/changelog/changes/022-add-media-duration-and-ratings.yaml
+  - include:
+      file: db/changelog/changes/023-add-media-premium-and-tags.yaml
+  - include:
+      file: db/changelog/changes/024-add-media-review-table.yaml

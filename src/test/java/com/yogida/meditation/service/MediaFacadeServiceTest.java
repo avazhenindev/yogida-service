@@ -12,7 +12,9 @@ import com.yogida.meditation.enums.MediaStatus;
 import com.yogida.meditation.repository.MediaRepository;
 import com.yogida.meditation.service.api.AdminStorageApi;
 import com.yogida.meditation.service.api.MediaApi;
+import com.yogida.meditation.service.api.MediaDurationApi;
 import com.yogida.meditation.service.api.MediaLogApi;
+import com.yogida.meditation.service.api.MediaRatingApi;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -54,6 +56,12 @@ class MediaFacadeServiceTest {
     @Mock
     private MediaRepository mediaRepository;
 
+    @Mock
+    private MediaRatingApi mediaRatingApi;
+
+    @Mock
+    private MediaDurationApi mediaDurationApi;
+
     @InjectMocks
     private MediaFacadeService mediaFacadeService;
 
@@ -82,7 +90,10 @@ class MediaFacadeServiceTest {
                 "desc",
                 7L,
                 MediaStatus.ACTIVE,
-                pictureFile
+                pictureFile,
+                null,
+                null,
+                null
         );
 
         when(adminStorageApi.uploadObject(eq("audio"), eq("focus.mp3"), eq(audioFile)))
@@ -92,7 +103,8 @@ class MediaFacadeServiceTest {
         when(s3ObjectService.createMediaObject("audio", "focus.mp3")).thenReturn(mediaObject);
         when(mediaPictureStorageService.uploadPicture(eq(pictureFile))).thenReturn(pictureObject);
         when(mediaApi.create(mediaUpdateRequestCaptor.capture()))
-                .thenReturn(new MediaDto(15L, "Focus", "audio", s3ObjectDto(mediaObject), MediaStatus.ACTIVE, "desc", null, null, null, null, null, null));
+                .thenReturn(new MediaDto(15L, "Focus", "audio", s3ObjectDto(mediaObject), MediaStatus.ACTIVE, "desc", null, null, null, null, null, null, 180, 0.0, false, null));
+        when(mediaDurationApi.extractDurationSeconds(audioFile)).thenReturn(180);
         when(mediaRepository.findById(15L)).thenReturn(Optional.of(mediaEntity(15L, "Focus", mediaObject, null)));
 
         mediaFacadeService.create(request);
@@ -124,7 +136,10 @@ class MediaFacadeServiceTest {
                 "desc",
                 7L,
                 MediaStatus.ACTIVE,
-                pictureFile
+                pictureFile,
+                null,
+                null,
+                null
         );
 
         when(adminStorageApi.uploadObject(eq("audio"), eq("focus.mp3"), eq(audioFile)))

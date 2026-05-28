@@ -1,0 +1,89 @@
+databaseChangeLog:
+  - changeSet:
+      id: 023-add-media-premium-and-tags
+      author: yogida
+      comment: "Add is_premium to media and create tag + media_tag tables"
+      changes:
+        # Add is_premium boolean column with default false
+        - addColumn:
+            tableName: media
+            columns:
+              - column:
+                  name: is_premium
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+
+        # Create tag dictionary table
+        - createTable:
+            tableName: tag
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: display_label
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: true
+
+        # Create media_tag many-to-many join table
+        - createTable:
+            tableName: media_tag
+            columns:
+              - column:
+                  name: media_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: tag_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+
+        - addPrimaryKey:
+            tableName: media_tag
+            columnNames: media_id, tag_id
+            constraintName: pk_media_tag
+
+        - addForeignKeyConstraint:
+            baseTableName: media_tag
+            baseColumnNames: media_id
+            referencedTableName: media
+            referencedColumnNames: id
+            constraintName: fk_media_tag_media
+
+        - addForeignKeyConstraint:
+            baseTableName: media_tag
+            baseColumnNames: tag_id
+            referencedTableName: tag
+            referencedColumnNames: id
+            constraintName: fk_media_tag_tag
+
+        # Index for efficient tag-to-media lookups
+        - createIndex:
+            tableName: media_tag
+            indexName: idx_media_tag_tag_id
+            columns:
+              - column:
+                  name: tag_id
+
+      rollback:
+        - dropTable:
+            tableName: media_tag
+        - dropTable:
+            tableName: tag
+        - dropColumn:
+            tableName: media
+            columnName: is_premium

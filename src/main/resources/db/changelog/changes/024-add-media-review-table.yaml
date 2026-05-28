@@ -1,0 +1,83 @@
+databaseChangeLog:
+  - changeSet:
+      id: 024-add-media-review-table
+      author: yogida
+      comment: "Create media_review table for written user reviews per media item"
+      changes:
+        - createTable:
+            tableName: media_review
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: media_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: review_text
+                  type: VARCHAR(2000)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: true
+
+        # Foreign key: media_review.user_id → app_user.user_id
+        - addForeignKeyConstraint:
+            baseTableName: media_review
+            baseColumnNames: user_id
+            referencedTableName: app_user
+            referencedColumnNames: user_id
+            constraintName: fk_media_review_user
+
+        # Foreign key: media_review.media_id → media.id
+        - addForeignKeyConstraint:
+            baseTableName: media_review
+            baseColumnNames: media_id
+            referencedTableName: media
+            referencedColumnNames: id
+            constraintName: fk_media_review_media
+
+        # Unique constraint: one review per (user, media)
+        - addUniqueConstraint:
+            tableName: media_review
+            columnNames: user_id, media_id
+            constraintName: uq_media_review_user_media
+
+        # Index for listing reviews by media_id
+        - createIndex:
+            tableName: media_review
+            indexName: idx_media_review_media_id
+            columns:
+              - column:
+                  name: media_id
+
+        # Index for finding the current user's review
+        - createIndex:
+            tableName: media_review
+            indexName: idx_media_review_user_id
+            columns:
+              - column:
+                  name: user_id
+
+      rollback:
+        - dropTable:
+            tableName: media_review

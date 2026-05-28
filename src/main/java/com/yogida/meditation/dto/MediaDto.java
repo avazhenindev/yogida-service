@@ -24,4 +24,8 @@ public class MediaDto {
     private LocalDateTime updatedAt;
     private List<MediaSubscriptionDto> mediaSubscriptions;
     private List<MediaLogDto> mediaLogs;
+    private Integer durationSeconds;
+    private Double averageRating;
+    private Boolean isPremium;
+    private List<String> tags;
 }
