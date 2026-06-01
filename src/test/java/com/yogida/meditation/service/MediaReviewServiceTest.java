@@ -6,7 +6,6 @@ import com.yogida.meditation.entity.MediaEntity;
 import com.yogida.meditation.entity.MediaReviewEntity;
 import com.yogida.meditation.exception.EntityNotFoundException;
 import com.yogida.meditation.repository.AppUserRepository;
-import com.yogida.meditation.repository.MediaRatingRepository;
 import com.yogida.meditation.repository.MediaRepository;
 import com.yogida.meditation.repository.MediaReviewRepository;
 import org.junit.jupiter.api.Test;
@@ -39,18 +38,15 @@ class MediaReviewServiceTest {
     @Mock
     private AppUserRepository appUserRepository;
 
-    @Mock
-    private MediaRatingRepository mediaRatingRepository;
-
     @InjectMocks
     private MediaReviewService mediaReviewService;
 
-    // --- upsertReview ---
+    // --- save (first save — rating + text) ---
 
     @Test
-    void upsertReview_createsNewReviewWhenNoneExists() {
+    void save_createsNewReviewWithRatingAndText() {
         MediaEntity media = mediaEntity(1L);
-        AppUserEntity user = appUser(2L);
+        AppUserEntity user = appUser(2L, "alice@example.com");
         when(mediaRepository.findById(1L)).thenReturn(Optional.of(media));
         when(appUserRepository.findById(2L)).thenReturn(Optional.of(user));
         when(mediaReviewRepository.findByUserAndMedia(user, media)).thenReturn(Optional.empty());
@@ -62,62 +58,74 @@ class MediaReviewServiceTest {
             return e;
         });
 
-        MediaReviewResponse response = mediaReviewService.upsertReview(1L, 2L, "Great meditation!");
+        MediaReviewResponse response = mediaReviewService.save(1L, 2L, 4, "Great meditation!");
 
         assertThat(response.id()).isEqualTo(10L);
+        assertThat(response.rating()).isEqualTo(4);
         assertThat(response.reviewText()).isEqualTo("Great meditation!");
+        assertThat(response.userName()).isEqualTo("alice");
+        assertThat(response.userInitial()).isEqualTo("A");
         verify(mediaReviewRepository).save(any(MediaReviewEntity.class));
     }
 
     @Test
-    void upsertReview_updatesExistingReview() {
+    void save_updatesRatingButPreservesExistingText() {
         MediaEntity media = mediaEntity(1L);
-        AppUserEntity user = appUser(2L);
-        MediaReviewEntity existing = reviewEntity(5L, user, media, "Old text");
+        AppUserEntity user = appUser(2L, "bob@example.com");
+        MediaReviewEntity existing = reviewEntity(5L, user, media, 3, "Original text");
         when(mediaRepository.findById(1L)).thenReturn(Optional.of(media));
         when(appUserRepository.findById(2L)).thenReturn(Optional.of(user));
         when(mediaReviewRepository.findByUserAndMedia(user, media)).thenReturn(Optional.of(existing));
         when(mediaReviewRepository.save(existing)).thenReturn(existing);
 
-        MediaReviewResponse response = mediaReviewService.upsertReview(1L, 2L, "Updated text");
+        MediaReviewResponse response = mediaReviewService.save(1L, 2L, 5, "New text ignored");
 
-        assertThat(existing.getReviewText()).isEqualTo("Updated text");
-        assertThat(response.reviewText()).isEqualTo("Updated text");
+        assertThat(existing.getRating()).isEqualTo(5);
+        assertThat(existing.getReviewText()).isEqualTo("Original text");
+        assertThat(response.rating()).isEqualTo(5);
+        assertThat(response.reviewText()).isEqualTo("Original text");
     }
 
     @Test
-    void upsertReview_throwsOnBlankText() {
-        assertThatThrownBy(() -> mediaReviewService.upsertReview(1L, 2L, "   "))
+    void save_ratingOnlyRow() {
+        MediaEntity media = mediaEntity(1L);
+        AppUserEntity user = appUser(2L, "carol@example.com");
+        when(mediaRepository.findById(1L)).thenReturn(Optional.of(media));
+        when(appUserRepository.findById(2L)).thenReturn(Optional.of(user));
+        when(mediaReviewRepository.findByUserAndMedia(user, media)).thenReturn(Optional.empty());
+        when(mediaReviewRepository.save(any(MediaReviewEntity.class))).thenAnswer(inv -> {
+            MediaReviewEntity e = inv.getArgument(0);
+            e.setId(11L);
+            e.setMedia(media);
+            e.setUser(user);
+            return e;
+        });
+
+        MediaReviewResponse response = mediaReviewService.save(1L, 2L, 5, null);
+
+        assertThat(response.rating()).isEqualTo(5);
+        assertThat(response.reviewText()).isNull();
+    }
+
+    @Test
+    void save_throwsWhenRatingOutOfRange() {
+        assertThatThrownBy(() -> mediaReviewService.save(1L, 2L, 6, null))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("blank");
+                .hasMessageContaining("Rating must be between 1 and 5");
     }
 
     @Test
-    void upsertReview_throwsOnNullText() {
-        assertThatThrownBy(() -> mediaReviewService.upsertReview(1L, 2L, null))
-                .isInstanceOf(IllegalArgumentException.class);
-    }
-
-    @Test
-    void upsertReview_throwsOnTextExceedingMaxLength() {
-        String longText = "a".repeat(2001);
-        assertThatThrownBy(() -> mediaReviewService.upsertReview(1L, 2L, longText))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("2000");
-    }
-
-    @Test
-    void upsertReview_throwsWhenMediaNotFound() {
+    void save_throwsWhenMediaNotFound() {
         when(mediaRepository.findById(99L)).thenReturn(Optional.empty());
-        assertThatThrownBy(() -> mediaReviewService.upsertReview(99L, 2L, "text"))
+        assertThatThrownBy(() -> mediaReviewService.save(99L, 2L, 3, "text"))
                 .isInstanceOf(EntityNotFoundException.class);
     }
 
     @Test
-    void upsertReview_throwsWhenUserNotFound() {
+    void save_throwsWhenUserNotFound() {
         when(mediaRepository.findById(1L)).thenReturn(Optional.of(mediaEntity(1L)));
         when(appUserRepository.findById(99L)).thenReturn(Optional.empty());
-        assertThatThrownBy(() -> mediaReviewService.upsertReview(1L, 99L, "text"))
+        assertThatThrownBy(() -> mediaReviewService.save(1L, 99L, 3, "text"))
                 .isInstanceOf(EntityNotFoundException.class);
     }
 
@@ -125,12 +133,11 @@ class MediaReviewServiceTest {
 
     @Test
     void findReviewsByMediaId_returnsEmptyPage() {
-        MediaEntity media = mediaEntity(1L);
-        when(mediaRepository.findById(1L)).thenReturn(Optional.of(media));
-        when(mediaReviewRepository.findAllByMediaOrderByCreatedAtDesc(media, PageRequest.of(0, 20)))
+        when(mediaRepository.existsById(1L)).thenReturn(true);
+        when(mediaReviewRepository.findAllByMediaId(1L, PageRequest.of(0, 10)))
                 .thenReturn(Page.empty());
 
-        Page<MediaReviewResponse> page = mediaReviewService.findReviewsByMediaId(1L, PageRequest.of(0, 20));
+        Page<MediaReviewResponse> page = mediaReviewService.findReviewsByMediaId(1L, PageRequest.of(0, 10));
 
         assertThat(page).isEmpty();
     }
@@ -138,16 +145,17 @@ class MediaReviewServiceTest {
     @Test
     void findReviewsByMediaId_returnsMappedReviews() {
         MediaEntity media = mediaEntity(1L);
-        AppUserEntity user = appUser(2L);
-        MediaReviewEntity review = reviewEntity(7L, user, media, "Wonderful!");
-        when(mediaRepository.findById(1L)).thenReturn(Optional.of(media));
-        when(mediaReviewRepository.findAllByMediaOrderByCreatedAtDesc(media, PageRequest.of(0, 20)))
+        AppUserEntity user = appUser(2L, "dave@example.com");
+        MediaReviewEntity review = reviewEntity(7L, user, media, 5, "Wonderful!");
+        when(mediaRepository.existsById(1L)).thenReturn(true);
+        when(mediaReviewRepository.findAllByMediaId(1L, PageRequest.of(0, 10)))
                 .thenReturn(new PageImpl<>(List.of(review)));
 
-        Page<MediaReviewResponse> page = mediaReviewService.findReviewsByMediaId(1L, PageRequest.of(0, 20));
+        Page<MediaReviewResponse> page = mediaReviewService.findReviewsByMediaId(1L, PageRequest.of(0, 10));
 
         assertThat(page.getContent()).hasSize(1);
         assertThat(page.getContent().get(0).reviewText()).isEqualTo("Wonderful!");
+        assertThat(page.getContent().get(0).userName()).isEqualTo("dave");
     }
 
     // --- Helpers ---
@@ -158,17 +166,19 @@ class MediaReviewServiceTest {
         return e;
     }
 
-    private AppUserEntity appUser(Long id) {
+    private AppUserEntity appUser(Long id, String email) {
         AppUserEntity u = new AppUserEntity();
         u.setUserId(id);
+        u.setEmail(email);
         return u;
     }
 
-    private MediaReviewEntity reviewEntity(Long id, AppUserEntity user, MediaEntity media, String text) {
+    private MediaReviewEntity reviewEntity(Long id, AppUserEntity user, MediaEntity media, Integer rating, String text) {
         MediaReviewEntity e = new MediaReviewEntity();
         e.setId(id);
         e.setUser(user);
         e.setMedia(media);
+        e.setRating(rating);
         e.setReviewText(text);
         e.setCreatedAt(LocalDateTime.now());
         e.setUpdatedAt(LocalDateTime.now());

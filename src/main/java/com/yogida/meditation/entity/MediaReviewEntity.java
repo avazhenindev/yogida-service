@@ -6,7 +6,8 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 /**
- * Stores a single written review per (user, media) pair.
+ * Stores a user's rating (1–5) and/or written review per (user, media) pair.
+ * Both fields are optional; at least one must be set at the application level.
  * Enforced unique by {@code uq_media_review_user_media}.
  */
 @Data
@@ -26,8 +27,12 @@ public class MediaReviewEntity {
     @JoinColumn(name = "media_id", nullable = false, foreignKey = @ForeignKey(name = "fk_media_review_media"))
     private MediaEntity media;
 
-    /** Review body, max 2 000 characters. */
-    @Column(name = "review_text", nullable = false, length = 2000)
+    /** Rating value 1–5. Null when the user wrote a review without submitting a star rating. */
+    @Column(name = "rating")
+    private Integer rating;
+
+    /** Review body, max 2 000 characters. Null when the user only submitted a star rating. */
+    @Column(name = "review_text", length = 2000)
     private String reviewText;
 
     @Column(name = "created_at", nullable = false)

@@ -1,0 +1,50 @@
+databaseChangeLog:
+  - changeSet:
+      id: 025-merge-rating-into-review
+      author: yogida
+      comment: "Add nullable rating column to media_review, migrate data from media_rating, drop media_rating table"
+      changes:
+
+        # 1. Add rating column to media_review (nullable — a user may write a review without rating)
+        - addColumn:
+            tableName: media_review
+            columns:
+              - column:
+                  name: rating
+                  type: INTEGER
+                  constraints:
+                    nullable: true
+
+        # 2. Add check constraint rating 1–5
+        - sql:
+            sql: "ALTER TABLE media_review ADD CONSTRAINT chk_media_review_rating CHECK (rating IS NULL OR (rating >= 1 AND rating <= 5))"
+
+        # 3. Make review_text nullable (a row may now hold only a rating)
+        - modifyDataType:
+            tableName: media_review
+            columnName: review_text
+            newDataType: VARCHAR(2000)
+        - sql:
+            sql: "ALTER TABLE media_review ALTER COLUMN review_text DROP NOT NULL"
+
+        # 4. Migrate existing ratings into media_review rows (upsert by user+media)
+        - sql:
+            sql: >
+              INSERT INTO media_review (user_id, media_id, rating, review_text, created_at, updated_at)
+              SELECT mr.user_id, mr.media_id, mr.rating, NULL, mr.created_at, mr.updated_at
+              FROM media_rating mr
+              ON CONFLICT (user_id, media_id) DO UPDATE
+                SET rating     = EXCLUDED.rating,
+                    updated_at = EXCLUDED.updated_at
+
+        # 5. Drop foreign key constraints from media_rating
+        - dropForeignKeyConstraint:
+            baseTableName: media_rating
+            constraintName: fk_media_rating_user
+        - dropForeignKeyConstraint:
+            baseTableName: media_rating
+            constraintName: fk_media_rating_media
+
+        # 6. Drop media_rating table
+        - dropTable:
+            tableName: media_rating

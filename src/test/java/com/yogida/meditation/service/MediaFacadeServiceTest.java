@@ -14,7 +14,7 @@ import com.yogida.meditation.service.api.AdminStorageApi;
 import com.yogida.meditation.service.api.MediaApi;
 import com.yogida.meditation.service.api.MediaDurationApi;
 import com.yogida.meditation.service.api.MediaLogApi;
-import com.yogida.meditation.service.api.MediaRatingApi;
+import com.yogida.meditation.service.api.MediaReviewApi;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -57,7 +57,7 @@ class MediaFacadeServiceTest {
     private MediaRepository mediaRepository;
 
     @Mock
-    private MediaRatingApi mediaRatingApi;
+    private MediaReviewApi mediaReviewApi;
 
     @Mock
     private MediaDurationApi mediaDurationApi;

@@ -17,44 +17,56 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/media")
 public interface MediaRatingControllerApi {
 
-    @Operation(summary = "Submit or update a rating", description = "Creates a new rating or updates the existing one for the given user and media item.")
+    @Operation(
+        summary = "Save review and/or rating",
+        description = """
+            Creates or updates the review/rating row for the given user and media item.
+            `rating` updates the star rating (1–5) on every call.
+            `reviewText` is written on first save only; subsequent saves do not change it.
+            """
+    )
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Rating saved"),
-            @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "404", description = "Media or user not found")
+        @ApiResponse(responseCode = "200", description = "Review saved"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "404", description = "Media or user not found")
     })
-    @PutMapping("/{mediaId}/rating")
-    ResponseEntity<Void> upsertRating(
+    @PutMapping("/{mediaId}/review")
+    ResponseEntity<MediaReviewResponse> save(
             @Parameter(description = "Media ID", required = true) @PathVariable Long mediaId,
-            @Valid @RequestBody MediaRatingRequest request);
+            @Valid @RequestBody MediaReviewSaveRequest request);
 
-    @Operation(summary = "Get rating summary", description = "Returns the average rating and total count for a media item.")
+    @Operation(
+        summary = "Get rating summary",
+        description = """
+            Returns the average rating, total rating count, and per-star breakdown (keys 1–5) for a media item.
+            All keys 1–5 are present in `starBreakdown` (missing stars have a count of 0).
+            """
+    )
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Rating summary returned"),
-            @ApiResponse(responseCode = "404", description = "Media not found")
+        @ApiResponse(responseCode = "200", description = "Rating summary returned"),
+        @ApiResponse(responseCode = "404", description = "Media not found")
     })
     @GetMapping("/{mediaId}/rating-summary")
     ResponseEntity<MediaRatingSummaryResponse> getRatingSummary(
             @Parameter(description = "Media ID", required = true) @PathVariable Long mediaId);
 
-    @Operation(summary = "Submit or update a written review", description = "Creates a new review or updates the existing one for the given user and media item.")
+    @Operation(
+        summary = "List reviews",
+        description = """
+            Returns a paginated list of reviews for a media item.
+            Each entry may have a null `rating` (text-only review) or null `reviewText` (rating-only entry).
+            `userName` is derived from the user email prefix; `userInitial` is the first uppercase character.
+            Supported sort fields: `createdAt` (default, desc), `rating` (asc or desc).
+            Example: GET /media/1/reviews?page=0&size=10&sort=rating,desc
+            """
+    )
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Review saved"),
-            @ApiResponse(responseCode = "400", description = "Invalid request"),
-            @ApiResponse(responseCode = "404", description = "Media or user not found")
-    })
-    @PutMapping("/{mediaId}/review")
-    ResponseEntity<MediaReviewResponse> upsertReview(
-            @Parameter(description = "Media ID", required = true) @PathVariable Long mediaId,
-            @Valid @RequestBody MediaReviewRequest request);
-
-    @Operation(summary = "List written reviews", description = "Returns a paginated list of written reviews for a media item, newest first.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Reviews page returned"),
-            @ApiResponse(responseCode = "404", description = "Media not found")
+        @ApiResponse(responseCode = "200", description = "Reviews page returned"),
+        @ApiResponse(responseCode = "400", description = "Unsupported sort field"),
+        @ApiResponse(responseCode = "404", description = "Media not found")
     })
     @GetMapping("/{mediaId}/reviews")
     ResponseEntity<Page<MediaReviewResponse>> getReviews(
             @Parameter(description = "Media ID", required = true) @PathVariable Long mediaId,
-            @PageableDefault(size = 20) Pageable pageable);
+            @PageableDefault(size = 10, sort = "createdAt") Pageable pageable);
 }

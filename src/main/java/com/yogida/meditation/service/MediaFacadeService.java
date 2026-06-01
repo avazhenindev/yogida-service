@@ -27,7 +27,7 @@ public class MediaFacadeService implements MediaFacadeApi {
     private final MediaPictureStorageService mediaPictureStorageService;
     private final S3ObjectService s3ObjectService;
     private final MediaRepository mediaRepository;
-    private final MediaRatingApi mediaRatingApi;
+    private final MediaReviewApi mediaReviewApi;
     private final MediaDurationApi mediaDurationApi;
 
     @Override
@@ -50,7 +50,7 @@ public class MediaFacadeService implements MediaFacadeApi {
     @Transactional(readOnly = true)
     public Optional<MediaDto> findById(Long id) {
         return mediaApi.findById(id).map(dto -> {
-            dto.setAverageRating(mediaRatingApi.findAverageRatingByMediaId(id));
+            dto.setAverageRating(mediaReviewApi.findAverageRatingByMediaId(id));
             return dto;
         });
     }
@@ -128,7 +128,7 @@ public class MediaFacadeService implements MediaFacadeApi {
 
         MediaEntity entity = resolveEntity(id);
         mediaLogApi.log(entity, MediaLogAction.UPDATED, "Media updated: " + entity.getName());
-        dto.setAverageRating(mediaRatingApi.findAverageRatingByMediaId(id));
+        dto.setAverageRating(mediaReviewApi.findAverageRatingByMediaId(id));
         return dto;
     }
 
@@ -152,7 +152,7 @@ public class MediaFacadeService implements MediaFacadeApi {
             return;
         }
         List<Long> ids = dtos.stream().map(MediaDto::getId).toList();
-        Map<Long, Double> ratingByMediaId = mediaRatingApi.findAverageRatingsByMediaIds(ids).stream()
+        Map<Long, Double> ratingByMediaId = mediaReviewApi.findAverageRatingsByMediaIds(ids).stream()
                 .collect(Collectors.toMap(MediaRatingSummary::mediaId, MediaRatingSummary::averageRating));
         dtos.forEach(dto -> dto.setAverageRating(ratingByMediaId.getOrDefault(dto.getId(), 0.0)));
     }
