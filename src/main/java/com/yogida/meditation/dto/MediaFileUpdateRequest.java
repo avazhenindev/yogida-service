@@ -25,7 +25,6 @@ public record MediaFileUpdateRequest(
         MediaStatus status,
         MultipartFile picture,
         Integer durationSeconds,
-        Boolean isPremium,
         List<Long> tagIds
 ) {}
 

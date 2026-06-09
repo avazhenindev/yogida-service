@@ -12,6 +12,11 @@ public interface MediaRepository extends JpaRepository<MediaEntity, Long> {
     @EntityGraph(attributePaths = "mediaObject")
     List<MediaEntity> findAllWithMediaObjectBy();
 
-
     List<MediaEntity> findAllByStatus(MediaStatus status);
+
+    /**
+     * Find all ACTIVE media with eager-loaded relationships for user-facing endpoints.
+     */
+    @EntityGraph(attributePaths = {"mediaObject", "mediaSubscriptions", "mediaSubscriptions.subscription"})
+    List<MediaEntity> findAllByStatusEquals(MediaStatus status);
 }

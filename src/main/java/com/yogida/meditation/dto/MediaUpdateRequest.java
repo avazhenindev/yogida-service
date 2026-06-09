@@ -19,7 +19,6 @@ public record MediaUpdateRequest(
         Long categoryId,
         MediaStatus status,
         @NotNull Integer durationSeconds,
-        Boolean isPremium,
         List<Long> tagIds
 ) {}
 

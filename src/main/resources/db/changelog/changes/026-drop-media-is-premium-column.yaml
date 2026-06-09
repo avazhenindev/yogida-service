@@ -1,0 +1,9 @@
+databaseChangeLog:
+  - changeSet:
+      id: 026-drop-media-is-premium-column
+      author: yogida
+      comment: "Remove is_premium column from media table. Use entitlements-based model instead."
+      changes:
+        - dropColumn:
+            tableName: media
+            columnName: is_premium

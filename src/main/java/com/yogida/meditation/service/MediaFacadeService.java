@@ -70,7 +70,7 @@ public class MediaFacadeService implements MediaFacadeApi {
         MediaUpdateRequest mediaRequest = new MediaUpdateRequest(
             request.name(), mediaObject.getId(), pictureObject == null ? null : pictureObject.getId(),
             request.description(), request.categoryId(), request.status(),
-            durationSeconds, request.isPremium(), request.tagIds());
+            durationSeconds, request.tagIds());
 
         MediaDto dto = mediaApi.create(mediaRequest);
         MediaEntity entity = resolveEntity(dto.getId());
@@ -115,7 +115,7 @@ public class MediaFacadeService implements MediaFacadeApi {
         MediaUpdateRequest mediaRequest = new MediaUpdateRequest(
             request.name(), newMediaObject.getId(), newPictureObject == null ? null : newPictureObject.getId(),
             request.description(), request.categoryId(), request.status(),
-            durationSeconds, request.isPremium(), request.tagIds());
+            durationSeconds, request.tagIds());
         MediaDto dto = mediaApi.update(id, mediaRequest);
 
         if (!newMediaObject.getId().equals(oldMediaObject.getId())) {

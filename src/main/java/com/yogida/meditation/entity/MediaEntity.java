@@ -59,9 +59,6 @@ public class MediaEntity {
     @Column(name = "duration_seconds", nullable = false)
     private Integer durationSeconds;
 
-    @Column(name = "is_premium", nullable = false)
-    private Boolean isPremium = false;
-
     @BatchSize(size = 30)
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
