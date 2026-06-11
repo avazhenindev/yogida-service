@@ -34,7 +34,7 @@ build/
 
 ### VS Code ###
 .vscode/
-./logs
+./logs/**
 ./docs
 
 ### GitHub local customization ###
