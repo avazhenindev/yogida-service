@@ -64,15 +64,7 @@ public class R2StorageService implements R2StorageApi {
         }
     }
 
-    @Override
-    public Map<String, List<String>> getAllBucketsWithObjects() {
-        List<Bucket> buckets = s3Client.listBuckets().buckets();
-        Map<String, List<String>> result = new LinkedHashMap<>();
-        for (Bucket bucket : buckets) {
-            result.put(bucket.name(), listAllObjectKeys(bucket.name()));
-        }
-        return result;
-    }
+
 
     private List<String> listAllObjectKeys(String bucketName) {
         List<String> keys = new ArrayList<>();

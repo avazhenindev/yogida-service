@@ -21,12 +21,6 @@ public interface R2StorageApi {
      */
     boolean objectExists(String bucketName, String objectKey);
 
-    Map<String, List<String>> getAllBucketsWithObjects();
 
-    /**
-     * Parses an S3 URL of the form
-     * {@code https://{accountId}.r2.cloudflarestorage.com/{bucket}/{key}}
-     * and returns {@code [bucket, key]}.
-     */
     String[] parseS3Url(String s3Url);
 }

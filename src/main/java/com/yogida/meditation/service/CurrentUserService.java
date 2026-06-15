@@ -61,23 +61,5 @@ public class CurrentUserService {
             ));
     }
 
-    /**
-     * Returns the Keycloak user ID (JWT 'sub' claim) of the current user.
-     *
-     * @return the Keycloak user ID if authenticated
-     */
-    public Optional<String> getCurrentKeycloakUserId() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return Optional.empty();
-        }
-
-        if (!(authentication.getPrincipal() instanceof Jwt jwt)) {
-            return Optional.empty();
-        }
-
-        String sub = jwt.getSubject();
-        return sub != null && !sub.isBlank() ? Optional.of(sub) : Optional.empty();
-    }
 }

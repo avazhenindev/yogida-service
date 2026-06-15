@@ -41,31 +41,7 @@ public class AdminStorageService implements AdminStorageApi {
         s3Client.deleteBucket(DeleteBucketRequest.builder().bucket(bucketName).build());
     }
 
-    @Override
-    public ObjectListResponse listObjects(String bucketName, String continuationToken, int maxKeys) {
-        ListObjectsV2Request.Builder builder = ListObjectsV2Request.builder()
-                .bucket(bucketName)
-                .maxKeys(maxKeys > 0 ? maxKeys : 100);
-        if (continuationToken != null && !continuationToken.isBlank()) {
-            builder.continuationToken(continuationToken);
-        }
 
-        ListObjectsV2Response response = s3Client.listObjectsV2(builder.build());
-        List<ObjectMetadataDto> objects = response.contents().stream()
-                .map(obj -> new ObjectMetadataDto(
-                        obj.key(),
-                        obj.size(),
-                        obj.lastModified(),
-                        obj.eTag(),
-                        buildS3Url(bucketName, obj.key())))
-                .toList();
-
-        return new ObjectListResponse(
-                bucketName,
-                objects,
-                response.isTruncated() ? response.nextContinuationToken() : null,
-                response.isTruncated());
-    }
 
     @Override
     public ObjectMetadataDto uploadObject(String bucketName, String objectKey, MultipartFile file) {
@@ -103,10 +79,7 @@ public class AdminStorageService implements AdminStorageApi {
     }
 
 
-    @Override
-    public String generatePresignedUrl(String bucketName, String objectKey) {
-        return r2StorageApi.generateStreamingUrl(bucketName, objectKey);
-    }
+
 
     private String buildS3Url(String bucketName, String objectKey) {
         return "https://" + r2Properties.accountId() + ".r2.cloudflarestorage.com/"

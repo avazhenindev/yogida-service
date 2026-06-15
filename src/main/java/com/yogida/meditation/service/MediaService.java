@@ -61,32 +61,7 @@ public class MediaService implements MediaApi {
         return mediaRepository.findById(id).map(mediaMapper::toDto);
     }
 
-    /**
-     * Find all active media with favourite information for the given user.
-     * For unauthenticated users (userId = null), favourite fields are set to false/null.
-     */
-    @Transactional(readOnly = true)
-    public List<MediaDto> findAllActiveWithFavourites(Long userId) {
-        List<MediaEntity> entities = mediaRepository.findAllByStatus(MediaStatus.ACTIVE);
-        List<MediaDto> dtos = mediaMapper.toDtoList(entities);
-        enrichWithFavouriteData(dtos, userId);
-        return dtos;
-    }
 
-    /**
-     * Find a single media by ID with favourite information for the given user.
-     * For unauthenticated users (userId = null), favourite fields are set to false/null.
-     */
-    @Transactional(readOnly = true)
-    public Optional<MediaDto> findByIdWithFavourites(Long id, Long userId) {
-        Optional<MediaEntity> entity = mediaRepository.findById(id);
-        if (entity.isEmpty()) {
-            return Optional.empty();
-        }
-        MediaDto dto = mediaMapper.toDto(entity.get());
-        enrichWithFavouriteData(dto, userId);
-        return Optional.of(dto);
-    }
 
     @Override
     @Transactional

@@ -94,28 +94,7 @@ public class FavouriteService implements FavouriteApi {
         log.info("FavouriteService > Deleted favourite with id: {}", id);
     }
 
-    /**
-     * Find a favourite by user ID, content type, and content ID.
-     * Used by mobile to get the favouriteId for deletion.
-     */
-    @Transactional(readOnly = true)
-    public FavouriteDto findByUserContentPair(Long userId, String contentType, Long contentId) {
-        return favouriteRepository.findByUserUserIdAndContentTypeAndContentId(userId, contentType, contentId)
-                .map(favouriteMapper::toDto)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        String.format("Favourite not found for userId=%d, contentType=%s, contentId=%d", userId, contentType, contentId)
-                ));
-    }
 
-    /**
-     * Find all favourites for a specific user.
-     */
-    @Transactional(readOnly = true)
-    public List<FavouriteDto> findByUserId(Long userId) {
-        return favouriteRepository.findByUserUserId(userId).stream()
-                .map(favouriteMapper::toDto)
-                .toList();
-    }
 
     private void validateUserExists(Long userId) {
         if (userId == null || !appUserRepository.existsById(userId)) {

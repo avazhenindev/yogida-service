@@ -13,16 +13,9 @@ public interface AdminStorageApi {
 
     void deleteBucket(String bucketName);
 
-    ObjectListResponse listObjects(String bucketName, String continuationToken, int maxKeys);
 
-    /**
-     * Uploads an object to S3 and returns its full S3 URL.
-     */
     ObjectMetadataDto uploadObject(String bucketName, String objectKey, MultipartFile file);
 
     void deleteObject(String bucketName, String objectKey);
-
-
-    String generatePresignedUrl(String bucketName, String objectKey);
 }
 
