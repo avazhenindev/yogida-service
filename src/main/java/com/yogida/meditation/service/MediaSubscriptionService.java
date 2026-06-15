@@ -41,7 +41,7 @@ public class MediaSubscriptionService implements MediaSubscriptionApi {
     @Override
     public MediaSubscriptionDto create(MediaSubscriptionDto dto) {
         validateMediaExists(dto.getMediaId());
-        validateSubscriptionExists(dto.getSubscriptionId());
+        validateSubscriptionExists(getSubscriptionId(dto));
         MediaSubscriptionEntity entity = mediaSubscriptionMapper.toEntity(dto);
         entity.setMediaSubscriptionId(null);
         entity.setCreatedAt(LocalDateTime.now());
@@ -57,8 +57,8 @@ public class MediaSubscriptionService implements MediaSubscriptionApi {
         if (dto.getMediaId() != null) {
             validateMediaExists(dto.getMediaId());
         }
-        if (dto.getSubscriptionId() != null) {
-            validateSubscriptionExists(dto.getSubscriptionId());
+        if (getSubscriptionId(dto) != null) {
+            validateSubscriptionExists(getSubscriptionId(dto));
         }
         mediaSubscriptionMapper.updateEntity(dto, existing);
         MediaSubscriptionEntity saved = mediaSubscriptionRepository.save(existing);
@@ -85,6 +85,10 @@ public class MediaSubscriptionService implements MediaSubscriptionApi {
         if (subscriptionId == null || !subscriptionRepository.existsById(subscriptionId)) {
             throw new EntityNotFoundException("Subscription", subscriptionId);
         }
+    }
+
+    private Long getSubscriptionId(MediaSubscriptionDto dto) {
+        return dto.getSubscription() != null ? dto.getSubscription().getSubscriptionId() : null;
     }
 }
 
