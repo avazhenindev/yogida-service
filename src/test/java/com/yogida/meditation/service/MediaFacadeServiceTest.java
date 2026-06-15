@@ -92,7 +92,6 @@ class MediaFacadeServiceTest {
                 MediaStatus.ACTIVE,
                 pictureFile,
                 null,
-                null,
                 null
         );
 
@@ -137,7 +136,6 @@ class MediaFacadeServiceTest {
                 7L,
                 MediaStatus.ACTIVE,
                 pictureFile,
-                null,
                 null,
                 null
         );
