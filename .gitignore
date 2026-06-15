@@ -41,3 +41,5 @@ build/
 .github/*
 !.github/workflows/
 !.github/workflows/**
+logs/**
+logs/archive/**
