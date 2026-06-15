@@ -11,6 +11,7 @@ import com.yogida.meditation.service.api.MediaSubscriptionApi;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -25,6 +26,7 @@ public class MediaSubscriptionService implements MediaSubscriptionApi {
     private final SubscriptionRepository subscriptionRepository;
     private final MediaSubscriptionMapper mediaSubscriptionMapper;
 
+    @Transactional(readOnly = true)
     @Override
     public List<MediaSubscriptionDto> findAll() {
         return mediaSubscriptionRepository.findAll().stream()
