@@ -1,0 +1,10 @@
+databaseChangeLog:
+  - changeSet:
+      id: add-unique-constraint-favourite
+      author: meditation-app
+      comment: Add unique constraint to prevent duplicate favourites for same user/content
+      changes:
+        - addUniqueConstraint:
+            tableName: favourite
+            columnNames: user_id, content_type, content_id
+            constraintName: uk_favourite_user_content

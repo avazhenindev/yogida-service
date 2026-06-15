@@ -49,3 +49,7 @@ databaseChangeLog:
       file: db/changelog/changes/024-add-media-review-table.yaml
   - include:
       file: db/changelog/changes/025-merge-rating-into-review.yaml
+  - include:
+      file: db/changelog/changes/026-drop-media-is-premium-column.yaml
+  - include:
+      file: db/changelog/changes/027-add-unique-constraint-favourite.yaml

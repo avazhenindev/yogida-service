@@ -22,6 +22,8 @@ public interface MediaMapper {
     @Mapping(target = "bucketName", expression = "java(entity.getMediaObject() != null ? entity.getMediaObject().getBucketName() : entity.getBucketName())")
     @Mapping(target = "averageRating", ignore = true)
     @Mapping(target = "isPremium", ignore = true)
+    @Mapping(target = "isFavourite", ignore = true)
+    @Mapping(target = "favouriteId", ignore = true)
     @Mapping(source = "tags", target = "tags", qualifiedByName = "tagEntitiesToNames")
     MediaDto toDto(MediaEntity entity);
 

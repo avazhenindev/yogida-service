@@ -2,13 +2,16 @@ package com.yogida.meditation.service;
 
 import com.yogida.meditation.dto.MediaDto;
 import com.yogida.meditation.dto.MediaUpdateRequest;
-import com.yogida.meditation.entity.MediaCategoryEntity;
+import com.yogida.meditation.entity.FavouriteEntity;
 import com.yogida.meditation.entity.MediaEntity;
+import com.yogida.meditation.entity.MediaCategoryEntity;
 import com.yogida.meditation.entity.S3ObjectEntity;
 import com.yogida.meditation.entity.TagEntity;
+import com.yogida.meditation.enums.ContentType;
 import com.yogida.meditation.enums.MediaStatus;
 import com.yogida.meditation.exception.EntityNotFoundException;
 import com.yogida.meditation.mapper.MediaMapper;
+import com.yogida.meditation.repository.FavouriteRepository;
 import com.yogida.meditation.repository.MediaCategoryRepository;
 import com.yogida.meditation.repository.MediaRepository;
 import com.yogida.meditation.repository.S3ObjectRepository;
@@ -23,8 +26,10 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Log4j2
 @Service
@@ -35,6 +40,7 @@ public class MediaService implements MediaApi {
     private final MediaCategoryRepository mediaCategoryRepository;
     private final S3ObjectRepository s3ObjectRepository;
     private final TagRepository tagRepository;
+    private final FavouriteRepository favouriteRepository;
     private final MediaMapper mediaMapper;
 
     @Override
@@ -53,6 +59,33 @@ public class MediaService implements MediaApi {
     @Transactional(readOnly = true)
     public Optional<MediaDto> findById(Long id) {
         return mediaRepository.findById(id).map(mediaMapper::toDto);
+    }
+
+    /**
+     * Find all active media with favourite information for the given user.
+     * For unauthenticated users (userId = null), favourite fields are set to false/null.
+     */
+    @Transactional(readOnly = true)
+    public List<MediaDto> findAllActiveWithFavourites(Long userId) {
+        List<MediaEntity> entities = mediaRepository.findAllByStatus(MediaStatus.ACTIVE);
+        List<MediaDto> dtos = mediaMapper.toDtoList(entities);
+        enrichWithFavouriteData(dtos, userId);
+        return dtos;
+    }
+
+    /**
+     * Find a single media by ID with favourite information for the given user.
+     * For unauthenticated users (userId = null), favourite fields are set to false/null.
+     */
+    @Transactional(readOnly = true)
+    public Optional<MediaDto> findByIdWithFavourites(Long id, Long userId) {
+        Optional<MediaEntity> entity = mediaRepository.findById(id);
+        if (entity.isEmpty()) {
+            return Optional.empty();
+        }
+        MediaDto dto = mediaMapper.toDto(entity.get());
+        enrichWithFavouriteData(dto, userId);
+        return Optional.of(dto);
     }
 
     @Override
@@ -118,6 +151,67 @@ public class MediaService implements MediaApi {
     @Transactional(readOnly = true)
     public List<MediaEntity> findAllEntities() {
         return mediaRepository.findAllWithMediaObjectBy();
+    }
+
+    /**
+     * Enrich a single MediaDto with favourite information for the given user.
+     * If userId is null (unauthenticated), isFavourite is set to false and favouriteId is null.
+     */
+    private void enrichWithFavouriteData(MediaDto mediaDto, Long userId) {
+        if (userId == null) {
+            mediaDto.setIsFavourite(false);
+            mediaDto.setFavouriteId(null);
+            return;
+        }
+
+        var favourite = favouriteRepository.findByUserUserIdAndContentTypeAndContentId(
+                userId,
+                ContentType.MEDIA.value(),
+                mediaDto.getId()
+        );
+
+        if (favourite.isPresent()) {
+            mediaDto.setIsFavourite(true);
+            mediaDto.setFavouriteId(favourite.get().getFavouriteId());
+        } else {
+            mediaDto.setIsFavourite(false);
+            mediaDto.setFavouriteId(null);
+        }
+    }
+
+    /**
+     * Enrich a list of MediaDtos with favourite information for the given user.
+     * If userId is null (unauthenticated), all favourite fields are set to false/null.
+     */
+    private void enrichWithFavouriteData(List<MediaDto> mediaDtos, Long userId) {
+        if (userId == null) {
+            mediaDtos.forEach(dto -> {
+                dto.setIsFavourite(false);
+                dto.setFavouriteId(null);
+            });
+            return;
+        }
+
+        // Fetch all favourites for this user and media content type
+        List<FavouriteEntity> favourites = favouriteRepository.findByUserUserId(userId).stream()
+                .filter(f -> ContentType.MEDIA.value().equals(f.getContentType()))
+                .toList();
+
+        // Build a map of media ID -> favourite ID for quick lookup
+        Map<Long, Long> favouriteMap = favourites.stream()
+                .collect(Collectors.toMap(FavouriteEntity::getContentId, FavouriteEntity::getFavouriteId));
+
+        // Enrich each DTO
+        mediaDtos.forEach(dto -> {
+            Long mediaId = dto.getId();
+            if (favouriteMap.containsKey(mediaId)) {
+                dto.setIsFavourite(true);
+                dto.setFavouriteId(favouriteMap.get(mediaId));
+            } else {
+                dto.setIsFavourite(false);
+                dto.setFavouriteId(null);
+            }
+        });
     }
 
     private MediaEntity findEntityById(Long id) {

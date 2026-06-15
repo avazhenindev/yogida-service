@@ -102,7 +102,7 @@ class MediaFacadeServiceTest {
         when(s3ObjectService.createMediaObject("audio", "focus.mp3")).thenReturn(mediaObject);
         when(mediaPictureStorageService.uploadPicture(eq(pictureFile))).thenReturn(pictureObject);
         when(mediaApi.create(mediaUpdateRequestCaptor.capture()))
-                .thenReturn(new MediaDto(15L, "Focus", "audio", s3ObjectDto(mediaObject), MediaStatus.ACTIVE, "desc", null, null, null, null, null, null, 180, 0.0, false, null));
+                .thenReturn(new MediaDto(15L, "Focus", "audio", s3ObjectDto(mediaObject), MediaStatus.ACTIVE, "desc", null, null, null, null, null, null, 180, 0.0, false, null, false, null));
         when(mediaDurationApi.extractDurationSeconds(audioFile)).thenReturn(180);
         when(mediaRepository.findById(15L)).thenReturn(Optional.of(mediaEntity(15L, "Focus", mediaObject, null)));
 
