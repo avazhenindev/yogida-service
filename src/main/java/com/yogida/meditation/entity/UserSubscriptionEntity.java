@@ -1,9 +1,11 @@
 package com.yogida.meditation.entity;
 
+import com.yogida.meditation.enums.BillingMode;
 import com.yogida.meditation.enums.SubscriptionStatus;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.time.Instant;
 import java.time.LocalDate;
 
 /**
@@ -40,5 +42,21 @@ public class UserSubscriptionEntity {
 
     @Column(name = "auto_renew", nullable = false)
     private Boolean autoRenew;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "billing_mode", length = 20)
+    private BillingMode billingMode;
+
+    @Column(name = "rc_app_user_id")
+    private String rcAppUserId;
+
+    @Column(name = "rc_product_id")
+    private String rcProductId;
+
+    @Column(name = "rc_store", length = 30)
+    private String rcStore;
+
+    @Column(name = "rc_last_event_at")
+    private Instant rcLastEventAt;
 }
 

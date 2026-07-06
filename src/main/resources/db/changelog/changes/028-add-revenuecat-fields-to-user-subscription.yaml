@@ -1,0 +1,35 @@
+databaseChangeLog:
+  - changeSet:
+      id: add-revenuecat-fields-to-user-subscription
+      author: meditation-app
+      comment: Add RevenueCat entitlement projection fields to user_subscription
+      changes:
+        - addColumn:
+            tableName: user_subscription
+            columns:
+              - column:
+                  name: billing_mode
+                  type: varchar(20)
+                  remarks: RECURRING or ONE_TIME entitlement origin
+              - column:
+                  name: rc_app_user_id
+                  type: varchar(255)
+                  remarks: RevenueCat app user id (Keycloak user id)
+              - column:
+                  name: rc_product_id
+                  type: varchar(255)
+                  remarks: Store product identifier reported by RevenueCat
+              - column:
+                  name: rc_store
+                  type: varchar(30)
+                  remarks: Store reported by RevenueCat (APP_STORE, PLAY_STORE, ...)
+              - column:
+                  name: rc_last_event_at
+                  type: timestamp
+                  remarks: Timestamp of the last processed RevenueCat event
+        - createIndex:
+            tableName: user_subscription
+            indexName: idx_user_subscription_rc_app_user_id
+            columns:
+              - column:
+                  name: rc_app_user_id

@@ -53,3 +53,7 @@ databaseChangeLog:
       file: db/changelog/changes/026-drop-media-is-premium-column.yaml
   - include:
       file: db/changelog/changes/027-add-unique-constraint-favourite.yaml
+  - include:
+      file: db/changelog/changes/028-add-revenuecat-fields-to-user-subscription.yaml
+  - include:
+      file: db/changelog/changes/029-create-subscription-payment-audit.yaml
