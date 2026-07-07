@@ -3,9 +3,12 @@ package com.yogida.meditation.entity;
 import com.yogida.meditation.enums.MediaStatus;
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.BatchSize;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Data
 @Entity
@@ -52,4 +55,16 @@ public class MediaEntity {
 
     @OneToMany(mappedBy = "media", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<MediaLogEntity> mediaLogs;
+
+    @Column(name = "duration_seconds", nullable = false)
+    private Integer durationSeconds;
+
+    @BatchSize(size = 30)
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "media_tag",
+            joinColumns = @JoinColumn(name = "media_id"),
+            inverseJoinColumns = @JoinColumn(name = "tag_id")
+    )
+    private Set<TagEntity> tags = new HashSet<>();
 }

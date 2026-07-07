@@ -12,22 +12,22 @@ import org.mapstruct.NullValuePropertyMappingStrategy;
 
 import java.util.List;
 
-@Mapper(componentModel = "spring", nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+@Mapper(componentModel = "spring", nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE, uses = {SubscriptionMapper.class})
 public interface MediaSubscriptionMapper {
 
     @Mapping(source = "media.id", target = "mediaId")
-    @Mapping(source = "subscription.subscriptionId", target = "subscriptionId")
+    @Mapping(source = "subscription", target = "subscription")
     MediaSubscriptionDto toDto(MediaSubscriptionEntity entity);
 
     @Mapping(source = "mediaId", target = "media", qualifiedByName = "mediaIdToMedia")
-    @Mapping(source = "subscriptionId", target = "subscription", qualifiedByName = "subscriptionIdToSubscription")
+    @Mapping(source = "subscription.subscriptionId", target = "subscription", qualifiedByName = "subscriptionIdToSubscription")
     MediaSubscriptionEntity toEntity(MediaSubscriptionDto dto);
 
     List<MediaSubscriptionDto> toDtoList(List<MediaSubscriptionEntity> entities);
 
     /** Merges non-null DTO fields into the existing entity. Skips server-managed timestamps. */
     @Mapping(source = "mediaId", target = "media", qualifiedByName = "mediaIdToMedia")
-    @Mapping(source = "subscriptionId", target = "subscription", qualifiedByName = "subscriptionIdToSubscription")
+    @Mapping(source = "subscription.subscriptionId", target = "subscription", qualifiedByName = "subscriptionIdToSubscription")
     @Mapping(target = "createdAt", ignore = true)
     void updateEntity(MediaSubscriptionDto dto, @MappingTarget MediaSubscriptionEntity entity);
 

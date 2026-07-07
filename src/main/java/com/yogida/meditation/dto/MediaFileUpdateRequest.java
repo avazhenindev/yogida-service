@@ -4,6 +4,8 @@ import com.yogida.meditation.enums.MediaStatus;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 /**
  * Multipart request for updating a media catalog entry.
  * If {@code file} is non-null and {@code objectKey} differs from the existing one,
@@ -11,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
  * If {@code status} is {@code null}, the existing status is preserved.
  * If {@code picture} is provided, it replaces the existing picture object and stores
  * the configured public picture URL when available.
+ * If {@code durationSeconds} is omitted and a new file is provided, duration is extracted automatically.
  */
 public record MediaFileUpdateRequest(
         @NotBlank String name,
@@ -20,6 +23,8 @@ public record MediaFileUpdateRequest(
         String description,
         Long categoryId,
         MediaStatus status,
-        MultipartFile picture
+        MultipartFile picture,
+        Integer durationSeconds,
+        List<Long> tagIds
 ) {}
 

@@ -2,6 +2,19 @@
 
 Spring Boot service for the Yogida meditation backend.
 
+## Project Overview
+
+Meditation Service is the backend API for the Yogida platform, providing secure, scalable endpoints for meditation content, user management, and media storage. It powers the mobile and admin applications, handling authentication, media uploads, and business logic.
+
+## Features
+
+- RESTful API for meditation content and categories
+- User authentication and authorization
+- Media upload and storage (Cloudflare R2)
+- Health and metrics endpoints
+- CI/CD with GitHub Actions and Docker Compose deployment
+- Secure environment and credential management
+
 ## Local validation
 
 Run the Maven test/build lifecycle with a reachable PostgreSQL database. The command below assumes a local database named `meditation` and uses test-safe R2 placeholders:
@@ -112,5 +125,13 @@ cp app.jar app.jar.failed
 cp app.jar.previous app.jar
 docker compose -f docker-compose.yml up -d --force-recreate --remove-orphans
 ```
+
+## Contribution Guidelines
+
+1. Fork the repository and create your feature branch.
+2. Write clear, well-documented code and tests.
+3. Run all tests locally before submitting a pull request.
+4. Follow the existing code style and conventions.
+5. Submit a pull request with a clear description of your changes.
 
 

@@ -1,0 +1,122 @@
+databaseChangeLog:
+  - changeSet:
+      id: 022-add-media-duration-and-ratings
+      author: yogida
+      comment: "Add duration_seconds to media (with backfill) and create media_rating table"
+      changes:
+        # Step 1: Add nullable duration_seconds column
+        - addColumn:
+            tableName: media
+            columns:
+              - column:
+                  name: duration_seconds
+                  type: INTEGER
+                  constraints:
+                    nullable: true
+
+        # Step 2: Backfill existing rows with a placeholder duration (1 second)
+        # NOTE: In production, replace this with actual extracted durations before deploying.
+        - sql:
+            sql: "UPDATE media SET duration_seconds = 1 WHERE duration_seconds IS NULL"
+
+        # Step 3: Enforce NOT NULL now that all rows have a value
+        - addNotNullConstraint:
+            tableName: media
+            columnName: duration_seconds
+            columnDataType: INTEGER
+
+        # Step 4: Check constraint — duration must be positive
+        - sql:
+            sql: "ALTER TABLE media ADD CONSTRAINT chk_media_duration_positive CHECK (duration_seconds > 0)"
+
+        # Step 5: Create media_rating table
+        - createTable:
+            tableName: media_rating
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: media_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: rating
+                  type: INTEGER
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: true
+
+        # Foreign key: media_rating.user_id → app_user.user_id
+        - addForeignKeyConstraint:
+            baseTableName: media_rating
+            baseColumnNames: user_id
+            referencedTableName: app_user
+            referencedColumnNames: user_id
+            constraintName: fk_media_rating_user
+
+        # Foreign key: media_rating.media_id → media.id
+        - addForeignKeyConstraint:
+            baseTableName: media_rating
+            baseColumnNames: media_id
+            referencedTableName: media
+            referencedColumnNames: id
+            constraintName: fk_media_rating_media
+
+        # Unique constraint: one rating per (user, media)
+        - addUniqueConstraint:
+            tableName: media_rating
+            columnNames: user_id, media_id
+            constraintName: uq_media_rating_user_media
+
+        # Rating bounds check: 1 ≤ rating ≤ 5
+        - sql:
+            sql: "ALTER TABLE media_rating ADD CONSTRAINT chk_media_rating_bounds CHECK (rating >= 1 AND rating <= 5)"
+
+        # Index for aggregate lookups by media_id
+        - createIndex:
+            tableName: media_rating
+            indexName: idx_media_rating_media_id
+            columns:
+              - column:
+                  name: media_id
+
+        # Index for user lookup by user_id
+        - createIndex:
+            tableName: media_rating
+            indexName: idx_media_rating_user_id
+            columns:
+              - column:
+                  name: user_id
+
+      rollback:
+        - dropTable:
+            tableName: media_rating
+        - sql:
+            sql: "ALTER TABLE media DROP CONSTRAINT IF EXISTS chk_media_duration_positive"
+        - dropNotNullConstraint:
+            tableName: media
+            columnName: duration_seconds
+            columnDataType: INTEGER
+        - dropColumn:
+            tableName: media
+            columnName: duration_seconds

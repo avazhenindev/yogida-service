@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 public class MediaSubscriptionDto {
     private Long mediaSubscriptionId;
     private Long mediaId;
-    private Long subscriptionId;
+    private SubscriptionDto subscription;
     private LocalDateTime createdAt;
 }
 

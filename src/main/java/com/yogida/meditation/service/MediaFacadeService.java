@@ -7,13 +7,14 @@ import com.yogida.meditation.enums.MediaLogAction;
 import com.yogida.meditation.exception.EntityNotFoundException;
 import com.yogida.meditation.repository.MediaRepository;
 import com.yogida.meditation.service.api.*;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
+import lombok.RequiredArgsConstructor;import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Log4j2
 @Service
@@ -26,23 +27,32 @@ public class MediaFacadeService implements MediaFacadeApi {
     private final MediaPictureStorageService mediaPictureStorageService;
     private final S3ObjectService s3ObjectService;
     private final MediaRepository mediaRepository;
+    private final MediaReviewApi mediaReviewApi;
+    private final MediaDurationApi mediaDurationApi;
 
     @Override
     @Transactional(readOnly = true)
     public List<MediaDto> findAll() {
-        return mediaApi.findAll();
+        List<MediaDto> dtos = mediaApi.findAll();
+        enrichWithAverageRating(dtos);
+        return dtos;
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<MediaDto> findAllActive() {
-        return mediaApi.findAllActive();
+        List<MediaDto> dtos = mediaApi.findAllActive();
+        enrichWithAverageRating(dtos);
+        return dtos;
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<MediaDto> findById(Long id) {
-        return mediaApi.findById(id);
+        return mediaApi.findById(id).map(dto -> {
+            dto.setAverageRating(mediaReviewApi.findAverageRatingByMediaId(id));
+            return dto;
+        });
     }
 
     @Override
@@ -53,12 +63,19 @@ public class MediaFacadeService implements MediaFacadeApi {
 
         S3ObjectEntity pictureObject = mediaPictureStorageService.uploadPicture(request.picture());
 
+        int durationSeconds = request.durationSeconds() != null && request.durationSeconds() > 0
+                ? request.durationSeconds()
+                : mediaDurationApi.extractDurationSeconds(request.file());
+
         MediaUpdateRequest mediaRequest = new MediaUpdateRequest(
-            request.name(), mediaObject.getId(), pictureObject == null ? null : pictureObject.getId(), request.description(), request.categoryId(), request.status());
+            request.name(), mediaObject.getId(), pictureObject == null ? null : pictureObject.getId(),
+            request.description(), request.categoryId(), request.status(),
+            durationSeconds, request.tagIds());
 
         MediaDto dto = mediaApi.create(mediaRequest);
         MediaEntity entity = resolveEntity(dto.getId());
         mediaLogApi.log(entity, MediaLogAction.ADDED, "Media created: " + entity.getName());
+        dto.setAverageRating(0.0);
         return dto;
     }
 
@@ -86,9 +103,19 @@ public class MediaFacadeService implements MediaFacadeApi {
                 && !oldPictureObject.getId().equals(newPictureObject.getId());
         }
 
+        Integer durationSeconds;
+        if (request.durationSeconds() != null && request.durationSeconds() > 0) {
+            durationSeconds = request.durationSeconds();
+        } else if (request.file() != null && !request.file().isEmpty()) {
+            durationSeconds = mediaDurationApi.extractDurationSeconds(request.file());
+        } else {
+            durationSeconds = existingEntity.getDurationSeconds();
+        }
+
         MediaUpdateRequest mediaRequest = new MediaUpdateRequest(
             request.name(), newMediaObject.getId(), newPictureObject == null ? null : newPictureObject.getId(),
-            request.description(), request.categoryId(), request.status());
+            request.description(), request.categoryId(), request.status(),
+            durationSeconds, request.tagIds());
         MediaDto dto = mediaApi.update(id, mediaRequest);
 
         if (!newMediaObject.getId().equals(oldMediaObject.getId())) {
@@ -101,6 +128,7 @@ public class MediaFacadeService implements MediaFacadeApi {
 
         MediaEntity entity = resolveEntity(id);
         mediaLogApi.log(entity, MediaLogAction.UPDATED, "Media updated: " + entity.getName());
+        dto.setAverageRating(mediaReviewApi.findAverageRatingByMediaId(id));
         return dto;
     }
 
@@ -117,6 +145,16 @@ public class MediaFacadeService implements MediaFacadeApi {
 
         s3ObjectService.deleteObjectAfterCommit(mediaObject);
         s3ObjectService.deleteObjectAfterCommit(pictureObject);
+    }
+
+    private void enrichWithAverageRating(List<MediaDto> dtos) {
+        if (dtos.isEmpty()) {
+            return;
+        }
+        List<Long> ids = dtos.stream().map(MediaDto::getId).toList();
+        Map<Long, Double> ratingByMediaId = mediaReviewApi.findAverageRatingsByMediaIds(ids).stream()
+                .collect(Collectors.toMap(MediaRatingSummary::mediaId, MediaRatingSummary::averageRating));
+        dtos.forEach(dto -> dto.setAverageRating(ratingByMediaId.getOrDefault(dto.getId(), 0.0)));
     }
 
     private MediaEntity resolveEntity(Long id) {

@@ -1,0 +1,58 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-subscription-payment-audit
+      author: meditation-app
+      comment: Compact audit table for processed RevenueCat webhook events (idempotency via unique rc_event_id)
+      changes:
+        - createTable:
+            tableName: subscription_payment_audit
+            columns:
+              - column:
+                  name: subscription_payment_audit_id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: rc_event_id
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+                    uniqueConstraintName: uk_subscription_payment_audit_rc_event_id
+              - column:
+                  name: event_type
+                  type: varchar(50)
+              - column:
+                  name: rc_app_user_id
+                  type: varchar(255)
+              - column:
+                  name: rc_product_id
+                  type: varchar(255)
+              - column:
+                  name: rc_store
+                  type: varchar(30)
+              - column:
+                  name: processing_status
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: detail
+                  type: varchar(1000)
+              - column:
+                  name: raw_payload
+                  type: text
+              - column:
+                  name: processed_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: subscription_payment_audit
+            indexName: idx_subscription_payment_audit_rc_app_user_id
+            columns:
+              - column:
+                  name: rc_app_user_id

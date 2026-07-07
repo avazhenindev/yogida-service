@@ -24,4 +24,22 @@ public class MediaDto {
     private LocalDateTime updatedAt;
     private List<MediaSubscriptionDto> mediaSubscriptions;
     private List<MediaLogDto> mediaLogs;
+    private Integer durationSeconds;
+    private Double averageRating;
+    private Boolean isPremium;
+    private List<String> tags;
+
+    /**
+     * Whether the current user has marked this media as a favourite.
+     * Null for unauthenticated requests.
+     */
+    private Boolean isFavourite;
+
+    /**
+     * The ID of the favourite record if this media is favourited by the current user.
+     * Null if not favourited or for unauthenticated requests.
+     * Used by mobile to delete the favourite without fetching all favourites.
+     */
+    private Long favouriteId;
 }
+
