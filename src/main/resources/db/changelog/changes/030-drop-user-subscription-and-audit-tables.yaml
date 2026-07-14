@@ -1,0 +1,44 @@
+databaseChangeLog:
+
+  - changeSet:
+      id: 030-1
+      author: meditation-app
+      comment: Drop FK from user_subscription to subscription (added in migration 007-8)
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: user_subscription
+            constraintName: fk_user_subscription_subscription
+
+  - changeSet:
+      id: 030-2
+      author: meditation-app
+      comment: Drop FK from user_subscription to app_user (added in migration 007-6)
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: user_subscription
+            constraintName: fk_user_subscription_user
+
+  - changeSet:
+      id: 030-3
+      author: meditation-app
+      comment: Drop index on user_subscription.rc_app_user_id (added in migration 028)
+      changes:
+        - dropIndex:
+            tableName: user_subscription
+            indexName: idx_user_subscription_rc_app_user_id
+
+  - changeSet:
+      id: 030-4
+      author: meditation-app
+      comment: Drop user_subscription table — entitlement is now resolved live from RevenueCat API
+      changes:
+        - dropTable:
+            tableName: user_subscription
+
+  - changeSet:
+      id: 030-5
+      author: meditation-app
+      comment: Drop subscription_payment_audit table — idempotency guard no longer needed after webhook simplification
+      changes:
+        - dropTable:
+            tableName: subscription_payment_audit

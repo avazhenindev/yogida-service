@@ -2,7 +2,6 @@ package com.yogida.meditation.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -64,10 +63,6 @@ public class SecurityConfig {
                 .requestMatchers("/admin/**").permitAll() // Admin endpoints managed separately
                 // RevenueCat webhook authenticates with a shared secret header, not a JWT
                 .requestMatchers("/webhooks/revenuecat").permitAll()
-                // Paid entitlement rows are written only by RevenueCat webhook processing or admins
-                .requestMatchers(HttpMethod.POST, "/user-subscriptions/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.PUT, "/user-subscriptions/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/user-subscriptions/**").hasRole("ADMIN")
                 // Protected endpoints - require JWT with Bearer token
                 .requestMatchers("/api/media/**").authenticated()
                 .anyRequest().permitAll()
