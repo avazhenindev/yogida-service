@@ -15,6 +15,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
+import com.yogida.meditation.config.TestSecurityConfig;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -29,6 +32,8 @@ import static org.mockito.Mockito.when;
  * Uses MapStruct instantiation via Spring Boot test context.
  */
 @SpringBootTest
+@Import(TestSecurityConfig.class)
+@ActiveProfiles("test")
 class MediaSubscriptionMapperTest {
 
     @Autowired
