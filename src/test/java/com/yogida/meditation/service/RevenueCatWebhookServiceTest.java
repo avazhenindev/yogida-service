@@ -1,230 +1,148 @@
 package com.yogida.meditation.service;
 
-import com.yogida.meditation.config.RevenueCatProperties;
+import com.yogida.meditation.dto.RevenueCatSubscriberResponse;
 import com.yogida.meditation.dto.RevenueCatWebhookRequest;
 import com.yogida.meditation.entity.AppUserEntity;
-import com.yogida.meditation.entity.SubscriptionEntity;
-import com.yogida.meditation.entity.SubscriptionPaymentAuditEntity;
-import com.yogida.meditation.entity.UserSubscriptionEntity;
-import com.yogida.meditation.enums.BillingMode;
-import com.yogida.meditation.enums.PaymentAuditStatus;
-import com.yogida.meditation.enums.SubscriptionStatus;
 import com.yogida.meditation.repository.AppUserRepository;
-import com.yogida.meditation.repository.SubscriptionPaymentAuditRepository;
-import com.yogida.meditation.repository.SubscriptionRepository;
-import com.yogida.meditation.repository.UserSubscriptionRepository;
+import com.yogida.meditation.service.api.SseApi;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.Instant;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class RevenueCatWebhookServiceTest {
 
     private static final String KEYCLOAK_ID = "kc-user-1";
-    private static final String ENTITLEMENT = "premium";
-    private static final String PLAN_NAME = "PREMIUM";
 
-    @Mock
-    private AppUserRepository appUserRepository;
-    @Mock
-    private SubscriptionRepository subscriptionRepository;
-    @Mock
-    private UserSubscriptionRepository userSubscriptionRepository;
-    @Mock
-    private SubscriptionPaymentAuditRepository auditRepository;
+    @Mock private AppUserRepository appUserRepository;
+    @Mock private EntitlementService entitlementService;
+    @Mock private RevenueCatSubscriberClient subscriberClient;
+    @Mock private SseApi sseApi;
 
     private RevenueCatWebhookService service;
 
     @BeforeEach
     void setUp() {
-        RevenueCatProperties properties =
-                new RevenueCatProperties(ENTITLEMENT, PLAN_NAME, "secret", null, null);
-        service = new RevenueCatWebhookService(appUserRepository, subscriptionRepository,
-                userSubscriptionRepository, auditRepository, properties);
+        service = new RevenueCatWebhookService(appUserRepository, entitlementService, subscriberClient, sseApi);
     }
 
     @Test
-    void initialPurchase_createsActiveRecurringProjection() {
-        AppUserEntity user = user(7L);
-        SubscriptionEntity plan = plan(3L);
-        when(auditRepository.existsByRcEventId("evt-1")).thenReturn(false);
+    void initialPurchase_evictsCacheAndPushesSSE() {
+        AppUserEntity user = user();
+        RevenueCatSubscriberResponse customerInfo = mock(RevenueCatSubscriberResponse.class);
         when(appUserRepository.findByKeycloakUserId(KEYCLOAK_ID)).thenReturn(Optional.of(user));
-        when(subscriptionRepository.findByName(PLAN_NAME)).thenReturn(Optional.of(plan));
-        when(userSubscriptionRepository.findFirstByUserUserIdAndSubscriptionSubscriptionId(7L, 3L))
-                .thenReturn(Optional.empty());
+        when(subscriberClient.getSubscriber(KEYCLOAK_ID)).thenReturn(Optional.of(customerInfo));
 
-        long purchasedAt = Instant.parse("2026-07-01T10:00:00Z").toEpochMilli();
-        long expiresAt = Instant.parse("2026-08-01T10:00:00Z").toEpochMilli();
-        service.processEvent(request(event("evt-1", "INITIAL_PURCHASE", purchasedAt, expiresAt)));
+        service.processEvent(request("INITIAL_PURCHASE"));
 
-        ArgumentCaptor<UserSubscriptionEntity> captor = ArgumentCaptor.forClass(UserSubscriptionEntity.class);
-        verify(userSubscriptionRepository).save(captor.capture());
-        UserSubscriptionEntity saved = captor.getValue();
-        assertThat(saved.getStatus()).isEqualTo(SubscriptionStatus.ACTIVE);
-        assertThat(saved.getBillingMode()).isEqualTo(BillingMode.RECURRING);
-        assertThat(saved.getAutoRenew()).isTrue();
-        assertThat(saved.getStartDate()).isEqualTo(LocalDate.of(2026, 7, 1));
-        assertThat(saved.getEndDate()).isEqualTo(LocalDate.of(2026, 8, 1));
-        assertThat(saved.getRcAppUserId()).isEqualTo(KEYCLOAK_ID);
-        assertAudit(PaymentAuditStatus.PROCESSED);
+        verify(entitlementService).evictUserEntitlement(KEYCLOAK_ID);
+        verify(sseApi).publishToUser(KEYCLOAK_ID, customerInfo);
     }
 
     @Test
-    void nonRenewingPurchase_createsOneTimeProjectionWithPlanPeriodFallback() {
-        AppUserEntity user = user(7L);
-        SubscriptionEntity plan = plan(3L);
-        when(auditRepository.existsByRcEventId("evt-2")).thenReturn(false);
+    void renewal_evictsCacheAndPushesSSE() {
+        AppUserEntity user = user();
+        RevenueCatSubscriberResponse customerInfo = mock(RevenueCatSubscriberResponse.class);
         when(appUserRepository.findByKeycloakUserId(KEYCLOAK_ID)).thenReturn(Optional.of(user));
-        when(subscriptionRepository.findByName(PLAN_NAME)).thenReturn(Optional.of(plan));
-        when(userSubscriptionRepository.findFirstByUserUserIdAndSubscriptionSubscriptionId(7L, 3L))
-                .thenReturn(Optional.empty());
+        when(subscriberClient.getSubscriber(KEYCLOAK_ID)).thenReturn(Optional.of(customerInfo));
 
-        long purchasedAt = Instant.parse("2026-07-01T10:00:00Z").toEpochMilli();
-        service.processEvent(request(event("evt-2", "NON_RENEWING_PURCHASE", purchasedAt, null)));
+        service.processEvent(request("RENEWAL"));
 
-        ArgumentCaptor<UserSubscriptionEntity> captor = ArgumentCaptor.forClass(UserSubscriptionEntity.class);
-        verify(userSubscriptionRepository).save(captor.capture());
-        UserSubscriptionEntity saved = captor.getValue();
-        assertThat(saved.getBillingMode()).isEqualTo(BillingMode.ONE_TIME);
-        assertThat(saved.getAutoRenew()).isFalse();
-        assertThat(saved.getEndDate()).isEqualTo(LocalDate.of(2026, 7, 31));
+        verify(entitlementService).evictUserEntitlement(KEYCLOAK_ID);
+        verify(sseApi).publishToUser(KEYCLOAK_ID, customerInfo);
     }
 
     @Test
-    void duplicateEvent_isSkipped() {
-        when(auditRepository.existsByRcEventId("evt-3")).thenReturn(true);
+    void expiration_evictsCacheAndPushesSSE() {
+        AppUserEntity user = user();
+        RevenueCatSubscriberResponse customerInfo = mock(RevenueCatSubscriberResponse.class);
+        when(appUserRepository.findByKeycloakUserId(KEYCLOAK_ID)).thenReturn(Optional.of(user));
+        when(subscriberClient.getSubscriber(KEYCLOAK_ID)).thenReturn(Optional.of(customerInfo));
 
-        service.processEvent(request(event("evt-3", "INITIAL_PURCHASE", null, null)));
+        service.processEvent(request("EXPIRATION"));
 
-        verify(userSubscriptionRepository, never()).save(any());
-        verify(auditRepository, never()).save(any());
+        verify(entitlementService).evictUserEntitlement(KEYCLOAK_ID);
+        verify(sseApi).publishToUser(KEYCLOAK_ID, customerInfo);
     }
 
     @Test
-    void unknownUser_isAuditedAsFailed() {
-        when(auditRepository.existsByRcEventId("evt-4")).thenReturn(false);
+    void testEvent_isIgnored() {
+        service.processEvent(request("TEST"));
+
+        verifyNoInteractions(appUserRepository, entitlementService, subscriberClient, sseApi);
+    }
+
+    @Test
+    void experimentEnrollment_isIgnored() {
+        service.processEvent(request("EXPERIMENT_ENROLLMENT"));
+
+        verifyNoInteractions(appUserRepository, entitlementService, subscriberClient, sseApi);
+    }
+
+    @Test
+    void unknownEventType_isIgnoredGracefully() {
+        service.processEvent(request("FUTURE_UNKNOWN_TYPE"));
+
+        verifyNoInteractions(appUserRepository, entitlementService, subscriberClient, sseApi);
+    }
+
+    @Test
+    void noUserFound_skipsCacheEvictAndSSE() {
         when(appUserRepository.findByKeycloakUserId(KEYCLOAK_ID)).thenReturn(Optional.empty());
 
-        service.processEvent(request(event("evt-4", "RENEWAL", null, null)));
+        service.processEvent(request("CANCELLATION"));
 
-        verify(userSubscriptionRepository, never()).save(any());
-        assertAudit(PaymentAuditStatus.FAILED);
+        verifyNoInteractions(entitlementService, sseApi);
     }
 
     @Test
-    void cancellation_disablesAutoRenewOnly() {
-        AppUserEntity user = user(7L);
-        SubscriptionEntity plan = plan(3L);
-        UserSubscriptionEntity existing = existingSubscription(user, plan);
-        when(auditRepository.existsByRcEventId("evt-5")).thenReturn(false);
+    void subscriberClientReturnsEmpty_cacheStillEvicted_sseSkipped() {
+        AppUserEntity user = user();
         when(appUserRepository.findByKeycloakUserId(KEYCLOAK_ID)).thenReturn(Optional.of(user));
-        when(subscriptionRepository.findByName(PLAN_NAME)).thenReturn(Optional.of(plan));
-        when(userSubscriptionRepository.findFirstByUserUserIdAndSubscriptionSubscriptionId(7L, 3L))
-                .thenReturn(Optional.of(existing));
+        when(subscriberClient.getSubscriber(KEYCLOAK_ID)).thenReturn(Optional.empty());
 
-        service.processEvent(request(event("evt-5", "CANCELLATION", null, null)));
+        service.processEvent(request("CANCELLATION"));
 
-        assertThat(existing.getAutoRenew()).isFalse();
-        assertThat(existing.getStatus()).isEqualTo(SubscriptionStatus.ACTIVE);
-        assertAudit(PaymentAuditStatus.PROCESSED);
+        verify(entitlementService).evictUserEntitlement(KEYCLOAK_ID);
+        verifyNoInteractions(sseApi);
     }
 
     @Test
-    void expiration_expiresProjection() {
-        AppUserEntity user = user(7L);
-        SubscriptionEntity plan = plan(3L);
-        UserSubscriptionEntity existing = existingSubscription(user, plan);
-        when(auditRepository.existsByRcEventId("evt-6")).thenReturn(false);
-        when(appUserRepository.findByKeycloakUserId(KEYCLOAK_ID)).thenReturn(Optional.of(user));
-        when(subscriptionRepository.findByName(PLAN_NAME)).thenReturn(Optional.of(plan));
-        when(userSubscriptionRepository.findFirstByUserUserIdAndSubscriptionSubscriptionId(7L, 3L))
-                .thenReturn(Optional.of(existing));
+    void nullRequest_isSkipped() {
+        service.processEvent(null);
 
-        service.processEvent(request(event("evt-6", "EXPIRATION", null, null)));
-
-        assertThat(existing.getStatus()).isEqualTo(SubscriptionStatus.EXPIRED);
-        assertThat(existing.getAutoRenew()).isFalse();
-        assertAudit(PaymentAuditStatus.PROCESSED);
+        verifyNoInteractions(appUserRepository, entitlementService, subscriberClient, sseApi);
     }
 
     @Test
-    void unknownEventType_isAuditedAsIgnored() {
-        when(auditRepository.existsByRcEventId("evt-7")).thenReturn(false);
-
-        service.processEvent(request(event("evt-7", "TRANSFER", null, null)));
-
-        verify(userSubscriptionRepository, never()).save(any());
-        assertAudit(PaymentAuditStatus.IGNORED);
-    }
-
-    @Test
-    void eventForOtherEntitlement_isAuditedAsIgnored() {
-        when(auditRepository.existsByRcEventId("evt-8")).thenReturn(false);
-
+    void nullEventType_isSkipped() {
         RevenueCatWebhookRequest.Event event = new RevenueCatWebhookRequest.Event(
-                "evt-8", "INITIAL_PURCHASE", KEYCLOAK_ID, null, "prod_month", "APP_STORE",
-                "PRODUCTION", List.of("other-entitlement"), null, null);
-        service.processEvent(request(event));
+                "evt-1", null, KEYCLOAK_ID, KEYCLOAK_ID, null, null, null, null, null, null);
+        service.processEvent(new RevenueCatWebhookRequest(event, "1.0"));
 
-        verify(userSubscriptionRepository, never()).save(any());
-        assertAudit(PaymentAuditStatus.IGNORED);
+        verifyNoInteractions(appUserRepository, entitlementService, subscriberClient, sseApi);
     }
 
-    private void assertAudit(PaymentAuditStatus expected) {
-        ArgumentCaptor<SubscriptionPaymentAuditEntity> captor =
-                ArgumentCaptor.forClass(SubscriptionPaymentAuditEntity.class);
-        verify(auditRepository).save(captor.capture());
-        assertThat(captor.getValue().getProcessingStatus()).isEqualTo(expected);
-    }
-
-    private static RevenueCatWebhookRequest request(RevenueCatWebhookRequest.Event event) {
+    private RevenueCatWebhookRequest request(String type) {
+        RevenueCatWebhookRequest.Event event = new RevenueCatWebhookRequest.Event(
+                "evt-1", type, KEYCLOAK_ID, KEYCLOAK_ID, "prod_month",
+                "APP_STORE", "PRODUCTION", List.of("premium"), null, null);
         return new RevenueCatWebhookRequest(event, "1.0");
     }
 
-    private static RevenueCatWebhookRequest.Event event(String id, String type, Long purchasedAtMs, Long expirationAtMs) {
-        return new RevenueCatWebhookRequest.Event(id, type, KEYCLOAK_ID, null, "prod_month",
-                "APP_STORE", "PRODUCTION", List.of(ENTITLEMENT), purchasedAtMs, expirationAtMs);
-    }
-
-    private static AppUserEntity user(Long id) {
-        AppUserEntity user = new AppUserEntity();
-        user.setUserId(id);
-        user.setKeycloakUserId(KEYCLOAK_ID);
-        return user;
-    }
-
-    private static SubscriptionEntity plan(Long id) {
-        SubscriptionEntity plan = new SubscriptionEntity();
-        plan.setSubscriptionId(id);
-        plan.setName(PLAN_NAME);
-        plan.setStatus(SubscriptionStatus.ACTIVE);
-        plan.setPeriodDays(30);
-        return plan;
-    }
-
-    private static UserSubscriptionEntity existingSubscription(AppUserEntity user, SubscriptionEntity plan) {
-        UserSubscriptionEntity entity = new UserSubscriptionEntity();
-        entity.setUserSubscriptionId(11L);
-        entity.setUser(user);
-        entity.setSubscription(plan);
-        entity.setStatus(SubscriptionStatus.ACTIVE);
-        entity.setStartDate(LocalDate.of(2026, 6, 1));
-        entity.setEndDate(LocalDate.of(2026, 8, 1));
-        entity.setAutoRenew(true);
-        return entity;
+    private AppUserEntity user() {
+        AppUserEntity u = new AppUserEntity();
+        u.setKeycloakUserId(KEYCLOAK_ID);
+        return u;
     }
 }

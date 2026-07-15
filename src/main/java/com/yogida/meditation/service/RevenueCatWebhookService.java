@@ -2,32 +2,31 @@ package com.yogida.meditation.service;
 
 import com.yogida.meditation.dto.RevenueCatWebhookRequest;
 import com.yogida.meditation.entity.AppUserEntity;
+import com.yogida.meditation.enums.RevenueCatEventType;
 import com.yogida.meditation.repository.AppUserRepository;
 import com.yogida.meditation.service.api.RevenueCatWebhookApi;
+import com.yogida.meditation.service.api.SseApi;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * Processes RevenueCat webhook events by evicting the cached entitlement entry
- * for the affected user. No local subscription state is written to the database.
- * RevenueCat is the authoritative entitlement source; the next {@code isEntitled}
- * call will fetch fresh data from the RC Subscriber API.
+ * for the affected user and pushing fresh customer info to any connected SSE clients.
+ * No local subscription state is written to the database.
+ * RevenueCat is the authoritative entitlement source.
  */
 @Log4j2
 @Service
 @RequiredArgsConstructor
 public class RevenueCatWebhookService implements RevenueCatWebhookApi {
 
-    /** Event types that signal a change in entitlement status. */
-    private static final Set<String> EVICT_EVENT_TYPES = Set.of(
-            "INITIAL_PURCHASE", "RENEWAL", "CANCELLATION", "EXPIRATION");
-
     private final AppUserRepository appUserRepository;
     private final EntitlementService entitlementService;
+    private final RevenueCatSubscriberClient subscriberClient;
+    private final SseApi sseApi;
 
     @Override
     public void processEvent(RevenueCatWebhookRequest request) {
@@ -36,7 +35,7 @@ public class RevenueCatWebhookService implements RevenueCatWebhookApi {
             log.warn("RevenueCatWebhookService > Skipping webhook without event type");
             return;
         }
-        if (!EVICT_EVENT_TYPES.contains(event.type())) {
+        if (!RevenueCatEventType.isEntitlementAffecting(event.type())) {
             log.debug("RevenueCatWebhookService > Ignoring non-entitlement event type: {}", event.type());
             return;
         }
@@ -45,9 +44,24 @@ public class RevenueCatWebhookService implements RevenueCatWebhookApi {
                     entitlementService.evictUserEntitlement(userId);
                     log.info("RevenueCatWebhookService > Cache evicted for user {} on event {}",
                             userId, event.type());
+                    publishEntitlementUpdate(userId);
                 },
                 () -> log.warn("RevenueCatWebhookService > No user found for RC app_user_id: {}",
                         event.appUserId())
+        );
+    }
+
+    /**
+     * Fetches fresh customer info from RevenueCat and pushes it to any connected SSE clients.
+     * If the RC API call fails (returns empty), the SSE push is skipped gracefully.
+     */
+    private void publishEntitlementUpdate(String keycloakUserId) {
+        subscriberClient.getSubscriber(keycloakUserId).ifPresentOrElse(
+                customerInfo -> {
+                    sseApi.publishToUser(keycloakUserId, customerInfo);
+                    log.debug("RevenueCatWebhookService > SSE entitlement update pushed for user {}", keycloakUserId);
+                },
+                () -> log.warn("RevenueCatWebhookService > Could not fetch customerInfo for SSE push, user {}", keycloakUserId)
         );
     }
 
@@ -60,3 +74,4 @@ public class RevenueCatWebhookService implements RevenueCatWebhookApi {
                         .map(AppUserEntity::getKeycloakUserId));
     }
 }
+

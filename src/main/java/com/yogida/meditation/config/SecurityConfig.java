@@ -65,6 +65,7 @@ public class SecurityConfig {
                 .requestMatchers("/webhooks/revenuecat").permitAll()
                 // Protected endpoints - require JWT with Bearer token
                 .requestMatchers("/api/media/**").authenticated()
+                .requestMatchers("/api/entitlement/**").authenticated()
                 .anyRequest().permitAll()
             )
             .oauth2ResourceServer(oauth2 -> oauth2
