@@ -31,14 +31,17 @@ public class RevenueCatWebhookController implements RevenueCatWebhookControllerA
         return ResponseEntity.ok().build();
     }
 
-    /** Constant-time comparison of the shared webhook secret. Rejects everything when not configured. */
+    /**
+     * Constant-time comparison of the shared webhook secret. Rejects everything when not configured.
+     */
     private boolean isAuthorized(String authorization) {
         String expected = revenueCatProperties.webhookAuthToken();
+        log.error("RevenueCatWebhookController > Auth headers > Expected: {}, Provided: {}", expected, authorization);
         if (expected == null || expected.isBlank() || authorization == null) {
             return false;
         }
         return MessageDigest.isEqual(
-                expected.getBytes(StandardCharsets.UTF_8),
-                authorization.getBytes(StandardCharsets.UTF_8));
+            expected.getBytes(StandardCharsets.UTF_8),
+            authorization.getBytes(StandardCharsets.UTF_8));
     }
 }
