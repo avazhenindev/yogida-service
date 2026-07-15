@@ -57,3 +57,5 @@ databaseChangeLog:
       file: db/changelog/changes/028-add-revenuecat-fields-to-user-subscription.yaml
   - include:
       file: db/changelog/changes/029-create-subscription-payment-audit.yaml
+  - include:
+      file: db/changelog/changes/030-drop-user-subscription-and-audit-tables.yaml

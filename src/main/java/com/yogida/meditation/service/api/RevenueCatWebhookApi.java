@@ -3,13 +3,15 @@ package com.yogida.meditation.service.api;
 import com.yogida.meditation.dto.RevenueCatWebhookRequest;
 
 /**
- * Contract for idempotent RevenueCat webhook event processing.
+ * Contract for RevenueCat webhook event processing.
  */
 public interface RevenueCatWebhookApi {
 
     /**
-     * Projects a RevenueCat webhook event onto the local user_subscription state
-     * and records a compact audit row. Duplicate event ids are ignored.
+     * Processes a RevenueCat webhook event. On entitlement-changing events
+     * (INITIAL_PURCHASE, RENEWAL, CANCELLATION, EXPIRATION) evicts the cached
+     * entitlement entry for the affected user so the next entitlement check
+     * fetches fresh data from the RevenueCat Subscriber API.
      */
     void processEvent(RevenueCatWebhookRequest request);
 }

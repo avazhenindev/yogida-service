@@ -1,82 +1,87 @@
 package com.yogida.meditation.service;
 
+import com.yogida.meditation.config.RevenueCatProperties;
+import com.yogida.meditation.dto.RevenueCatSubscriberResponse;
 import com.yogida.meditation.entity.AppUserEntity;
 import com.yogida.meditation.entity.MediaEntity;
-import com.yogida.meditation.enums.SubscriptionStatus;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
+import java.time.OffsetDateTime;
 
 /**
  * Service for checking media entitlement.
- * Determines if a user has a valid subscription that grants access to a premium media item.
+ * Entitlement is resolved live from the RevenueCat Subscriber API and cached
+ * in Caffeine for up to 5 minutes per user. Cache is evicted immediately on
+ * relevant RevenueCat webhook events.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class EntitlementService {
 
+    private final RevenueCatSubscriberClient subscriberClient;
+    private final RevenueCatProperties properties;
+
+    /** Self-reference via Spring proxy — required so @Cacheable/@CacheEvict AOP applies on internal calls. */
+    @Lazy
+    @Autowired
+    private EntitlementService self;
+
     /**
-     * Checks if the media is premium (has associated subscriptions).
-     *
-     * @param media the media entity to check
-     * @return true if the media has subscriptions (is premium), false otherwise
+     * Returns true when the media item is premium (has at least one associated subscription plan).
      */
     public boolean isPremium(MediaEntity media) {
         return media.getMediaSubscriptions() != null && !media.getMediaSubscriptions().isEmpty();
     }
 
     /**
-     * Checks if a user has entitlement (valid subscription) to access premium media.
-     * Returns true if:
-     * - The media is not premium (no subscriptions), OR
-     * - The user has at least one ACTIVE subscription that includes the media
+     * Returns true when the user is entitled to access the given media item.
+     * Free media always returns true. For premium media, delegates to the
+     * cached RevenueCat entitlement check.
      *
-     * @param user the app user entity
-     * @param media the media entity
-     * @return true if the user is entitled to access the media, false otherwise
+     * @param user  the authenticated app user
+     * @param media the media item to check
+     * @return true if the user may access the media
      */
-    @Transactional(readOnly = true)
     public boolean isEntitled(AppUserEntity user, MediaEntity media) {
-        // If media is not premium, everyone has access
         if (!isPremium(media)) {
             return true;
         }
-
-        // User must have an ACTIVE subscription that grants access to this media
-        if (user.getSubscriptions() == null || user.getSubscriptions().isEmpty()) {
-            return false;
-        }
-
-        LocalDate today = LocalDate.now();
-
-        // Check if user has any ACTIVE subscription that covers this media
-        return user.getSubscriptions().stream()
-            .filter(userSub -> userSub.getStatus() == SubscriptionStatus.ACTIVE)
-            .filter(userSub -> isSubscriptionValid(userSub.getStartDate(), userSub.getEndDate(), today))
-            .anyMatch(userSub -> media.getMediaSubscriptions().stream()
-                .anyMatch(mediaSub -> mediaSub.getSubscription().getSubscriptionId()
-                    .equals(userSub.getSubscription().getSubscriptionId()))
-            );
+        return self.isUserPremium(user.getKeycloakUserId());
     }
 
     /**
-     * Checks if a subscription is valid on a given date.
-     * A subscription is valid if today is between start_date (inclusive) and end_date (exclusive, or null = no end date).
+     * Checks the RevenueCat Subscriber API for an active premium entitlement.
+     * Result is cached per user for up to 5 minutes (see {@link com.yogida.meditation.config.CacheConfig}).
+     * Returns false (deny access) when the RC API is unavailable — secure by default.
      *
-     * @param startDate the subscription start date
-     * @param endDate the subscription end date (null = no end date)
-     * @param today the date to check
-     * @return true if the subscription is valid on the given date
+     * @param keycloakUserId the user's Keycloak subject, used as the RC app user id
+     * @return true when the user has a non-expired premium entitlement
      */
-    private boolean isSubscriptionValid(LocalDate startDate, LocalDate endDate, LocalDate today) {
-        if (startDate != null && today.isBefore(startDate)) {
-            return false;
-        }
-        if (endDate != null && !today.isBefore(endDate)) {
-            return false;
-        }
-        return true;
+    @Cacheable(value = "entitlement", key = "#keycloakUserId")
+    public boolean isUserPremium(String keycloakUserId) {
+        return subscriberClient.getSubscriber(keycloakUserId)
+                .map(RevenueCatSubscriberResponse::subscriber)
+                .map(RevenueCatSubscriberResponse.Subscriber::entitlements)
+                .map(entitlements -> entitlements.get(properties.entitlementId()))
+                .filter(ent -> ent.expiresDate() == null || ent.expiresDate().isAfter(OffsetDateTime.now()))
+                .isPresent();
+    }
+
+    /**
+     * Evicts the cached entitlement for a user so the next {@link #isUserPremium} call
+     * fetches fresh data from the RevenueCat Subscriber API.
+     *
+     * @param keycloakUserId the user's Keycloak subject
+     */
+    @CacheEvict(value = "entitlement", key = "#keycloakUserId")
+    public void evictUserEntitlement(String keycloakUserId) {
+        log.debug("EntitlementService > Cache evicted for user: {}", keycloakUserId);
     }
 }

@@ -2,11 +2,8 @@ package com.yogida.meditation.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import lombok.ToString;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Data
 @Entity
@@ -21,7 +18,6 @@ public class AppUserEntity {
     @Column(name = "keycloak_user_id", nullable = false, unique = true, length = 100)
     private String keycloakUserId;
 
-
     @Column(name = "email", length = 100)
     private String email;
 
@@ -33,9 +29,4 @@ public class AppUserEntity {
 
     @Column(name = "last_login")
     private LocalDateTime lastLogin;
-
-    @ToString.Exclude
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<UserSubscriptionEntity> subscriptions = new ArrayList<>();
 }
-
