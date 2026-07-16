@@ -47,6 +47,18 @@ public class SseService implements SseApi {
             log.warn("SseService > Multiple emitters registered for user {} — stale connection likely present",
                     keycloakUserId);
         }
+
+        // Send an initial event immediately so the first bytes travel through the network
+        // path (including the Cloudflare tunnel) and the client onopen fires promptly.
+        // Without this, the response contains only headers; proxies may buffer it until
+        // the first keepalive arrives (up to 25 s later).
+        try {
+            emitter.send(SseEmitter.event().name("connected").data(""));
+        } catch (IOException e) {
+            log.warn("SseService > Failed to send initial connected event for user {}: {}", keycloakUserId, e.getMessage());
+            removeEmitter(keycloakUserId, emitter);
+        }
+
         return emitter;
     }
 
