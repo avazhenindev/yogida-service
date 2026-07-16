@@ -22,7 +22,9 @@ public interface SseApi {
 
     /**
      * Pushes a typed {@link com.yogida.meditation.dto.SseEvent} envelope to all active connections
-     * of the given user. Dead emitters are silently removed. No-op when no connections exist.
+     * of the given user. Dead emitters are silently removed. When the user has no deliverable
+     * connection, the event is retained in a bounded per-user pending queue and flushed on the
+     * user's next subscribe.
      *
      * @param keycloakUserId the user to notify
      * @param type           discriminates the origin/intent of the event

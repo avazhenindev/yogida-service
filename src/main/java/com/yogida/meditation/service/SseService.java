@@ -12,6 +12,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 /**
  * Manages per-user SSE emitter registrations and publishes entitlement update events.
@@ -21,12 +22,21 @@ import java.util.concurrent.ConcurrentHashMap;
  * from the same client replaces its previous emitter instead of accumulating stale ones;
  * distinct clients (multiple devices) coexist. Emitters are removed automatically on
  * completion, timeout, or error.
+ *
+ * <p>Events that cannot be delivered (no active connection, or all sends fail) are kept in
+ * a bounded per-user pending queue and flushed to the client on its next subscribe.
  */
 @Log4j2
 @Service
 public class SseService implements SseApi {
 
+    /** Upper bound of undelivered events retained per user; oldest are dropped first. */
+    private static final int MAX_PENDING_EVENTS_PER_USER = 20;
+
     private final ConcurrentHashMap<String, ConcurrentHashMap<String, SseEmitter>> registry =
+            new ConcurrentHashMap<>();
+
+    private final ConcurrentHashMap<String, ConcurrentLinkedDeque<SseEvent>> pendingEvents =
             new ConcurrentHashMap<>();
 
     @Override
@@ -57,23 +67,28 @@ public class SseService implements SseApi {
         // the first keepalive arrives (up to 25 s later).
         try {
             emitter.send(SseEmitter.event().name("connected").data(""));
-        } catch (IOException e) {
+        } catch (IOException | IllegalStateException e) {
             log.warn("SseService > Failed to send initial connected event for user {}: {}", keycloakUserId, e.getMessage());
             removeEmitter(keycloakUserId, clientId, emitter);
+            return emitter;
         }
+
+        // Deliver events that were published while the user had no usable connection.
+        flushPendingEvents(keycloakUserId, clientId, emitter);
 
         return emitter;
     }
 
     @Override
     public void publishToUser(String keycloakUserId, SseMessageType type, Object payload) {
+        SseEvent envelope = new SseEvent(type, payload);
+
         ConcurrentHashMap<String, SseEmitter> userEmitters = registry.get(keycloakUserId);
         if (userEmitters == null || userEmitters.isEmpty()) {
-            log.debug("SseService > No active SSE connections for user {}", keycloakUserId);
+            enqueuePendingEvent(keycloakUserId, envelope);
             return;
         }
 
-        SseEvent envelope = new SseEvent(type, payload);
         int sent = 0;
         for (Map.Entry<String, SseEmitter> entry : userEmitters.entrySet()) {
             try {
@@ -81,10 +96,19 @@ public class SseService implements SseApi {
                         .name("entitlement-update")
                         .data(envelope, MediaType.APPLICATION_JSON));
                 sent++;
-            } catch (IOException e) {
-                log.warn("SseService > Failed to send SSE event to user {}: {}", keycloakUserId, e.getMessage());
+            } catch (IOException | IllegalStateException e) {
+                // Dead client (broken pipe surfaces as IllegalStateException from
+                // ResponseBodyEmitter). Evict; must never break the publishing caller
+                // (e.g. the RevenueCat webhook).
+                log.debug("SseService > Evicting dead emitter for user {} client {}: {}",
+                        keycloakUserId, entry.getKey(), e.getMessage());
                 userEmitters.remove(entry.getKey(), entry.getValue());
             }
+        }
+
+        if (sent == 0) {
+            enqueuePendingEvent(keycloakUserId, envelope);
+            return;
         }
 
         log.info("SseService > Pushed entitlement update to {} connection(s) for user {}",
@@ -98,6 +122,46 @@ public class SseService implements SseApi {
         if (userEmitters != null && userEmitters.remove(clientId, emitter)) {
             log.debug("SseService > Removed emitter for user {} client {}; remaining: {}",
                     keycloakUserId, clientId, userEmitters.size());
+        }
+    }
+
+    private void enqueuePendingEvent(String keycloakUserId, SseEvent event) {
+        ConcurrentLinkedDeque<SseEvent> queue =
+                pendingEvents.computeIfAbsent(keycloakUserId, k -> new ConcurrentLinkedDeque<>());
+        queue.offerLast(event);
+        while (queue.size() > MAX_PENDING_EVENTS_PER_USER) {
+            queue.pollFirst(); // drop oldest
+        }
+        log.info("SseService > No deliverable SSE connection for user {}; event queued (pending: {})",
+                keycloakUserId, queue.size());
+    }
+
+    private void flushPendingEvents(String keycloakUserId, String clientId, SseEmitter emitter) {
+        ConcurrentLinkedDeque<SseEvent> queue = pendingEvents.get(keycloakUserId);
+        if (queue == null || queue.isEmpty()) {
+            return;
+        }
+
+        int flushed = 0;
+        SseEvent event;
+        while ((event = queue.pollFirst()) != null) {
+            try {
+                emitter.send(SseEmitter.event()
+                        .name("entitlement-update")
+                        .data(event, MediaType.APPLICATION_JSON));
+                flushed++;
+            } catch (IOException | IllegalStateException e) {
+                queue.offerFirst(event); // keep order; retry on the next reconnect
+                log.debug("SseService > Flush interrupted for user {} client {}: {}",
+                        keycloakUserId, clientId, e.getMessage());
+                removeEmitter(keycloakUserId, clientId, emitter);
+                break;
+            }
+        }
+
+        if (flushed > 0) {
+            log.info("SseService > Flushed {} pending event(s) to user {} client {}; remaining: {}",
+                    flushed, keycloakUserId, clientId, queue.size());
         }
     }
 
@@ -115,7 +179,7 @@ public class SseService implements SseApi {
                 try {
                     entry.getValue().send(SseEmitter.event().comment("keepalive"));
                     total++;
-                } catch (IOException e) {
+                } catch (IOException | IllegalStateException e) {
                     userEmitters.remove(entry.getKey(), entry.getValue());
                 }
             }
