@@ -9,6 +9,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 import org.springframework.web.context.request.async.AsyncRequestTimeoutException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
@@ -77,6 +78,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AsyncRequestTimeoutException.class)
     public void handleAsyncTimeout(AsyncRequestTimeoutException ex, HttpServletRequest request) {
         log.debug("SSE stream timed out [{} {}]", request.getMethod(), request.getRequestURI());
+    }
+
+    /**
+     * Raised by the servlet container when an async (SSE) response is written to after the
+     * client disconnected — routine on mobile networks (app suspension, network switch).
+     * The emitter registry already evicts dead connections; nothing to report.
+     */
+    @ExceptionHandler(AsyncRequestNotUsableException.class)
+    public void handleAsyncNotUsable(AsyncRequestNotUsableException ex, HttpServletRequest request) {
+        log.debug("SSE client disconnected [{} {}]: {}", request.getMethod(), request.getRequestURI(), ex.getMessage());
     }
 
     @ExceptionHandler(Exception.class)
