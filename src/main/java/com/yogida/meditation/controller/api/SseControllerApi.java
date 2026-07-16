@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @Tag(name = "Entitlement SSE", description = "Server-Sent Events for real-time entitlement updates")
-@RequestMapping("/api/entitlement")
+@RequestMapping("/entitlement")
 public interface SseControllerApi {
 
     @Operation(
