@@ -30,20 +30,22 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 @Service
 public class SseService implements SseApi {
 
-    /** Upper bound of undelivered events retained per user; oldest are dropped first. */
+    /**
+     * Upper bound of undelivered events retained per user; oldest are dropped first.
+     */
     private static final int MAX_PENDING_EVENTS_PER_USER = 20;
 
     private final ConcurrentHashMap<String, ConcurrentHashMap<String, SseEmitter>> registry =
-            new ConcurrentHashMap<>();
+        new ConcurrentHashMap<>();
 
     private final ConcurrentHashMap<String, ConcurrentLinkedDeque<SseEvent>> pendingEvents =
-            new ConcurrentHashMap<>();
+        new ConcurrentHashMap<>();
 
     @Override
     public SseEmitter subscribe(String keycloakUserId, String clientId) {
         SseEmitter emitter = new SseEmitter(0L);
         ConcurrentHashMap<String, SseEmitter> userEmitters =
-                registry.computeIfAbsent(keycloakUserId, k -> new ConcurrentHashMap<>());
+            registry.computeIfAbsent(keycloakUserId, k -> new ConcurrentHashMap<>());
 
         SseEmitter previous = userEmitters.put(clientId, emitter);
         if (previous != null) {
@@ -59,7 +61,7 @@ public class SseService implements SseApi {
         emitter.onError(ex -> remove.run());
 
         log.debug("SseService > Registered emitter for user {} client {}; active connections: {}",
-                keycloakUserId, clientId, userEmitters.size());
+            keycloakUserId, clientId, userEmitters.size());
 
         // Send an initial event immediately so the first bytes travel through the network
         // path (including the Cloudflare tunnel) and the client onopen fires promptly.
@@ -93,15 +95,19 @@ public class SseService implements SseApi {
         for (Map.Entry<String, SseEmitter> entry : userEmitters.entrySet()) {
             try {
                 entry.getValue().send(SseEmitter.event()
-                        .name("entitlement-update")
-                        .data(envelope, MediaType.APPLICATION_JSON));
+                    .name("entitlement-update")
+                    .data(envelope, MediaType.APPLICATION_JSON));
+                log.debug(payload != null
+                        ? "SseService > Pushed entitlement update to user {} client {}: {}"
+                        : "SseService > Pushed entitlement update to user {} client {} (no payload)",
+                    keycloakUserId, entry.getKey(), payload);
                 sent++;
             } catch (IOException | IllegalStateException e) {
                 // Dead client (broken pipe surfaces as IllegalStateException from
                 // ResponseBodyEmitter). Evict; must never break the publishing caller
                 // (e.g. the RevenueCat webhook).
                 log.debug("SseService > Evicting dead emitter for user {} client {}: {}",
-                        keycloakUserId, entry.getKey(), e.getMessage());
+                    keycloakUserId, entry.getKey(), e.getMessage());
                 userEmitters.remove(entry.getKey(), entry.getValue());
             }
         }
@@ -112,7 +118,7 @@ public class SseService implements SseApi {
         }
 
         log.info("SseService > Pushed entitlement update to {} connection(s) for user {}",
-                sent, keycloakUserId);
+            sent, keycloakUserId);
     }
 
     private void removeEmitter(String keycloakUserId, String clientId, SseEmitter emitter) {
@@ -121,19 +127,19 @@ public class SseService implements SseApi {
         // so completing a replaced (stale) emitter cannot evict its replacement.
         if (userEmitters != null && userEmitters.remove(clientId, emitter)) {
             log.debug("SseService > Removed emitter for user {} client {}; remaining: {}",
-                    keycloakUserId, clientId, userEmitters.size());
+                keycloakUserId, clientId, userEmitters.size());
         }
     }
 
     private void enqueuePendingEvent(String keycloakUserId, SseEvent event) {
         ConcurrentLinkedDeque<SseEvent> queue =
-                pendingEvents.computeIfAbsent(keycloakUserId, k -> new ConcurrentLinkedDeque<>());
+            pendingEvents.computeIfAbsent(keycloakUserId, k -> new ConcurrentLinkedDeque<>());
         queue.offerLast(event);
         while (queue.size() > MAX_PENDING_EVENTS_PER_USER) {
             queue.pollFirst(); // drop oldest
         }
         log.info("SseService > No deliverable SSE connection for user {}; event queued (pending: {})",
-                keycloakUserId, queue.size());
+            keycloakUserId, queue.size());
     }
 
     private void flushPendingEvents(String keycloakUserId, String clientId, SseEmitter emitter) {
@@ -147,13 +153,13 @@ public class SseService implements SseApi {
         while ((event = queue.pollFirst()) != null) {
             try {
                 emitter.send(SseEmitter.event()
-                        .name("entitlement-update")
-                        .data(event, MediaType.APPLICATION_JSON));
+                    .name("entitlement-update")
+                    .data(event, MediaType.APPLICATION_JSON));
                 flushed++;
             } catch (IOException | IllegalStateException e) {
                 queue.offerFirst(event); // keep order; retry on the next reconnect
                 log.debug("SseService > Flush interrupted for user {} client {}: {}",
-                        keycloakUserId, clientId, e.getMessage());
+                    keycloakUserId, clientId, e.getMessage());
                 removeEmitter(keycloakUserId, clientId, emitter);
                 break;
             }
@@ -161,7 +167,7 @@ public class SseService implements SseApi {
 
         if (flushed > 0) {
             log.info("SseService > Flushed {} pending event(s) to user {} client {}; remaining: {}",
-                    flushed, keycloakUserId, clientId, queue.size());
+                flushed, keycloakUserId, clientId, queue.size());
         }
     }
 
