@@ -9,6 +9,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.async.AsyncRequestTimeoutException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
@@ -71,6 +72,11 @@ public class GlobalExceptionHandler {
                                                                       HttpServletRequest request) {
         log.warn("Illegal argument on [{} {}]: {}", request.getMethod(), request.getRequestURI(), ex.getMessage());
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(AsyncRequestTimeoutException.class)
+    public void handleAsyncTimeout(AsyncRequestTimeoutException ex, HttpServletRequest request) {
+        log.debug("SSE stream timed out [{} {}]", request.getMethod(), request.getRequestURI());
     }
 
     @ExceptionHandler(Exception.class)
