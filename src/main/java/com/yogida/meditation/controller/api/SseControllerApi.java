@@ -26,7 +26,7 @@ public interface SseControllerApi {
             @ApiResponse(responseCode = "401", description = "Missing or invalid JWT")
     })
     @GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    SseEmitter stream();
+    ResponseEntity<SseEmitter> stream();
 
     @Operation(
             summary = "Send a test SSE message",

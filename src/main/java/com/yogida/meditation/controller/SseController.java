@@ -6,6 +6,7 @@ import com.yogida.meditation.service.CurrentUserService;
 import com.yogida.meditation.service.api.SseApi;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -19,10 +20,15 @@ public class SseController implements SseControllerApi {
     private final SseApi sseApi;
 
     @Override
-    public SseEmitter stream() {
+    public ResponseEntity<SseEmitter> stream() {
         String keycloakUserId = currentUserService.getCurrentUserOrThrow().getKeycloakUserId();
         log.info("SseController > SSE stream opened for user {}", keycloakUserId);
-        return sseApi.subscribe(keycloakUserId);
+        return ResponseEntity.ok()
+                // Disables response buffering in nginx (X-Accel convention); without it
+                // nginx holds SSE bytes in its proxy buffer and clients never see events.
+                .header("X-Accel-Buffering", "no")
+                .cacheControl(CacheControl.noCache())
+                .body(sseApi.subscribe(keycloakUserId));
     }
 
     @Override
