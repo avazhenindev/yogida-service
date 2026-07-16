@@ -36,7 +36,6 @@ public class RevenueCatWebhookController implements RevenueCatWebhookControllerA
      */
     private boolean isAuthorized(String authorization) {
         String expected = revenueCatProperties.webhookAuthToken();
-        log.error("RevenueCatWebhookController > Auth headers > Expected: {}, Provided: {}", expected, authorization);
         if (expected == null || expected.isBlank() || authorization == null) {
             return false;
         }
