@@ -1,6 +1,7 @@
 package com.yogida.meditation.controller.api;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -8,6 +9,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -26,7 +28,10 @@ public interface SseControllerApi {
             @ApiResponse(responseCode = "401", description = "Missing or invalid JWT")
     })
     @GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    ResponseEntity<SseEmitter> stream();
+    ResponseEntity<SseEmitter> stream(
+            @Parameter(description = "Stable per-app-instance connection id; reconnects with the "
+                    + "same id replace the previous emitter instead of accumulating stale ones")
+            @RequestHeader(value = "X-Sse-Client-Id", required = false) String clientId);
 
     @Operation(
             summary = "Send a test SSE message",

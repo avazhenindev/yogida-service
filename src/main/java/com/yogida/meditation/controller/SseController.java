@@ -11,6 +11,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.util.UUID;
+
 @Log4j2
 @RestController
 @RequiredArgsConstructor
@@ -20,15 +22,19 @@ public class SseController implements SseControllerApi {
     private final SseApi sseApi;
 
     @Override
-    public ResponseEntity<SseEmitter> stream() {
+    public ResponseEntity<SseEmitter> stream(String clientId) {
         String keycloakUserId = currentUserService.getCurrentUserOrThrow().getKeycloakUserId();
-        log.info("SseController > SSE stream opened for user {}", keycloakUserId);
+        // Clients that do not send the header get a random id (legacy accumulate behaviour).
+        String effectiveClientId = clientId != null && !clientId.isBlank()
+                ? clientId
+                : UUID.randomUUID().toString();
+        log.info("SseController > SSE stream opened for user {} client {}", keycloakUserId, effectiveClientId);
         return ResponseEntity.ok()
                 // Disables response buffering in nginx (X-Accel convention); without it
                 // nginx holds SSE bytes in its proxy buffer and clients never see events.
                 .header("X-Accel-Buffering", "no")
                 .cacheControl(CacheControl.noCache())
-                .body(sseApi.subscribe(keycloakUserId));
+                .body(sseApi.subscribe(keycloakUserId, effectiveClientId));
     }
 
     @Override

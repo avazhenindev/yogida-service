@@ -10,43 +10,46 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Manages per-user SSE emitter registrations and publishes entitlement update events.
  *
- * <p>The emitter registry uses a {@link ConcurrentHashMap} keyed by {@code keycloakUserId}
- * with {@link CopyOnWriteArrayList} values so that multiple concurrent tabs or devices per
- * user are supported. Emitters are removed automatically on completion, timeout, or error.
+ * <p>The emitter registry is keyed by {@code keycloakUserId}, with a nested map keyed by
+ * {@code clientId} (a stable per-app-instance identifier sent by the client). A reconnect
+ * from the same client replaces its previous emitter instead of accumulating stale ones;
+ * distinct clients (multiple devices) coexist. Emitters are removed automatically on
+ * completion, timeout, or error.
  */
 @Log4j2
 @Service
 public class SseService implements SseApi {
 
-    private final ConcurrentHashMap<String, CopyOnWriteArrayList<SseEmitter>> registry =
+    private final ConcurrentHashMap<String, ConcurrentHashMap<String, SseEmitter>> registry =
             new ConcurrentHashMap<>();
 
     @Override
-    public SseEmitter subscribe(String keycloakUserId) {
+    public SseEmitter subscribe(String keycloakUserId, String clientId) {
         SseEmitter emitter = new SseEmitter(0L);
-        registry.computeIfAbsent(keycloakUserId, k -> new CopyOnWriteArrayList<>()).add(emitter);
+        ConcurrentHashMap<String, SseEmitter> userEmitters =
+                registry.computeIfAbsent(keycloakUserId, k -> new ConcurrentHashMap<>());
 
-        Runnable remove = () -> removeEmitter(keycloakUserId, emitter);
+        SseEmitter previous = userEmitters.put(clientId, emitter);
+        if (previous != null) {
+            // Same client reconnected (e.g. app foregrounded) before Tomcat noticed the
+            // dead connection — complete the stale emitter instead of keeping both.
+            log.debug("SseService > Replacing stale emitter for user {} client {}", keycloakUserId, clientId);
+            previous.complete();
+        }
+
+        Runnable remove = () -> removeEmitter(keycloakUserId, clientId, emitter);
         emitter.onCompletion(remove);
         emitter.onTimeout(remove);
         emitter.onError(ex -> remove.run());
 
-        log.debug("SseService > Registered emitter for user {}; active connections: {}",
-                keycloakUserId,
-                registry.getOrDefault(keycloakUserId, new CopyOnWriteArrayList<>()).size());
-        if (registry.getOrDefault(keycloakUserId, new CopyOnWriteArrayList<>()).size() > 1) {
-            log.warn("SseService > Multiple emitters registered for user {} — stale connection likely present",
-                    keycloakUserId);
-        }
+        log.debug("SseService > Registered emitter for user {} client {}; active connections: {}",
+                keycloakUserId, clientId, userEmitters.size());
 
         // Send an initial event immediately so the first bytes travel through the network
         // path (including the Cloudflare tunnel) and the client onopen fires promptly.
@@ -56,7 +59,7 @@ public class SseService implements SseApi {
             emitter.send(SseEmitter.event().name("connected").data(""));
         } catch (IOException e) {
             log.warn("SseService > Failed to send initial connected event for user {}: {}", keycloakUserId, e.getMessage());
-            removeEmitter(keycloakUserId, emitter);
+            removeEmitter(keycloakUserId, clientId, emitter);
         }
 
         return emitter;
@@ -64,38 +67,37 @@ public class SseService implements SseApi {
 
     @Override
     public void publishToUser(String keycloakUserId, SseMessageType type, Object payload) {
-        CopyOnWriteArrayList<SseEmitter> emitters = registry.get(keycloakUserId);
-        if (emitters == null || emitters.isEmpty()) {
+        ConcurrentHashMap<String, SseEmitter> userEmitters = registry.get(keycloakUserId);
+        if (userEmitters == null || userEmitters.isEmpty()) {
             log.debug("SseService > No active SSE connections for user {}", keycloakUserId);
             return;
         }
 
         SseEvent envelope = new SseEvent(type, payload);
-        List<SseEmitter> dead = new ArrayList<>();
-        for (SseEmitter emitter : emitters) {
+        int sent = 0;
+        for (Map.Entry<String, SseEmitter> entry : userEmitters.entrySet()) {
             try {
-                emitter.send(SseEmitter.event()
+                entry.getValue().send(SseEmitter.event()
                         .name("entitlement-update")
                         .data(envelope, MediaType.APPLICATION_JSON));
+                sent++;
             } catch (IOException e) {
                 log.warn("SseService > Failed to send SSE event to user {}: {}", keycloakUserId, e.getMessage());
-                dead.add(emitter);
+                userEmitters.remove(entry.getKey(), entry.getValue());
             }
         }
 
-        if (!dead.isEmpty()) {
-            emitters.removeAll(dead);
-        }
-
         log.info("SseService > Pushed entitlement update to {} connection(s) for user {}",
-                emitters.size(), keycloakUserId);
+                sent, keycloakUserId);
     }
 
-    private void removeEmitter(String keycloakUserId, SseEmitter emitter) {
-        CopyOnWriteArrayList<SseEmitter> emitters = registry.get(keycloakUserId);
-        if (emitters != null) {
-            emitters.remove(emitter);
-            log.debug("SseService > Removed emitter for user {}; remaining: {}", keycloakUserId, emitters.size());
+    private void removeEmitter(String keycloakUserId, String clientId, SseEmitter emitter) {
+        ConcurrentHashMap<String, SseEmitter> userEmitters = registry.get(keycloakUserId);
+        // Two-arg remove: only removes when this emitter is still the registered one,
+        // so completing a replaced (stale) emitter cannot evict its replacement.
+        if (userEmitters != null && userEmitters.remove(clientId, emitter)) {
+            log.debug("SseService > Removed emitter for user {} client {}; remaining: {}",
+                    keycloakUserId, clientId, userEmitters.size());
         }
     }
 
@@ -107,19 +109,15 @@ public class SseService implements SseApi {
     @Scheduled(fixedDelay = 25_000)
     public void sendKeepAlives() {
         int total = 0;
-        for (Map.Entry<String, CopyOnWriteArrayList<SseEmitter>> entry : registry.entrySet()) {
-            CopyOnWriteArrayList<SseEmitter> emitters = entry.getValue();
-            List<SseEmitter> dead = new ArrayList<>();
-            for (SseEmitter emitter : emitters) {
+        for (Map.Entry<String, ConcurrentHashMap<String, SseEmitter>> userEntry : registry.entrySet()) {
+            ConcurrentHashMap<String, SseEmitter> userEmitters = userEntry.getValue();
+            for (Map.Entry<String, SseEmitter> entry : userEmitters.entrySet()) {
                 try {
-                    emitter.send(SseEmitter.event().comment("keepalive"));
+                    entry.getValue().send(SseEmitter.event().comment("keepalive"));
                     total++;
                 } catch (IOException e) {
-                    dead.add(emitter);
+                    userEmitters.remove(entry.getKey(), entry.getValue());
                 }
-            }
-            if (!dead.isEmpty()) {
-                emitters.removeAll(dead);
             }
         }
         if (total > 0) {
