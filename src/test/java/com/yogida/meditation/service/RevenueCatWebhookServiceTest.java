@@ -3,6 +3,7 @@ package com.yogida.meditation.service;
 import com.yogida.meditation.dto.RevenueCatSubscriberResponse;
 import com.yogida.meditation.dto.RevenueCatWebhookRequest;
 import com.yogida.meditation.entity.AppUserEntity;
+import com.yogida.meditation.enums.SseMessageType;
 import com.yogida.meditation.repository.AppUserRepository;
 import com.yogida.meditation.service.api.SseApi;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,7 +47,7 @@ class RevenueCatWebhookServiceTest {
         service.processEvent(request("INITIAL_PURCHASE"));
 
         verify(entitlementService).evictUserEntitlement(KEYCLOAK_ID);
-        verify(sseApi).publishToUser(KEYCLOAK_ID, customerInfo);
+        verify(sseApi).publishToUser(KEYCLOAK_ID, SseMessageType.RC, customerInfo);
     }
 
     @Test
@@ -59,7 +60,7 @@ class RevenueCatWebhookServiceTest {
         service.processEvent(request("RENEWAL"));
 
         verify(entitlementService).evictUserEntitlement(KEYCLOAK_ID);
-        verify(sseApi).publishToUser(KEYCLOAK_ID, customerInfo);
+        verify(sseApi).publishToUser(KEYCLOAK_ID, SseMessageType.RC, customerInfo);
     }
 
     @Test
@@ -72,7 +73,7 @@ class RevenueCatWebhookServiceTest {
         service.processEvent(request("EXPIRATION"));
 
         verify(entitlementService).evictUserEntitlement(KEYCLOAK_ID);
-        verify(sseApi).publishToUser(KEYCLOAK_ID, customerInfo);
+        verify(sseApi).publishToUser(KEYCLOAK_ID, SseMessageType.RC, customerInfo);
     }
 
     @Test

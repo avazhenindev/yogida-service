@@ -1,10 +1,12 @@
 package com.yogida.meditation.controller;
 
 import com.yogida.meditation.controller.api.SseControllerApi;
+import com.yogida.meditation.enums.SseMessageType;
 import com.yogida.meditation.service.CurrentUserService;
 import com.yogida.meditation.service.api.SseApi;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -21,5 +23,13 @@ public class SseController implements SseControllerApi {
         String keycloakUserId = currentUserService.getCurrentUserOrThrow().getKeycloakUserId();
         log.info("SseController > SSE stream opened for user {}", keycloakUserId);
         return sseApi.subscribe(keycloakUserId);
+    }
+
+    @Override
+    public ResponseEntity<Void> sendTestMessage() {
+        String keycloakUserId = currentUserService.getCurrentUserOrThrow().getKeycloakUserId();
+        log.info("SseController > Sending TEST message to user {}", keycloakUserId);
+        sseApi.publishToUser(keycloakUserId, SseMessageType.TEST, null);
+        return ResponseEntity.noContent().build();
     }
 }

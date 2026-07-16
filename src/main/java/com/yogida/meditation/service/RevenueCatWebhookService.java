@@ -3,6 +3,7 @@ package com.yogida.meditation.service;
 import com.yogida.meditation.dto.RevenueCatWebhookRequest;
 import com.yogida.meditation.entity.AppUserEntity;
 import com.yogida.meditation.enums.RevenueCatEventType;
+import com.yogida.meditation.enums.SseMessageType;
 import com.yogida.meditation.repository.AppUserRepository;
 import com.yogida.meditation.service.api.RevenueCatWebhookApi;
 import com.yogida.meditation.service.api.SseApi;
@@ -58,7 +59,7 @@ public class RevenueCatWebhookService implements RevenueCatWebhookApi {
     private void publishEntitlementUpdate(String keycloakUserId) {
         subscriberClient.getSubscriber(keycloakUserId).ifPresentOrElse(
                 customerInfo -> {
-                    sseApi.publishToUser(keycloakUserId, customerInfo);
+                    sseApi.publishToUser(keycloakUserId, SseMessageType.RC, customerInfo);
                     log.debug("RevenueCatWebhookService > SSE entitlement update pushed for user {}", keycloakUserId);
                 },
                 () -> log.warn("RevenueCatWebhookService > Could not fetch customerInfo for SSE push, user {}", keycloakUserId)

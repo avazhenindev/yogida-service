@@ -1,5 +1,6 @@
 package com.yogida.meditation.service.api;
 
+import com.yogida.meditation.enums.SseMessageType;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
@@ -17,11 +18,12 @@ public interface SseApi {
     SseEmitter subscribe(String keycloakUserId);
 
     /**
-     * Pushes {@code payload} as an SSE event to all active connections of the given user.
-     * Dead emitters are silently removed. If the user has no active connections, this is a no-op.
+     * Pushes a typed {@link com.yogida.meditation.dto.SseEvent} envelope to all active connections
+     * of the given user. Dead emitters are silently removed. No-op when no connections exist.
      *
      * @param keycloakUserId the user to notify
-     * @param payload        the object to serialize as JSON event data
+     * @param type           discriminates the origin/intent of the event
+     * @param payload        the object to serialize as JSON event data; may be {@code null}
      */
-    void publishToUser(String keycloakUserId, Object payload);
+    void publishToUser(String keycloakUserId, SseMessageType type, Object payload);
 }

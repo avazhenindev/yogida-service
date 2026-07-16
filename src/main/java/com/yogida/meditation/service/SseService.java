@@ -1,5 +1,7 @@
 package com.yogida.meditation.service;
 
+import com.yogida.meditation.dto.SseEvent;
+import com.yogida.meditation.enums.SseMessageType;
 import com.yogida.meditation.service.api.SseApi;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.MediaType;
@@ -23,14 +25,12 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @Service
 public class SseService implements SseApi {
 
-    private static final long SSE_TIMEOUT_MS = 300_000L; // 5 minutes
-
     private final ConcurrentHashMap<String, CopyOnWriteArrayList<SseEmitter>> registry =
             new ConcurrentHashMap<>();
 
     @Override
     public SseEmitter subscribe(String keycloakUserId) {
-        SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MS);
+        SseEmitter emitter = new SseEmitter(0L);
         registry.computeIfAbsent(keycloakUserId, k -> new CopyOnWriteArrayList<>()).add(emitter);
 
         Runnable remove = () -> removeEmitter(keycloakUserId, emitter);
@@ -45,19 +45,20 @@ public class SseService implements SseApi {
     }
 
     @Override
-    public void publishToUser(String keycloakUserId, Object payload) {
+    public void publishToUser(String keycloakUserId, SseMessageType type, Object payload) {
         CopyOnWriteArrayList<SseEmitter> emitters = registry.get(keycloakUserId);
         if (emitters == null || emitters.isEmpty()) {
             log.debug("SseService > No active SSE connections for user {}", keycloakUserId);
             return;
         }
 
+        SseEvent envelope = new SseEvent(type, payload);
         List<SseEmitter> dead = new ArrayList<>();
         for (SseEmitter emitter : emitters) {
             try {
                 emitter.send(SseEmitter.event()
                         .name("entitlement-update")
-                        .data(payload, MediaType.APPLICATION_JSON));
+                        .data(envelope, MediaType.APPLICATION_JSON));
             } catch (IOException e) {
                 log.warn("SseService > Failed to send SSE event to user {}: {}", keycloakUserId, e.getMessage());
                 dead.add(emitter);
