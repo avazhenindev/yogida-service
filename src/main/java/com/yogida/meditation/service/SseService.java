@@ -1,7 +1,7 @@
 package com.yogida.meditation.service;
 
+import com.yogida.meditation.dto.RevenueCatWebhookRequest;
 import com.yogida.meditation.dto.SseEvent;
-import com.yogida.meditation.enums.SseMessageType;
 import com.yogida.meditation.service.api.SseApi;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.MediaType;
@@ -38,7 +38,7 @@ public class SseService implements SseApi {
     private final ConcurrentHashMap<String, ConcurrentHashMap<String, SseEmitter>> registry =
         new ConcurrentHashMap<>();
 
-    private final ConcurrentHashMap<String, ConcurrentLinkedDeque<SseEvent>> pendingEvents =
+    private final ConcurrentHashMap<String, ConcurrentLinkedDeque<String>> pendingEvents =
         new ConcurrentHashMap<>();
 
     @Override
@@ -82,13 +82,13 @@ public class SseService implements SseApi {
     }
 
     @Override
-    public void publishToUser(String keycloakUserId, SseMessageType type, Object payload) {
-        log.debug("SseService > Publishing {} event to user {}: {}", type, keycloakUserId, payload);
-        SseEvent envelope = new SseEvent(type, payload);
-
+    public void publishToUser(RevenueCatWebhookRequest.Event event) {
+        log.debug("SseService > Publishing entitlement update to user {}: {}", event.appUserId(), event);
+        String keycloakUserId = event.appUserId();
+        String payload = event.type();
         ConcurrentHashMap<String, SseEmitter> userEmitters = registry.get(keycloakUserId);
         if (userEmitters == null || userEmitters.isEmpty()) {
-            enqueuePendingEvent(keycloakUserId, envelope);
+            enqueuePendingEvent(keycloakUserId, payload);
             return;
         }
 
@@ -97,11 +97,7 @@ public class SseService implements SseApi {
             try {
                 entry.getValue().send(SseEmitter.event()
                     .name("entitlement-update")
-                    .data(envelope, MediaType.APPLICATION_JSON));
-                log.debug(payload != null
-                        ? "SseService > Pushed entitlement update to user {} client {}: {}"
-                        : "SseService > Pushed entitlement update to user {} client {} (no payload)",
-                    keycloakUserId, entry.getKey(), payload);
+                    .data(payload, MediaType.APPLICATION_JSON));
                 sent++;
             } catch (IOException | IllegalStateException e) {
                 // Dead client (broken pipe surfaces as IllegalStateException from
@@ -114,7 +110,7 @@ public class SseService implements SseApi {
         }
 
         if (sent == 0) {
-            enqueuePendingEvent(keycloakUserId, envelope);
+            enqueuePendingEvent(keycloakUserId, payload);
             return;
         }
 
@@ -132,8 +128,8 @@ public class SseService implements SseApi {
         }
     }
 
-    private void enqueuePendingEvent(String keycloakUserId, SseEvent event) {
-        ConcurrentLinkedDeque<SseEvent> queue =
+    private void enqueuePendingEvent(String keycloakUserId, String event) {
+        ConcurrentLinkedDeque<String> queue =
             pendingEvents.computeIfAbsent(keycloakUserId, k -> new ConcurrentLinkedDeque<>());
         queue.offerLast(event);
         while (queue.size() > MAX_PENDING_EVENTS_PER_USER) {
@@ -144,16 +140,16 @@ public class SseService implements SseApi {
     }
 
     private void flushPendingEvents(String keycloakUserId, String clientId, SseEmitter emitter) {
-        ConcurrentLinkedDeque<SseEvent> queue = pendingEvents.get(keycloakUserId);
+        ConcurrentLinkedDeque<String> queue = pendingEvents.get(keycloakUserId);
         if (queue == null || queue.isEmpty()) {
             return;
         }
 
         int flushed = 0;
-        SseEvent event;
+        String event;
         while ((event = queue.pollFirst()) != null) {
             log.debug("SseService > Flushing pending event to user {} client {}: {}",
-                keycloakUserId, clientId, event.data());
+                keycloakUserId, clientId, event);
             try {
                 emitter.send(SseEmitter.event()
                     .name("entitlement-update")
