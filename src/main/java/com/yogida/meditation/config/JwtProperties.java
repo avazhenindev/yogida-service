@@ -8,6 +8,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "app.security.jwt")
 public record JwtProperties(
     String issuer,
+    String adminIssuer,
     String audience
 ) {
     /**
@@ -16,6 +17,9 @@ public record JwtProperties(
     public JwtProperties {
         if (issuer == null || issuer.isBlank()) {
             issuer = "https://auth.yogida.example";
+        }
+        if (adminIssuer == null || adminIssuer.isBlank()) {
+            adminIssuer = "https://yogida.org/zxcasdqwe/realms/yogida-admin";
         }
         if (audience == null || audience.isBlank()) {
             audience = "yogida";
