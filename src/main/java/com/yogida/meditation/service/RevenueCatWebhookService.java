@@ -41,14 +41,14 @@ public class RevenueCatWebhookService implements RevenueCatWebhookApi {
             return;
         }
         resolveKeycloakUserId(event).ifPresentOrElse(
-                userId -> {
-                    entitlementService.evictUserEntitlement(userId);
-                    log.info("RevenueCatWebhookService > Cache evicted for user {} on event {}",
-                            userId, event.type());
-                    publishEntitlementUpdate(userId);
-                },
-                () -> log.warn("RevenueCatWebhookService > No user found for RC app_user_id: {}",
-                        event.appUserId())
+            userId -> {
+                entitlementService.evictUserEntitlement(userId);
+                log.info("RevenueCatWebhookService > Cache evicted for user {} on event {}",
+                    userId, event.type());
+                publishEntitlementUpdate(userId);
+            },
+            () -> log.warn("RevenueCatWebhookService > No user found for RC app_user_id: {}",
+                event.appUserId())
         );
     }
 
@@ -57,22 +57,20 @@ public class RevenueCatWebhookService implements RevenueCatWebhookApi {
      * If the RC API call fails (returns empty), the SSE push is skipped gracefully.
      */
     private void publishEntitlementUpdate(String keycloakUserId) {
+        log.debug("RevenueCatWebhookService > Publishing entitlement update to SSE for user {}", keycloakUserId);
         subscriberClient.getSubscriber(keycloakUserId).ifPresentOrElse(
-                customerInfo -> {
-                    sseApi.publishToUser(keycloakUserId, SseMessageType.RC, customerInfo);
-                    log.debug("RevenueCatWebhookService > SSE entitlement update pushed for user {}", keycloakUserId);
-                },
-                () -> log.warn("RevenueCatWebhookService > Could not fetch customerInfo for SSE push, user {}", keycloakUserId)
+            customerInfo -> sseApi.publishToUser(keycloakUserId, SseMessageType.RC, customerInfo),
+            () -> log.warn("RevenueCatWebhookService > Could not fetch customerInfo for SSE push, user {}", keycloakUserId)
         );
     }
 
     private Optional<String> resolveKeycloakUserId(RevenueCatWebhookRequest.Event event) {
         return Optional.ofNullable(event.appUserId())
+            .flatMap(appUserRepository::findByKeycloakUserId)
+            .map(AppUserEntity::getKeycloakUserId)
+            .or(() -> Optional.ofNullable(event.originalAppUserId())
                 .flatMap(appUserRepository::findByKeycloakUserId)
-                .map(AppUserEntity::getKeycloakUserId)
-                .or(() -> Optional.ofNullable(event.originalAppUserId())
-                        .flatMap(appUserRepository::findByKeycloakUserId)
-                        .map(AppUserEntity::getKeycloakUserId));
+                .map(AppUserEntity::getKeycloakUserId));
     }
 }
 
