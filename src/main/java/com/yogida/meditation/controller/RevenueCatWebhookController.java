@@ -23,6 +23,7 @@ public class RevenueCatWebhookController implements RevenueCatWebhookControllerA
 
     @Override
     public ResponseEntity<Void> handleWebhook(String authorization, RevenueCatWebhookRequest request) {
+        log.info("RevenueCatWebhookController > Received webhook event: {}", request);
         if (!isAuthorized(authorization)) {
             log.warn("RevenueCatWebhookController > Rejected webhook with invalid authorization");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();

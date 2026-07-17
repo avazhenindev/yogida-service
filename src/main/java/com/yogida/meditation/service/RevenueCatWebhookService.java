@@ -31,6 +31,7 @@ public class RevenueCatWebhookService implements RevenueCatWebhookApi {
 
     @Override
     public void processEvent(RevenueCatWebhookRequest request) {
+        log.info("RevenueCatWebhookService > Received webhook event: {}", request);
         RevenueCatWebhookRequest.Event event = request == null ? null : request.event();
         if (event == null || event.type() == null) {
             log.warn("RevenueCatWebhookService > Skipping webhook without event type");
@@ -43,8 +44,6 @@ public class RevenueCatWebhookService implements RevenueCatWebhookApi {
         resolveKeycloakUserId(event).ifPresentOrElse(
             userId -> {
                 entitlementService.evictUserEntitlement(userId);
-                log.info("RevenueCatWebhookService > Cache evicted for user {} on event {}",
-                    userId, event.type());
                 publishEntitlementUpdate(userId);
             },
             () -> log.warn("RevenueCatWebhookService > No user found for RC app_user_id: {}",
@@ -57,7 +56,7 @@ public class RevenueCatWebhookService implements RevenueCatWebhookApi {
      * If the RC API call fails (returns empty), the SSE push is skipped gracefully.
      */
     private void publishEntitlementUpdate(String keycloakUserId) {
-        log.debug("RevenueCatWebhookService > Publishing entitlement update to SSE for user {}", keycloakUserId);
+        log.info("RevenueCatWebhookService > Publishing entitlement update to SSE for user {}", keycloakUserId);
         subscriberClient.getSubscriber(keycloakUserId).ifPresentOrElse(
             customerInfo -> sseApi.publishToUser(keycloakUserId, SseMessageType.RC, customerInfo),
             () -> log.warn("RevenueCatWebhookService > Could not fetch customerInfo for SSE push, user {}", keycloakUserId)
