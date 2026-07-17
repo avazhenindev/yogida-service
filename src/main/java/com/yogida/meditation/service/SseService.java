@@ -83,6 +83,7 @@ public class SseService implements SseApi {
 
     @Override
     public void publishToUser(String keycloakUserId, SseMessageType type, Object payload) {
+        log.debug("SseService > Publishing {} event to user {}: {}", type, keycloakUserId, payload);
         SseEvent envelope = new SseEvent(type, payload);
 
         ConcurrentHashMap<String, SseEmitter> userEmitters = registry.get(keycloakUserId);
@@ -151,6 +152,8 @@ public class SseService implements SseApi {
         int flushed = 0;
         SseEvent event;
         while ((event = queue.pollFirst()) != null) {
+            log.debug("SseService > Flushing pending event to user {} client {}: {}",
+                keycloakUserId, clientId, event.data());
             try {
                 emitter.send(SseEmitter.event()
                     .name("entitlement-update")
