@@ -9,7 +9,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public record JwtProperties(
     String issuer,
     String adminIssuer,
-    String audience
+    String audience,
+    String adminClientId,
+    String clientId
 ) {
     /**
      * Creates a JwtProperties instance with default values.
@@ -23,6 +25,12 @@ public record JwtProperties(
         }
         if (audience == null || audience.isBlank()) {
             audience = "yogida";
+        }
+        if (adminClientId == null || adminClientId.isBlank()) {
+            adminClientId = "yogida-admin";
+        }
+        if (clientId == null || clientId.isBlank()) {
+            clientId = "yogida";
         }
     }
 }

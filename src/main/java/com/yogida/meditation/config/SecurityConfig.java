@@ -131,20 +131,35 @@ public class SecurityConfig {
     }
 
     /**
-     * Maps Keycloak realm roles (realm_access.roles) to Spring Security ROLE_* authorities,
-     * in addition to the default SCOPE_* authorities.
+     * Maps Keycloak client roles to Spring Security {@code ROLE_*} authorities, in addition to
+     * the default {@code SCOPE_*} authorities.
+     * <p>
+     * Keycloak places client-specific roles under {@code resource_access.<clientId>.roles}.
+     * Roles are extracted from both the mobile app client ({@code app.security.jwt.client-id})
+     * and the admin client ({@code app.security.jwt.admin-client-id}) and merged into a single
+     * authority collection, so a single converter handles tokens from either realm.
      */
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtGrantedAuthoritiesConverter scopes = new JwtGrantedAuthoritiesConverter();
+        List<String> clientIds = List.of(jwtProperties.clientId(), jwtProperties.adminClientId());
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
         converter.setJwtGrantedAuthoritiesConverter(jwt -> {
             Collection<GrantedAuthority> authorities = new ArrayList<>(scopes.convert(jwt));
-            Map<String, Object> realmAccess = jwt.getClaimAsMap("realm_access");
-            if (realmAccess != null && realmAccess.get("roles") instanceof List<?> roles) {
-                roles.stream()
-                    .map(String::valueOf)
-                    .map(role -> new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()))
+
+            // resource_access is a map of clientId → { "roles": [...] }
+            Map<String, Object> resourceAccess = jwt.getClaimAsMap("resource_access");
+            if (resourceAccess != null) {
+                clientIds.stream()
+                    .filter(id -> resourceAccess.get(id) instanceof Map<?, ?> clientAccess
+                            && clientAccess.get("roles") instanceof List<?>)
+                    .flatMap(id -> {
+                        Map<?, ?> clientAccess = (Map<?, ?>) resourceAccess.get(id);
+                        List<?> roles = (List<?>) clientAccess.get("roles");
+                        return roles.stream()
+                            .map(String::valueOf)
+                            .map(role -> new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()));
+                    })
                     .forEach(authorities::add);
             }
             return authorities;
