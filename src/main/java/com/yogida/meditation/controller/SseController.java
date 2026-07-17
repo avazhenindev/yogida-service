@@ -41,7 +41,7 @@ public class SseController implements SseControllerApi {
     public ResponseEntity<Void> sendTestMessage() {
         String keycloakUserId = currentUserService.getCurrentUserOrThrow().getKeycloakUserId();
         log.info("SseController > Sending TEST message to user {}", keycloakUserId);
-        sseApi.publishToUser(keycloakUserId, SseMessageType.TEST, null);
+        sseApi.publishToUser(keycloakUserId, SseMessageType.TEST.name(), null);
         return ResponseEntity.noContent().build();
     }
 }
