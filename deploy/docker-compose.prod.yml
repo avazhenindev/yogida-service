@@ -1,8 +1,8 @@
 services:
   app:
     build:
-      context: ..
-      dockerfile: deploy/Dockerfile.prod
+      context: .
+      dockerfile: Dockerfile.prod
     image: meditation-service:prod
     container_name: meditation-service
     restart: unless-stopped
