@@ -1,9 +1,6 @@
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile.prod
-    image: meditation-service:prod
+    image: eclipse-temurin:21-jre-alpine
     container_name: meditation-service
     restart: unless-stopped
     working_dir: /app
@@ -17,7 +14,7 @@ services:
     volumes:
       - ./app.jar:/app/app.jar:ro
       - ../logs:/app/logs
-    command: ["java", "-jar", "/app/app.jar"]
+    entrypoint: ["/bin/sh", "-c", "apk add --no-cache ffmpeg && java -jar /app/app.jar"]
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8080/api/actuator/health || exit 1"]
       interval: 30s

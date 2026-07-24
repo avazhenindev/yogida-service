@@ -1,7 +1,0 @@
-FROM eclipse-temurin:21-jre-alpine
-
-# ffmpeg package on Alpine provides both ffmpeg and ffprobe binaries.
-RUN apk add --no-cache ffmpeg
-
-WORKDIR /app
-
