@@ -1,6 +1,9 @@
 services:
   app:
-    image: eclipse-temurin:21-jre-alpine
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.prod
+    image: meditation-service:prod
     container_name: meditation-service
     restart: unless-stopped
     working_dir: /app
@@ -13,6 +16,7 @@ services:
       JAVA_TOOL_OPTIONS: ${JAVA_TOOL_OPTIONS:--XX:MaxRAMPercentage=75.0}
     volumes:
       - ./app.jar:/app/app.jar:ro
+      - ../logs:/app/logs
     command: ["java", "-jar", "/app/app.jar"]
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8080/api/actuator/health || exit 1"]
