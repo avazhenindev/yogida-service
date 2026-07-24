@@ -28,7 +28,9 @@ public class EntitlementService {
     private final RevenueCatSubscriberClient subscriberClient;
     private final RevenueCatProperties properties;
 
-    /** Self-reference via Spring proxy — required so @Cacheable/@CacheEvict AOP applies on internal calls. */
+    /**
+     * Self-reference via Spring proxy — required so @Cacheable/@CacheEvict AOP applies on internal calls.
+     */
     @Lazy
     @Autowired
     private EntitlementService self;
@@ -50,7 +52,11 @@ public class EntitlementService {
      * @return true if the user may access the media
      */
     public boolean isEntitled(AppUserEntity user, MediaEntity media) {
-        if (!isPremium(media)) {
+        boolean premium = isPremium(media);
+        log.debug("EntitlementService > Checking entitlement for user {} and media {} (premium: {})",
+            user.getKeycloakUserId(), media.getId(), premium);
+        if (!premium) {
+            log.debug("EntitlementService > Media {} is not premium, granting access to user {}", media.getId(), user.getKeycloakUserId());
             return true;
         }
         return self.isUserPremium(user.getKeycloakUserId());
@@ -64,14 +70,21 @@ public class EntitlementService {
      * @param keycloakUserId the user's Keycloak subject, used as the RC app user id
      * @return true when the user has a non-expired premium entitlement
      */
-    @Cacheable(value = "entitlement", key = "#keycloakUserId")
+//    @Cacheable(value = "entitlement", key = "#keycloakUserId")
     public boolean isUserPremium(String keycloakUserId) {
-        return subscriberClient.getSubscriber(keycloakUserId)
-                .map(RevenueCatSubscriberResponse::subscriber)
-                .map(RevenueCatSubscriberResponse.Subscriber::entitlements)
-                .map(entitlements -> entitlements.get(properties.entitlementId()))
-                .filter(ent -> ent.expiresDate() == null || ent.expiresDate().isAfter(OffsetDateTime.now()))
-                .isPresent();
+        log.debug("EntitlementService > Checking RevenueCat entitlement for user {}", keycloakUserId);
+        var response = subscriberClient.getSubscriber(keycloakUserId);
+        response.ifPresentOrElse(r -> log.debug("EntitlementService > RevenueCat response: {}", r),
+            () -> {
+                throw new RuntimeException("EntitlementService > RevenueCat response: empty, check logs");
+            });
+
+        return response
+            .map(RevenueCatSubscriberResponse::subscriber)
+            .map(RevenueCatSubscriberResponse.Subscriber::entitlements)
+            .map(entitlements -> entitlements.get(properties.entitlementId()))
+            .filter(ent -> ent.expiresDate() == null || ent.expiresDate().isAfter(OffsetDateTime.now()))
+            .isPresent();
     }
 
     /**
