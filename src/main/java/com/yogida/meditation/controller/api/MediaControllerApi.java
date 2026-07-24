@@ -39,6 +39,10 @@ public interface MediaControllerApi {
             content = @Content(mediaType = "application/json",
                 schema = @Schema(type = "object", example = """
                     {"url": "https://r2.example.com/bucket/media.mp3?X-Amz-Signature=..."}"""))),
+        @ApiResponse(responseCode = "403", description = "User is not entitled to access this media",
+            content = @Content(mediaType = "application/json",
+                schema = @Schema(type = "object", example = """
+                    {"timestamp": "2026-07-24T10:00:00", "status": 403, "error": "Forbidden", "message": "Not entitled to access this media", "path": "/api/media/stream"}"""))),
         @ApiResponse(responseCode = "404", description = "Media not found")
     })
     @PostMapping("/stream")

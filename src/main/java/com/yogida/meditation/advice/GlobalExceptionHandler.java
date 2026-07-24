@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 import org.springframework.web.context.request.async.AsyncRequestTimeoutException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 import software.amazon.awssdk.services.s3.model.S3Exception;
@@ -88,6 +89,22 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AsyncRequestNotUsableException.class)
     public void handleAsyncNotUsable(AsyncRequestNotUsableException ex, HttpServletRequest request) {
         log.debug("SSE client disconnected [{} {}]: {}", request.getMethod(), request.getRequestURI(), ex.getMessage());
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<Map<String, Object>> handleResponseStatus(ResponseStatusException ex,
+                                                                     HttpServletRequest request) {
+        HttpStatus status = HttpStatus.resolve(ex.getStatusCode().value());
+        if (status == null) {
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+        }
+        if (status.is5xxServerError()) {
+            log.error("Response status error on [{} {}]: {}", request.getMethod(), request.getRequestURI(), ex.getMessage(), ex);
+        } else {
+            log.warn("Response status error on [{} {}]: {}", request.getMethod(), request.getRequestURI(), ex.getMessage());
+        }
+        String message = ex.getReason() != null ? ex.getReason() : ex.getMessage();
+        return buildResponse(status, message, request);
     }
 
     @ExceptionHandler(Exception.class)
