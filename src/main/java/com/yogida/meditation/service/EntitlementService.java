@@ -53,8 +53,7 @@ public class EntitlementService {
      */
     public boolean isEntitled(AppUserEntity user, MediaEntity media) {
         boolean premium = isPremium(media);
-        log.debug("EntitlementService > Checking entitlement for user {} and media {} (premium: {})",
-            user.getKeycloakUserId(), media.getId(), premium);
+        log.debug("EntitlementService > Checking entitlement for user {} and media {} (premium: {})", user.getKeycloakUserId(), media.getId(), premium);
         if (!premium) {
             log.debug("EntitlementService > Media {} is not premium, granting access to user {}", media.getId(), user.getKeycloakUserId());
             return true;
@@ -74,17 +73,20 @@ public class EntitlementService {
     public boolean isUserPremium(String keycloakUserId) {
         log.debug("EntitlementService > Checking RevenueCat entitlement for user {}", keycloakUserId);
         var response = subscriberClient.getSubscriber(keycloakUserId);
-        response.ifPresentOrElse(r -> log.debug("EntitlementService > RevenueCat response: {}", r),
-            () -> {
-                throw new RuntimeException("EntitlementService > RevenueCat response: empty, check logs");
-            });
+        response.ifPresentOrElse(r -> log.debug("EntitlementService > RevenueCat response: {}", r), () -> {
+            throw new RuntimeException("EntitlementService > RevenueCat response: empty, check logs");
+        });
 
-        return response
-            .map(RevenueCatSubscriberResponse::subscriber)
-            .map(RevenueCatSubscriberResponse.Subscriber::entitlements)
-            .map(entitlements -> entitlements.get(properties.entitlementId()))
-            .filter(ent -> ent.expiresDate() == null || ent.expiresDate().isAfter(OffsetDateTime.now()))
-            .isPresent();
+        return response.map(RevenueCatSubscriberResponse::subscriber).map(RevenueCatSubscriberResponse.Subscriber::entitlements).map(entitlements -> entitlements.get(properties.entitlementId())).filter(ent -> {
+            OffsetDateTime expiresDate = ent.expiresDate();
+            boolean offsetDateTimeAfter = expiresDate.isAfter(OffsetDateTime.now());
+            if (offsetDateTimeAfter) {
+                log.debug("EntitlementService > User {} has active entitlement {} expiring at {}", keycloakUserId, properties.entitlementId(), expiresDate);
+            } else {
+                log.debug("EntitlementService > User {} has active entitlements {}", keycloakUserId, expiresDate);
+            }
+            return offsetDateTimeAfter;
+        }).isPresent();
     }
 
     /**
