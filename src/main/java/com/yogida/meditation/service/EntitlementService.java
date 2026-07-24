@@ -69,7 +69,7 @@ public class EntitlementService {
      * @param keycloakUserId the user's Keycloak subject, used as the RC app user id
      * @return true when the user has a non-expired premium entitlement
      */
-//    @Cacheable(value = "entitlement", key = "#keycloakUserId")
+    @Cacheable(value = "entitlement", key = "#keycloakUserId")
     public boolean isUserPremium(String keycloakUserId) {
         log.debug("EntitlementService > Checking RevenueCat entitlement for user {}", keycloakUserId);
         var response = subscriberClient.getSubscriber(keycloakUserId);
