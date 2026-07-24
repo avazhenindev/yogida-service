@@ -34,10 +34,10 @@ public class EntitlementService {
     private EntitlementService self;
 
     /**
-     * Returns true when the media item is premium (has at least one associated subscription plan).
+     * Returns true when the media item requires a premium subscription.
      */
     public boolean isPremium(MediaEntity media) {
-        return media.getMediaSubscriptions() != null && !media.getMediaSubscriptions().isEmpty();
+        return media.isRequiresPremiumSubscription();
     }
 
     /**

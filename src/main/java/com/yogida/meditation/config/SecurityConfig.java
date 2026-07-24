@@ -26,12 +26,12 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtIss
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfigurationSource;
 
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -100,11 +100,18 @@ public class SecurityConfig {
     @ConditionalOnMissingBean(AuthenticationManagerResolver.class)
     public AuthenticationManagerResolver<HttpServletRequest> authenticationManagerResolver(
             JwtAuthenticationConverter jwtAuthenticationConverter) {
-        Map<String, AuthenticationManager> managersByIssuer = Stream
-            .of(jwtProperties.issuer(), jwtProperties.adminIssuer())
-            .distinct()
-            .collect(Collectors.toMap(Function.identity(),
-                issuer -> jwtAuthenticationManager(issuer, jwtAuthenticationConverter)));
+        Map<String, String> jwkSetUriByIssuer = Stream
+            .of(
+                new AbstractMap.SimpleEntry<>(jwtProperties.issuer(), jwtProperties.resolvedJwkSetUri()),
+                new AbstractMap.SimpleEntry<>(jwtProperties.adminIssuer(), jwtProperties.resolvedAdminJwkSetUri())
+            )
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (current, ignored) -> current));
+
+        Map<String, AuthenticationManager> managersByIssuer = jwkSetUriByIssuer.entrySet().stream()
+            .collect(Collectors.toMap(
+                Map.Entry::getKey,
+                entry -> jwtAuthenticationManager(entry.getKey(), entry.getValue(), jwtAuthenticationConverter)
+            ));
 
         return new JwtIssuerAuthenticationManagerResolver(issuer -> {
             log.debug("Resolving JWT authentication manager for issuer: {}", issuer);
@@ -116,9 +123,12 @@ public class SecurityConfig {
      * Builds an authentication manager for a single issuer with issuer/timestamp
      * validation plus the shared audience validation and role mapping.
      */
-    private AuthenticationManager jwtAuthenticationManager(String issuer, JwtAuthenticationConverter converter) {
+    private AuthenticationManager jwtAuthenticationManager(
+            String issuer,
+            String jwkSetUri,
+            JwtAuthenticationConverter converter) {
         NimbusJwtDecoder decoder = NimbusJwtDecoder
-            .withIssuerLocation(issuer)
+            .withJwkSetUri(jwkSetUri)
             .build();
         decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(
             JwtValidators.createDefaultWithIssuer(issuer),

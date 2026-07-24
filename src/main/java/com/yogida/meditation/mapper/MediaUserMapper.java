@@ -30,8 +30,6 @@ public class MediaUserMapper {
     private final EntitlementService entitlementService;
     private final FavouriteRepository favouriteRepository;
     private final S3ObjectMapper s3ObjectMapper;
-    private final MediaSubscriptionMapper mediaSubscriptionMapper;
-    private final MediaLogMapper mediaLogMapper;
     private final MediaCategoryMapper mediaCategoryMapper;
 
     /**
@@ -47,6 +45,9 @@ public class MediaUserMapper {
     public MediaDto toDtoForUser(MediaEntity entity, AppUserEntity user) {
         // First map using the standard mapper (without isPremium from entity)
         MediaDto dto = mediaMapper.toDto(entity);
+
+        // Suppress admin-only field from user-facing responses
+        dto.setRequiresPremiumSubscription(null);
 
         // Determine entitlement
         boolean isPremium = entitlementService.isPremium(entity);

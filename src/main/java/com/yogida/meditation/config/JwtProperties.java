@@ -11,7 +11,9 @@ public record JwtProperties(
     String adminIssuer,
     String audience,
     String adminClientId,
-    String clientId
+    String clientId,
+    String jwkSetUri,
+    String adminJwkSetUri
 ) {
     /**
      * Creates a JwtProperties instance with default values.
@@ -32,5 +34,23 @@ public record JwtProperties(
         if (clientId == null || clientId.isBlank()) {
             clientId = "yogida";
         }
+    }
+
+    public String resolvedJwkSetUri() {
+        return resolveJwkSetUri(issuer, jwkSetUri);
+    }
+
+    public String resolvedAdminJwkSetUri() {
+        return resolveJwkSetUri(adminIssuer, adminJwkSetUri);
+    }
+
+    private static String resolveJwkSetUri(String issuer, String configuredJwkSetUri) {
+        if (configuredJwkSetUri != null && !configuredJwkSetUri.isBlank()) {
+            return configuredJwkSetUri;
+        }
+        String normalizedIssuer = issuer.endsWith("/")
+            ? issuer.substring(0, issuer.length() - 1)
+            : issuer;
+        return normalizedIssuer + "/protocol/openid-connect/certs";
     }
 }

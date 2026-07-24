@@ -2,9 +2,7 @@ package com.yogida.meditation.scheduler;
 
 import com.yogida.meditation.entity.MediaEntity;
 import com.yogida.meditation.entity.S3ObjectEntity;
-import com.yogida.meditation.enums.MediaLogAction;
 import com.yogida.meditation.enums.MediaStatus;
-import com.yogida.meditation.service.MediaLogService;
 import com.yogida.meditation.service.MediaService;
 import com.yogida.meditation.service.api.R2StorageApi;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +16,7 @@ import java.util.List;
 
 /**
  * Periodically verifies that every MediaEntity's S3 object is reachable.
- * Sets status to ERROR (and logs it) when an object is missing or unreachable.
+ * Sets status to ERROR when an object is missing or unreachable.
  * Recovers status to ACTIVE when the object is found again.
  */
 @Log4j2
@@ -29,7 +27,6 @@ public class Scheduler {
 
     private final R2StorageApi r2StorageApi;
     private final MediaService mediaService;
-    private final MediaLogService mediaLogService;
 
     @Scheduled(fixedDelayString = "${app.scheduler.health-check-delay-ms:300000}")
     public void verifyMediaHealth() {
@@ -48,15 +45,11 @@ public class Scheduler {
                 if (!exists) {
                     if (media.getStatus() != MediaStatus.ERROR) {
                         mediaService.updateStatus(media.getId(), MediaStatus.ERROR);
-                        mediaLogService.log(media, MediaLogAction.ERROR,
-                                "Object not found in S3: " + mediaUrl);
                         log.warn("Scheduler > Object not found — marked ERROR: id={} s3Url={}", media.getId(), mediaUrl);
                     }
                 } else {
                     if (media.getStatus() == MediaStatus.ERROR) {
                         mediaService.updateStatus(media.getId(), MediaStatus.ACTIVE);
-                        mediaLogService.log(media, MediaLogAction.UPDATED,
-                                "Object recovered in S3: " + mediaUrl);
                         log.info("Scheduler > Object recovered — restored ACTIVE: id={}", media.getId());
                     }
                 }
@@ -65,8 +58,6 @@ public class Scheduler {
                 log.error("Scheduler > S3 error checking media id={}: {}", media.getId(), e.getMessage(), e);
                 if (media.getStatus() != MediaStatus.ERROR) {
                     mediaService.updateStatus(media.getId(), MediaStatus.ERROR);
-                    mediaLogService.log(media, MediaLogAction.ERROR,
-                            "S3 error during health check: " + e.getMessage());
                 }
             } catch (IllegalArgumentException e) {
                 log.error("Scheduler > Cannot resolve media object for media id={}: {}", media.getId(), e.getMessage());
@@ -75,6 +66,4 @@ public class Scheduler {
 
         log.info("Scheduler > S3 health check complete");
     }
-
-
 }
