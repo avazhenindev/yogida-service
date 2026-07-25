@@ -44,7 +44,7 @@ public class RevenueCatWebhookService implements RevenueCatWebhookApi {
         resolveKeycloakUserId(event).ifPresentOrElse(
             userId -> {
                 entitlementService.evictUserEntitlement(userId);
-                publishEntitlementUpdate(event);
+                publishEntitlementUpdate(userId, event);
             },
             () -> log.warn("RevenueCatWebhookService > No user found for RC app_user_id: {}",
                 event.appUserId())
@@ -55,9 +55,9 @@ public class RevenueCatWebhookService implements RevenueCatWebhookApi {
      * Fetches fresh customer info from RevenueCat and pushes it to any connected SSE clients.
      * If the RC API call fails (returns empty), the SSE push is skipped gracefully.
      */
-    private void publishEntitlementUpdate(RevenueCatWebhookRequest.Event event) {
-        log.info("RevenueCatWebhookService > Publishing entitlement update to SSE for user {}", keycloakUserId);
-        sseApi.publishToUser(event);
+    private void publishEntitlementUpdate(String userId, RevenueCatWebhookRequest.Event event) {
+        log.info("RevenueCatWebhookService > Publishing entitlement update to SSE for user {}", userId);
+        sseApi.publishToUser(userId, SseMessageType.TEST.name(), event);
     }
 
     private Optional<String> resolveKeycloakUserId(RevenueCatWebhookRequest.Event event) {

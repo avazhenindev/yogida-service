@@ -22,11 +22,11 @@ public class MediaDto {
     private MediaCategoryDto category;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private List<MediaSubscriptionDto> mediaSubscriptions;
-    private List<MediaLogDto> mediaLogs;
     private Integer durationSeconds;
     private Double averageRating;
     private Boolean isPremium;
+    /** Admin-facing flag: whether this media requires a premium subscription. Not set in user-facing responses. */
+    private Boolean requiresPremiumSubscription;
     private List<String> tags;
 
     /**

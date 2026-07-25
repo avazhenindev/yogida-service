@@ -7,13 +7,11 @@ import com.yogida.meditation.dto.ObjectMetadataDto;
 import com.yogida.meditation.dto.S3ObjectDto;
 import com.yogida.meditation.entity.MediaEntity;
 import com.yogida.meditation.entity.S3ObjectEntity;
-import com.yogida.meditation.enums.MediaLogAction;
 import com.yogida.meditation.enums.MediaStatus;
 import com.yogida.meditation.repository.MediaRepository;
 import com.yogida.meditation.service.api.AdminStorageApi;
 import com.yogida.meditation.service.api.MediaApi;
 import com.yogida.meditation.service.api.MediaDurationApi;
-import com.yogida.meditation.service.api.MediaLogApi;
 import com.yogida.meditation.service.api.MediaReviewApi;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,7 +26,6 @@ import java.time.Instant;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -40,9 +37,6 @@ class MediaFacadeServiceTest {
 
     @Mock
     private MediaApi mediaApi;
-
-    @Mock
-    private MediaLogApi mediaLogApi;
 
     @Mock
     private AdminStorageApi adminStorageApi;
@@ -92,7 +86,8 @@ class MediaFacadeServiceTest {
                 MediaStatus.ACTIVE,
                 pictureFile,
                 null,
-                null
+                null,
+                false
         );
 
         when(adminStorageApi.uploadObject(eq("audio"), eq("focus.mp3"), eq(audioFile)))
@@ -102,15 +97,13 @@ class MediaFacadeServiceTest {
         when(s3ObjectService.createMediaObject("audio", "focus.mp3")).thenReturn(mediaObject);
         when(mediaPictureStorageService.uploadPicture(eq(pictureFile))).thenReturn(pictureObject);
         when(mediaApi.create(mediaUpdateRequestCaptor.capture()))
-                .thenReturn(new MediaDto(15L, "Focus", "audio", s3ObjectDto(mediaObject), MediaStatus.ACTIVE, "desc", null, null, null, null, null, null, 180, 0.0, false, null, false, null));
+                .thenReturn(new MediaDto(15L, "Focus", "audio", s3ObjectDto(mediaObject), MediaStatus.ACTIVE, "desc", null, null, null, null, 180, 0.0, false, false, null, false, null));
         when(mediaDurationApi.extractDurationSeconds(audioFile)).thenReturn(180);
-        when(mediaRepository.findById(15L)).thenReturn(Optional.of(mediaEntity(15L, "Focus", mediaObject, null)));
 
         mediaFacadeService.create(request);
 
         assertThat(mediaUpdateRequestCaptor.getValue().mediaObjectId()).isEqualTo(31L);
         assertThat(mediaUpdateRequestCaptor.getValue().pictureObjectId()).isEqualTo(32L);
-        verify(mediaLogApi).log(any(MediaEntity.class), eq(MediaLogAction.ADDED), eq("Media created: Focus"));
     }
 
     @Test
@@ -137,7 +130,8 @@ class MediaFacadeServiceTest {
                 MediaStatus.ACTIVE,
                 pictureFile,
                 null,
-                null
+                null,
+                false
         );
 
         when(adminStorageApi.uploadObject(eq("audio"), eq("focus.mp3"), eq(audioFile)))
@@ -168,7 +162,6 @@ class MediaFacadeServiceTest {
 
         verify(s3ObjectService).deleteObjectAfterCommit(mediaObject);
         verify(s3ObjectService).deleteObjectAfterCommit(pictureObject);
-        verify(mediaLogApi).log(mediaEntity, MediaLogAction.REMOVED, "Media deleted: Sleep");
         verify(mediaApi).delete(21L);
     }
 

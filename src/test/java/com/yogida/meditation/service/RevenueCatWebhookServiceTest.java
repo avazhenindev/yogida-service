@@ -40,40 +40,37 @@ class RevenueCatWebhookServiceTest {
     @Test
     void initialPurchase_evictsCacheAndPushesSSE() {
         AppUserEntity user = user();
-        RevenueCatSubscriberResponse customerInfo = mock(RevenueCatSubscriberResponse.class);
         when(appUserRepository.findByKeycloakUserId(KEYCLOAK_ID)).thenReturn(Optional.of(user));
-        when(subscriberClient.getSubscriber(KEYCLOAK_ID)).thenReturn(Optional.of(customerInfo));
+        RevenueCatWebhookRequest request = request("INITIAL_PURCHASE");
 
-        service.processEvent(request("INITIAL_PURCHASE"));
+        service.processEvent(request);
 
         verify(entitlementService).evictUserEntitlement(KEYCLOAK_ID);
-        verify(sseApi).publishToUser(KEYCLOAK_ID, SseMessageType.RC, customerInfo);
+        verify(sseApi).publishToUser(KEYCLOAK_ID, SseMessageType.TEST.name(), request.event());
     }
 
     @Test
     void renewal_evictsCacheAndPushesSSE() {
         AppUserEntity user = user();
-        RevenueCatSubscriberResponse customerInfo = mock(RevenueCatSubscriberResponse.class);
         when(appUserRepository.findByKeycloakUserId(KEYCLOAK_ID)).thenReturn(Optional.of(user));
-        when(subscriberClient.getSubscriber(KEYCLOAK_ID)).thenReturn(Optional.of(customerInfo));
+        RevenueCatWebhookRequest request = request("RENEWAL");
 
-        service.processEvent(request("RENEWAL"));
+        service.processEvent(request);
 
         verify(entitlementService).evictUserEntitlement(KEYCLOAK_ID);
-        verify(sseApi).publishToUser(KEYCLOAK_ID, SseMessageType.RC, customerInfo);
+        verify(sseApi).publishToUser(KEYCLOAK_ID, SseMessageType.TEST.name(), request.event());
     }
 
     @Test
     void expiration_evictsCacheAndPushesSSE() {
         AppUserEntity user = user();
-        RevenueCatSubscriberResponse customerInfo = mock(RevenueCatSubscriberResponse.class);
         when(appUserRepository.findByKeycloakUserId(KEYCLOAK_ID)).thenReturn(Optional.of(user));
-        when(subscriberClient.getSubscriber(KEYCLOAK_ID)).thenReturn(Optional.of(customerInfo));
+        RevenueCatWebhookRequest request = request("EXPIRATION");
 
-        service.processEvent(request("EXPIRATION"));
+        service.processEvent(request);
 
         verify(entitlementService).evictUserEntitlement(KEYCLOAK_ID);
-        verify(sseApi).publishToUser(KEYCLOAK_ID, SseMessageType.RC, customerInfo);
+        verify(sseApi).publishToUser(KEYCLOAK_ID, SseMessageType.TEST.name(), request.event());
     }
 
     @Test
@@ -107,15 +104,16 @@ class RevenueCatWebhookServiceTest {
     }
 
     @Test
-    void subscriberClientReturnsEmpty_cacheStillEvicted_sseSkipped() {
+    void cacheStillEvicted_andSsePublished_withoutSubscriberClientLookup() {
         AppUserEntity user = user();
         when(appUserRepository.findByKeycloakUserId(KEYCLOAK_ID)).thenReturn(Optional.of(user));
-        when(subscriberClient.getSubscriber(KEYCLOAK_ID)).thenReturn(Optional.empty());
+        RevenueCatWebhookRequest request = request("CANCELLATION");
 
-        service.processEvent(request("CANCELLATION"));
+        service.processEvent(request);
 
         verify(entitlementService).evictUserEntitlement(KEYCLOAK_ID);
-        verifyNoInteractions(sseApi);
+        verify(sseApi).publishToUser(KEYCLOAK_ID, SseMessageType.TEST.name(), request.event());
+        verifyNoInteractions(subscriberClient);
     }
 
     @Test

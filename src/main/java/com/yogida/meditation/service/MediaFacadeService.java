@@ -3,7 +3,6 @@ package com.yogida.meditation.service;
 import com.yogida.meditation.dto.*;
 import com.yogida.meditation.entity.MediaEntity;
 import com.yogida.meditation.entity.S3ObjectEntity;
-import com.yogida.meditation.enums.MediaLogAction;
 import com.yogida.meditation.exception.EntityNotFoundException;
 import com.yogida.meditation.repository.MediaRepository;
 import com.yogida.meditation.service.api.*;
@@ -22,7 +21,6 @@ import java.util.stream.Collectors;
 public class MediaFacadeService implements MediaFacadeApi {
 
     private final MediaApi mediaApi;
-    private final MediaLogApi mediaLogApi;
     private final AdminStorageApi adminStorageApi;
     private final MediaPictureStorageService mediaPictureStorageService;
     private final S3ObjectService s3ObjectService;
@@ -70,11 +68,9 @@ public class MediaFacadeService implements MediaFacadeApi {
         MediaUpdateRequest mediaRequest = new MediaUpdateRequest(
             request.name(), mediaObject.getId(), pictureObject == null ? null : pictureObject.getId(),
             request.description(), request.categoryId(), request.status(),
-            durationSeconds, request.tagIds());
+            durationSeconds, request.tagIds(), request.requiresPremiumSubscription());
 
         MediaDto dto = mediaApi.create(mediaRequest);
-        MediaEntity entity = resolveEntity(dto.getId());
-        mediaLogApi.log(entity, MediaLogAction.ADDED, "Media created: " + entity.getName());
         dto.setAverageRating(0.0);
         return dto;
     }
@@ -115,7 +111,7 @@ public class MediaFacadeService implements MediaFacadeApi {
         MediaUpdateRequest mediaRequest = new MediaUpdateRequest(
             request.name(), newMediaObject.getId(), newPictureObject == null ? null : newPictureObject.getId(),
             request.description(), request.categoryId(), request.status(),
-            durationSeconds, request.tagIds());
+            durationSeconds, request.tagIds(), request.requiresPremiumSubscription());
         MediaDto dto = mediaApi.update(id, mediaRequest);
 
         if (!newMediaObject.getId().equals(oldMediaObject.getId())) {
@@ -126,8 +122,6 @@ public class MediaFacadeService implements MediaFacadeApi {
             s3ObjectService.deleteObjectAfterCommit(oldPictureObject);
         }
 
-        MediaEntity entity = resolveEntity(id);
-        mediaLogApi.log(entity, MediaLogAction.UPDATED, "Media updated: " + entity.getName());
         dto.setAverageRating(mediaReviewApi.findAverageRatingByMediaId(id));
         return dto;
     }
@@ -138,9 +132,7 @@ public class MediaFacadeService implements MediaFacadeApi {
         MediaEntity entity = resolveEntity(id);
         S3ObjectEntity mediaObject = entity.getMediaObject();
         S3ObjectEntity pictureObject = entity.getPictureObject();
-        String name = entity.getName();
 
-        mediaLogApi.log(entity, MediaLogAction.REMOVED, "Media deleted: " + name);
         mediaApi.delete(id);
 
         s3ObjectService.deleteObjectAfterCommit(mediaObject);

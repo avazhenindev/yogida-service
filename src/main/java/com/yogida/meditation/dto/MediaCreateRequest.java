@@ -24,6 +24,7 @@ public record MediaCreateRequest(
         MediaStatus status,
         MultipartFile picture,
         Integer durationSeconds,
-        List<Long> tagIds
+        List<Long> tagIds,
+        boolean requiresPremiumSubscription
 ) {}
 

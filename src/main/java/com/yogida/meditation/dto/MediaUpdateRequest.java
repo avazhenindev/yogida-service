@@ -19,6 +19,7 @@ public record MediaUpdateRequest(
         Long categoryId,
         MediaStatus status,
         @NotNull Integer durationSeconds,
-        List<Long> tagIds
+        List<Long> tagIds,
+        boolean requiresPremiumSubscription
 ) {}
 

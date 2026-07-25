@@ -4,7 +4,6 @@ import com.yogida.meditation.controller.api.AdminMediaControllerApi;
 import com.yogida.meditation.dto.*;
 import com.yogida.meditation.exception.EntityNotFoundException;
 import com.yogida.meditation.service.api.MediaFacadeApi;
-import com.yogida.meditation.service.api.MediaLogApi;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -19,7 +18,6 @@ import java.util.List;
 public class AdminMediaController implements AdminMediaControllerApi {
 
     private final MediaFacadeApi mediaFacadeApi;
-    private final MediaLogApi mediaLogApi;
 
     @Value("${app.media.max-picture-size-bytes:512000}")
     private long maxPictureSizeBytes;
@@ -52,12 +50,6 @@ public class AdminMediaController implements AdminMediaControllerApi {
     public ResponseEntity<Void> delete(Long id) {
         mediaFacadeApi.delete(id);
         return ResponseEntity.noContent().build();
-    }
-
-
-    @Override
-    public ResponseEntity<List<MediaLogDto>> getLogs(Long id) {
-        return ResponseEntity.ok(mediaLogApi.findByMediaId(id));
     }
 
     private void validatePictureSize(MultipartFile picture) {

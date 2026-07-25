@@ -28,16 +28,18 @@ public class EntitlementService {
     private final RevenueCatSubscriberClient subscriberClient;
     private final RevenueCatProperties properties;
 
-    /** Self-reference via Spring proxy — required so @Cacheable/@CacheEvict AOP applies on internal calls. */
+    /**
+     * Self-reference via Spring proxy — required so @Cacheable/@CacheEvict AOP applies on internal calls.
+     */
     @Lazy
     @Autowired
     private EntitlementService self;
 
     /**
-     * Returns true when the media item is premium (has at least one associated subscription plan).
+     * Returns true when the media item requires a premium subscription.
      */
     public boolean isPremium(MediaEntity media) {
-        return media.getMediaSubscriptions() != null && !media.getMediaSubscriptions().isEmpty();
+        return media.isRequiresPremiumSubscription();
     }
 
     /**
@@ -50,7 +52,10 @@ public class EntitlementService {
      * @return true if the user may access the media
      */
     public boolean isEntitled(AppUserEntity user, MediaEntity media) {
-        if (!isPremium(media)) {
+        boolean premium = isPremium(media);
+        log.debug("EntitlementService > Checking entitlement for user {} and media {} (premium: {})", user.getKeycloakUserId(), media.getId(), premium);
+        if (!premium) {
+            log.debug("EntitlementService > Media {} is not premium, granting access to user {}", media.getId(), user.getKeycloakUserId());
             return true;
         }
         return self.isUserPremium(user.getKeycloakUserId());
@@ -66,12 +71,22 @@ public class EntitlementService {
      */
     @Cacheable(value = "entitlement", key = "#keycloakUserId")
     public boolean isUserPremium(String keycloakUserId) {
-        return subscriberClient.getSubscriber(keycloakUserId)
-                .map(RevenueCatSubscriberResponse::subscriber)
-                .map(RevenueCatSubscriberResponse.Subscriber::entitlements)
-                .map(entitlements -> entitlements.get(properties.entitlementId()))
-                .filter(ent -> ent.expiresDate() == null || ent.expiresDate().isAfter(OffsetDateTime.now()))
-                .isPresent();
+        log.debug("EntitlementService > Checking RevenueCat entitlement for user {}", keycloakUserId);
+        var response = subscriberClient.getSubscriber(keycloakUserId);
+        response.ifPresentOrElse(r -> log.debug("EntitlementService > RevenueCat response: {}", r), () -> {
+            throw new RuntimeException("EntitlementService > RevenueCat response: empty, check logs");
+        });
+
+        return response.map(RevenueCatSubscriberResponse::subscriber).map(RevenueCatSubscriberResponse.Subscriber::entitlements).map(entitlements -> entitlements.get(properties.entitlementId())).filter(ent -> {
+            OffsetDateTime expiresDate = ent.expiresDate();
+            boolean offsetDateTimeAfter = expiresDate.isAfter(OffsetDateTime.now());
+            if (offsetDateTimeAfter) {
+                log.debug("EntitlementService > User {} has active entitlement {} expiring at {}", keycloakUserId, properties.entitlementId(), expiresDate);
+            } else {
+                log.debug("EntitlementService > User {} has active entitlements {}", keycloakUserId, expiresDate);
+            }
+            return offsetDateTimeAfter;
+        }).isPresent();
     }
 
     /**

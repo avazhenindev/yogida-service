@@ -7,7 +7,6 @@ import org.hibernate.annotations.BatchSize;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 @Data
@@ -50,11 +49,8 @@ public class MediaEntity {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @OneToMany(mappedBy = "media", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<MediaSubscriptionEntity> mediaSubscriptions;
-
-    @OneToMany(mappedBy = "media", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<MediaLogEntity> mediaLogs;
+    @Column(name = "requires_premium_subscription", nullable = false)
+    private boolean requiresPremiumSubscription = false;
 
     @Column(name = "duration_seconds", nullable = false)
     private Integer durationSeconds;

@@ -60,11 +60,4 @@ public interface AdminMediaControllerApi {
     @DeleteMapping("/{id}")
     ResponseEntity<Void> delete(
             @Parameter(description = "Media ID", required = true) @PathVariable Long id);
-
-
-    @Operation(summary = "Get audit log for a media item")
-    @ApiResponses(@ApiResponse(responseCode = "200", description = "Log entries retrieved"))
-    @GetMapping("/{id}/logs")
-    ResponseEntity<List<MediaLogDto>> getLogs(
-            @Parameter(description = "Media ID", required = true) @PathVariable Long id);
 }

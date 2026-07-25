@@ -76,6 +76,7 @@ public class MediaService implements MediaApi {
         entity.setCategory(resolveCategory(request.categoryId()));
         entity.setStatus(request.status() != null ? request.status() : MediaStatus.ACTIVE);
         entity.setDurationSeconds(request.durationSeconds());
+        entity.setRequiresPremiumSubscription(request.requiresPremiumSubscription());
         entity.setTags(resolveTags(request.tagIds()));
         entity.setCreatedAt(LocalDateTime.now());
         return mediaMapper.toDto(mediaRepository.save(entity));
@@ -96,6 +97,7 @@ public class MediaService implements MediaApi {
             entity.setStatus(request.status());
         }
         entity.setDurationSeconds(request.durationSeconds());
+        entity.setRequiresPremiumSubscription(request.requiresPremiumSubscription());
         if (request.tagIds() != null) {
             entity.setTags(resolveTags(request.tagIds()));
         }

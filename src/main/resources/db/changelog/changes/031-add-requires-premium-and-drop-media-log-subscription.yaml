@@ -1,0 +1,23 @@
+databaseChangeLog:
+  - changeSet:
+      id: 031-add-requires-premium-and-drop-media-log-subscription
+      author: yogida
+      comment: >
+        Forward-only migration: adds requires_premium_subscription to media table,
+        drops media_log and media_subscription tables. No rollback blocks.
+      changes:
+        - addColumn:
+            tableName: media
+            columns:
+              - column:
+                  name: requires_premium_subscription
+                  type: boolean
+                  constraints:
+                    nullable: false
+                  defaultValueBoolean: false
+
+        - dropTable:
+            tableName: media_log
+
+        - dropTable:
+            tableName: media_subscription

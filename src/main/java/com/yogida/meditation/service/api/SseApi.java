@@ -1,7 +1,6 @@
 package com.yogida.meditation.service.api;
 
 import com.yogida.meditation.dto.RevenueCatWebhookRequest;
-import com.yogida.meditation.enums.SseMessageType;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
@@ -27,7 +26,9 @@ public interface SseApi {
      * connection, the event is retained in a bounded per-user pending queue and flushed on the
      * user's next subscribe.
      *
-     * @param event the event to publish
+     * @param keycloakUserId
+     * @param name
+     * @param event          the event to publish
      */
-    void publishToUser(RevenueCatWebhookRequest.Event event);
+    void publishToUser(String keycloakUserId, String name, RevenueCatWebhookRequest.Event event);
 }

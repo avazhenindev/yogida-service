@@ -1,7 +1,6 @@
 package com.yogida.meditation.service;
 
 import com.yogida.meditation.dto.RevenueCatWebhookRequest;
-import com.yogida.meditation.dto.SseEvent;
 import com.yogida.meditation.service.api.SseApi;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.MediaType;
@@ -82,9 +81,8 @@ public class SseService implements SseApi {
     }
 
     @Override
-    public void publishToUser(RevenueCatWebhookRequest.Event event) {
+    public void publishToUser(String keycloakUserId, String name, RevenueCatWebhookRequest.Event event) {
         log.debug("SseService > Publishing entitlement update to user {}: {}", event.appUserId(), event);
-        String keycloakUserId = event.appUserId();
         String payload = event.type();
         ConcurrentHashMap<String, SseEmitter> userEmitters = registry.get(keycloakUserId);
         if (userEmitters == null || userEmitters.isEmpty()) {
