@@ -1,9 +1,11 @@
 package com.yogida.meditation.advice;
 
+import com.yogida.meditation.exception.BreathingNotFoundException;
 import com.yogida.meditation.exception.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -123,6 +125,19 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleNoSuchBucketException(NoSuchBucketException ex, HttpServletRequest request) {
         log.error("Bucket not found on [{} {}]: {}", request.getMethod(), request.getRequestURI(), ex.getMessage(), ex);
         return buildResponse(HttpStatus.NOT_FOUND, "Bucket not found", request);
+    }
+
+    /**
+     * Returns an RFC 9457 {@link ProblemDetail} response for breathing exercise / phase not found.
+     */
+    @ExceptionHandler(BreathingNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handleBreathingNotFound(BreathingNotFoundException ex,
+                                                                  HttpServletRequest request) {
+        log.warn("Breathing not found [{} {}]: {}", request.getMethod(), request.getRequestURI(), ex.getMessage());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        problem.setTitle("Breathing Exercise Not Found");
+        problem.setInstance(java.net.URI.create(request.getRequestURI()));
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problem);
     }
 
     private ResponseEntity<Map<String, Object>> buildResponse(HttpStatus status, String message,

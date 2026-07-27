@@ -1,0 +1,140 @@
+databaseChangeLog:
+  - changeSet:
+      id: 032-create-breathing-tables
+      author: yogida
+      comment: >
+        Creates breathing exercise tables: breathing, breathing_phase, and breathing_phase_audio.
+        Each exercise has a required icon (S3 object), ordered phases, and each phase has
+        one or more associated audio files (S3 objects).
+      changes:
+
+        # Main breathing exercise table
+        - createTable:
+            tableName: breathing
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: icon_object_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_breathing_icon_object
+                    references: s3_object(id)
+              - column:
+                  name: description
+                  type: TEXT
+                  constraints:
+                    nullable: true
+              - column:
+                  name: color
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: cycles
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_premium
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: display_order
+                  type: INT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: true
+
+        # Breathing phase table
+        - createTable:
+            tableName: breathing_phase
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: breathing_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_breathing_phase_breathing
+                    references: breathing(id)
+                    deleteCascade: true
+              - column:
+                  name: name
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: label
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: duration_seconds
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: color
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: display_order
+                  type: INT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+
+        # Breathing phase audio join table (phase → s3_object)
+        - createTable:
+            tableName: breathing_phase_audio
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: phase_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_breathing_phase_audio_phase
+                    references: breathing_phase(id)
+                    deleteCascade: true
+              - column:
+                  name: audio_object_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_breathing_phase_audio_s3
+                    references: s3_object(id)

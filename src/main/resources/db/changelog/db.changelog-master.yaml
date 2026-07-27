@@ -61,3 +61,5 @@ databaseChangeLog:
       file: db/changelog/changes/030-drop-user-subscription-and-audit-tables.yaml
   - include:
       file: db/changelog/changes/031-add-requires-premium-and-drop-media-log-subscription.yaml
+  - include:
+      file: db/changelog/changes/032-create-breathing-tables.yaml
