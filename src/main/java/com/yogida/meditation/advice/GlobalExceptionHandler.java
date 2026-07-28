@@ -124,7 +124,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NoSuchBucketException.class)
     public ResponseEntity<Map<String, Object>> handleNoSuchBucketException(NoSuchBucketException ex, HttpServletRequest request) {
         log.error("Bucket not found on [{} {}]: {}", request.getMethod(), request.getRequestURI(), ex.getMessage(), ex);
-        return buildResponse(HttpStatus.NOT_FOUND, "Bucket not found", request);
+        log.error("Bucket not found details: {}", ex.awsErrorDetails().errorMessage());
+        return buildResponse(HttpStatus.NOT_FOUND, "Bucket not found ", request);
     }
 
     /**
