@@ -6,6 +6,7 @@ import com.yogida.meditation.dto.*;
 import com.yogida.meditation.service.api.AdminStorageApi;
 import com.yogida.meditation.service.api.R2StorageApi;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -17,6 +18,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AdminStorageService implements AdminStorageApi {
 
     private final S3Client s3Client;
@@ -46,6 +48,7 @@ public class AdminStorageService implements AdminStorageApi {
     @Override
     public ObjectMetadataDto uploadObject(String bucketName, String objectKey, MultipartFile file) {
         try {
+            log.debug("Uploading object to bucket [{}] with key [{}]", bucketName, objectKey);
             s3Client.putObject(
                     PutObjectRequest.builder()
                             .bucket(bucketName)
