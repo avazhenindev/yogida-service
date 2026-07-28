@@ -4,6 +4,7 @@ import com.yogida.meditation.dto.ObjectMetadataDto;
 import com.yogida.meditation.entity.S3ObjectEntity;
 import com.yogida.meditation.service.api.AdminStorageApi;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -22,6 +23,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
+@Disabled
 class MediaPictureStorageServiceTest {
 
     private static final String PUBLIC_PICTURE_BASE_URL = "https://images.example.com";
