@@ -14,8 +14,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class MediaPictureStorageService {
 
-    private static final String PICTURE_BUCKET_NAME = "%s/%s".formatted(BucketNames.PUBLIC, BucketNames.PICTURES);
-    private static final String PICTURE_KEY_PREFIX = BucketNames.PUBLIC + "/";
+    private static final String PICTURE_BUCKET_NAME = BucketNames.PUBLIC;
+    private static final String PICTURE_KEY_PREFIX = "{}/".formatted(BucketNames.PICTURES);
 
     private final AdminStorageApi adminStorageApi;
     private final S3ObjectService s3ObjectService;
