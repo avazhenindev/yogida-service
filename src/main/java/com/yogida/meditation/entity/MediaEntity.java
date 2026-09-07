@@ -21,8 +21,6 @@ public class MediaEntity {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "bucket_name", nullable = false)
-    private String bucketName;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "media_object_id", nullable = false)

@@ -17,7 +17,9 @@ public interface MediaMapper {
     @Mapping(source = "category", target = "category")
     @Mapping(source = "mediaObject", target = "mediaObject")
     @Mapping(source = "pictureObject", target = "pictureObject")
-    @Mapping(target = "bucketName", expression = "java(entity.getMediaObject() != null ? entity.getMediaObject().getBucketName() : entity.getBucketName())")
+    // media.media_object_id is NOT NULL, so the old fallback to a duplicate bucket_name column
+    // on media itself was unreachable. The S3 object is the single place a bucket is recorded.
+    @Mapping(target = "bucketName", source = "mediaObject.bucketName")
     @Mapping(target = "averageRating", ignore = true)
     @Mapping(target = "isPremium", ignore = true)
     @Mapping(target = "isFavourite", ignore = true)

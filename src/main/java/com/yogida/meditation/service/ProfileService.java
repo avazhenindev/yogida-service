@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.List;
 
 @Log4j2
@@ -47,11 +48,31 @@ public class ProfileService implements ProfileApi {
         return profileMapper.toDto(findOwnedOrThrow(id));
     }
 
+    /**
+     * Creates the caller's profile, or returns the one they already have.
+     *
+     * <p>Idempotent by necessity, not by preference. {@code JwtUserProvisioner} creates a
+     * profile the first time it sees any token, and {@code CurrentUserService} provisions on
+     * every authenticated request — so by the time anyone can call this endpoint they already
+     * have a profile. Left as a plain insert, it was the source of the duplicate rows that
+     * make {@code profile} a 1:1 in the entity model and a 1:N in the database; once the unique
+     * constraint exists it would instead be a permanent 409 for every caller.
+     *
+     * <p>Mirrors the same decision already made in {@code FavouriteService.create}.
+     */
     @Override
     @Transactional
     public ProfileDto create(ProfileDto dto) {
+        Long userId = currentUserId();
+
+        Optional<ProfileEntity> existing = profileRepository.findFirstByUserUserIdOrderByProfileIdAsc(userId);
+        if (existing.isPresent()) {
+            log.debug("ProfileService > Profile already exists for user {}; returning it", userId);
+            return profileMapper.toDto(existing.get());
+        }
+
         // Ownership comes from the token; the body's userId is ignored.
-        dto.setUserId(currentUserId());
+        dto.setUserId(userId);
         ProfileEntity entity = profileMapper.toEntity(dto);
         entity.setProfileId(null);
         entity.setCreatedAt(LocalDateTime.now());

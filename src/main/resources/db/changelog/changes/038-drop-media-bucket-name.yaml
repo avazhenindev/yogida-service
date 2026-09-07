@@ -1,0 +1,28 @@
+databaseChangeLog:
+  - changeSet:
+      id: 038-drop-media-bucket-name
+      author: yogida
+      comment: >
+        Drops media.bucket_name.
+
+        It duplicated s3_object.bucket_name for the row media.media_object_id already points at,
+        and the two could disagree: the column was nullable here and non-null in the entity, so
+        Hibernate's own mapping did not match the schema. Every write copied the value straight
+        off the S3 object, and the only read was a fallback for a null media object — which
+        media_object_id being NOT NULL made unreachable.
+      changes:
+        - dropColumn:
+            tableName: media
+            columnName: bucket_name
+      rollback:
+        - addColumn:
+            tableName: media
+            columns:
+              - column:
+                  name: bucket_name
+                  type: VARCHAR(255)
+        - sql:
+            comment: Restore the duplicated value from the authoritative S3 object row.
+            sql: >
+              UPDATE media m SET bucket_name = s.bucket_name
+              FROM s3_object s WHERE s.id = m.media_object_id;

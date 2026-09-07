@@ -70,7 +70,6 @@ public class MediaService implements MediaApi {
         entity.setName(request.name());
         S3ObjectEntity mediaObject = resolveS3Object(request.mediaObjectId());
         entity.setMediaObject(mediaObject);
-        entity.setBucketName(mediaObject.getBucketName());
         entity.setDescription(request.description());
         entity.setPictureObject(resolveS3ObjectOrNull(request.pictureObjectId()));
         entity.setCategory(resolveCategory(request.categoryId()));
@@ -89,7 +88,6 @@ public class MediaService implements MediaApi {
         entity.setName(request.name());
         S3ObjectEntity mediaObject = resolveS3Object(request.mediaObjectId());
         entity.setMediaObject(mediaObject);
-        entity.setBucketName(mediaObject.getBucketName());
         entity.setDescription(request.description());
         entity.setPictureObject(resolveS3ObjectOrNull(request.pictureObjectId()));
         entity.setCategory(resolveCategory(request.categoryId()));

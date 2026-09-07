@@ -1,0 +1,111 @@
+databaseChangeLog:
+
+  # ---------------------------------------------------------------------------
+  # profile.user_id — a 1:1 in the entity model that the database never enforced
+  # ---------------------------------------------------------------------------
+  - changeSet:
+      id: 036-1-dedupe-profiles
+      author: yogida
+      comment: >
+        Collapses duplicate profiles before the unique constraint below can be added.
+
+        ProfileEntity models a 1:1 with app_user and ProfileRepository.findByUserUserId returns
+        a List precisely because the database permitted duplicates. Rows created by the old
+        non-idempotent POST /profiles are reachable today — GET /profiles lists them and
+        PUT /profiles/{id} can edit them — so the survivor is chosen by most recently updated,
+        not by lowest id. Picking the lowest id would delete the row a user has actually been
+        editing.
+
+        Losing rows are copied to profile_dedupe_backup rather than dropped, because this is
+        irreversible and the choice of survivor is a heuristic.
+      changes:
+        - sql:
+            comment: Preserve every row that is about to be deleted.
+            sql: >
+              CREATE TABLE IF NOT EXISTS profile_dedupe_backup AS
+              SELECT * FROM profile WHERE false;
+
+        - sql:
+            sql: >
+              INSERT INTO profile_dedupe_backup
+              SELECT p.* FROM profile p
+              WHERE p.profile_id NOT IN (
+                SELECT DISTINCT ON (user_id) profile_id
+                FROM profile
+                ORDER BY user_id, updated_at DESC NULLS LAST, profile_id ASC
+              );
+
+        - sql:
+            sql: >
+              DELETE FROM profile
+              WHERE profile_id NOT IN (
+                SELECT DISTINCT ON (user_id) profile_id
+                FROM profile
+                ORDER BY user_id, updated_at DESC NULLS LAST, profile_id ASC
+              );
+      rollback:
+        - sql:
+            sql: INSERT INTO profile SELECT * FROM profile_dedupe_backup;
+        - dropTable:
+            tableName: profile_dedupe_backup
+
+  - changeSet:
+      id: 036-2-unique-profile-user
+      author: yogida
+      comment: >
+        Makes the 1:1 real. ProfileService.create is idempotent as of the same change, so this
+        does not turn POST /profiles into a permanent 409 — every caller already has a profile
+        created by JwtUserProvisioner on first sight of their token.
+      preConditions:
+        - onFail: HALT
+          onFailMessage: >
+            profile still contains duplicate user_id values; changeset 036-1 should have
+            removed them. Investigate before forcing this through.
+          sqlCheck:
+            expectedResult: 0
+            sql: SELECT count(*) FROM (SELECT user_id FROM profile GROUP BY user_id HAVING count(*) > 1) d
+      changes:
+        - addUniqueConstraint:
+            tableName: profile
+            columnNames: user_id
+            constraintName: uk_profile_user_id
+      rollback:
+        - dropUniqueConstraint:
+            tableName: profile
+            constraintName: uk_profile_user_id
+
+  # ---------------------------------------------------------------------------
+  # app_user.email
+  # ---------------------------------------------------------------------------
+  - changeSet:
+      id: 036-3-unique-app-user-email
+      author: yogida
+      comment: >
+        Email identifies an account and was previously unconstrained.
+
+        A partial index rather than a unique constraint, because app_user.email is nullable
+        (changelog 001) and JwtUserProvisioner writes whatever the token carries — a token
+        without an email claim yields a null. A plain unique constraint permits multiple NULLs
+        in PostgreSQL anyway, so the partial index states the intent explicitly and avoids
+        indexing rows that carry no email.
+      preConditions:
+        - onFail: HALT
+          onFailMessage: >
+            app_user contains duplicate non-null emails. Resolve them by hand before applying:
+            these are real accounts and merging them is not a decision a migration should make.
+          sqlCheck:
+            expectedResult: 0
+            sql: >
+              SELECT count(*) FROM (
+                SELECT lower(email) FROM app_user WHERE email IS NOT NULL
+                GROUP BY lower(email) HAVING count(*) > 1
+              ) d
+      changes:
+        - sql:
+            sql: >
+              CREATE UNIQUE INDEX uk_app_user_email
+              ON app_user (lower(email))
+              WHERE email IS NOT NULL;
+      rollback:
+        - sql:
+            sql: DROP INDEX IF EXISTS uk_app_user_email;

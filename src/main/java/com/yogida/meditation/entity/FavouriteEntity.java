@@ -22,7 +22,7 @@ public class FavouriteEntity {
     @Column(name = "content_type", nullable = false, length = 20)
     private String contentType;
 
-    @Column(name = "content_id")
+    @Column(name = "content_id", nullable = false)
     private Long contentId;
 
     @Column(name = "created_at", nullable = false)

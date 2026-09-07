@@ -171,7 +171,6 @@ class MediaFacadeServiceTest {
         entity.setName(name);
         entity.setMediaObject(mediaObject);
         entity.setPictureObject(pictureObject);
-        entity.setBucketName(mediaObject.getBucketName());
         entity.setStatus(MediaStatus.ACTIVE);
         return entity;
     }

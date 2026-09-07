@@ -69,3 +69,9 @@ databaseChangeLog:
       file: db/changelog/changes/034-create-entitlement-projection-tables.yaml
   - include:
       file: db/changelog/changes/035-add-nplusone-supporting-indexes.yaml
+  - include:
+      file: db/changelog/changes/036-add-identity-unique-constraints.yaml
+  - include:
+      file: db/changelog/changes/037-tighten-favourite-and-review-integrity.yaml
+  - include:
+      file: db/changelog/changes/038-drop-media-bucket-name.yaml

@@ -1,0 +1,143 @@
+databaseChangeLog:
+
+  # ---------------------------------------------------------------------------
+  # favourite: make the polymorphic reference honest
+  # ---------------------------------------------------------------------------
+  - changeSet:
+      id: 037-1-normalise-favourite-content-type
+      author: yogida
+      comment: >
+        favourite.content_type is a free-form VARCHAR that the application writes from
+        ContentType.value(). ContentType.fromValue() upper-cases its input, so a client sending
+        "media" is accepted, and nothing ever normalised what was stored. This upper-cases
+        existing rows so the CHECK constraint below cannot fail on ordinary historical data —
+        a deploy-time HALT on a case difference would be a poor use of an operator's attention.
+      changes:
+        - sql:
+            sql: UPDATE favourite SET content_type = upper(content_type) WHERE content_type <> upper(content_type);
+      rollback:
+        - empty
+
+  - changeSet:
+      id: 037-2-favourite-content-id-not-null
+      author: yogida
+      comment: >
+        content_id was nullable in both the table and the entity, so a favourite could reference
+        nothing at all. Such a row has no meaning and cannot be resolved to any content.
+      preConditions:
+        - onFail: HALT
+          onFailMessage: >
+            favourite contains rows with a NULL content_id. These reference no content and
+            cannot be repaired automatically — delete them, then re-run.
+          sqlCheck:
+            expectedResult: 0
+            sql: SELECT count(*) FROM favourite WHERE content_id IS NULL
+      changes:
+        - addNotNullConstraint:
+            tableName: favourite
+            columnName: content_id
+            columnDataType: BIGINT
+      rollback:
+        - dropNotNullConstraint:
+            tableName: favourite
+            columnName: content_id
+            columnDataType: BIGINT
+
+  - changeSet:
+      id: 037-3-favourite-content-type-check
+      author: yogida
+      comment: >
+        Constrains content_type to the values the ContentType enum actually defines.
+
+        There is no foreign key on content_id and there cannot be one while the reference is
+        polymorphic, so this is the only structural guarantee available: it stops a typo or a
+        client-supplied value from being persisted as a content type that no code can resolve.
+
+        Adding a value to ContentType (BREATHING, say — the breathing feature shipped without
+        favourite support) requires extending this constraint in a new changeset. That coupling
+        is deliberate: the database should not silently accept content types the application
+        cannot handle.
+      preConditions:
+        - onFail: HALT
+          onFailMessage: >
+            favourite contains content_type values outside the ContentType enum. Inspect them
+            before applying: SELECT DISTINCT content_type FROM favourite;
+          sqlCheck:
+            expectedResult: 0
+            sql: SELECT count(*) FROM favourite WHERE content_type NOT IN ('MEDIA')
+      changes:
+        - sql:
+            sql: ALTER TABLE favourite ADD CONSTRAINT chk_favourite_content_type CHECK (content_type IN ('MEDIA'));
+      rollback:
+        - sql:
+            sql: ALTER TABLE favourite DROP CONSTRAINT IF EXISTS chk_favourite_content_type;
+
+  # ---------------------------------------------------------------------------
+  # media_review: deleting a user or a media item raised a 500
+  # ---------------------------------------------------------------------------
+  - changeSet:
+      id: 037-4-media-review-cascades
+      author: yogida
+      comment: >
+        Both media_review foreign keys were created with no ON DELETE action, so deleting a user
+        or a media item that had reviews raised a constraint violation. Unhandled it surfaced as
+        a 500; it now surfaces as a 409, which is honest but still means the operation is simply
+        impossible.
+
+        CASCADE on both sides, for different reasons.
+
+        user_id: a review is the user's own content, and profile and favourite ALREADY cascade
+        from app_user (changelogs 003 and 005) — media_review was the only thing standing between
+        an admin and a working DELETE /users/{id}. Leaving it as the sole blocker means user
+        deletion is neither possible nor cleanly refused.
+
+        media_id: a review of a deleted media item references nothing and can never be displayed.
+
+        NOTE THE CONSEQUENCE, because it is a real behaviour change: DELETE /users/{id} now
+        succeeds and removes that user's profile, favourites and reviews. It is admin-only. If a
+        soft delete is wanted instead, that is a product decision and this changeset is the wrong
+        place for it — but the previous state was not a soft delete, it was an error.
+
+        It does NOT remove the user's row in user_entitlement, which is keyed by the Keycloak
+        subject rather than by a foreign key; AppUserService handles that explicitly.
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: media_review
+            constraintName: fk_media_review_user
+        - addForeignKeyConstraint:
+            baseTableName: media_review
+            baseColumnNames: user_id
+            referencedTableName: app_user
+            referencedColumnNames: user_id
+            constraintName: fk_media_review_user
+            onDelete: CASCADE
+
+        - dropForeignKeyConstraint:
+            baseTableName: media_review
+            constraintName: fk_media_review_media
+        - addForeignKeyConstraint:
+            baseTableName: media_review
+            baseColumnNames: media_id
+            referencedTableName: media
+            referencedColumnNames: id
+            constraintName: fk_media_review_media
+            onDelete: CASCADE
+      rollback:
+        - dropForeignKeyConstraint:
+            baseTableName: media_review
+            constraintName: fk_media_review_media
+        - addForeignKeyConstraint:
+            baseTableName: media_review
+            baseColumnNames: media_id
+            referencedTableName: media
+            referencedColumnNames: id
+            constraintName: fk_media_review_media
+        - dropForeignKeyConstraint:
+            baseTableName: media_review
+            constraintName: fk_media_review_user
+        - addForeignKeyConstraint:
+            baseTableName: media_review
+            baseColumnNames: user_id
+            referencedTableName: app_user
+            referencedColumnNames: user_id
+            constraintName: fk_media_review_user
