@@ -1,0 +1,13 @@
+# Without this the whole directory is sent as build context, including the rotated log
+# archives (which contain user emails and presigned R2 URLs), IDE state, and a target/ tree
+# that the multi-stage build rebuilds anyway.
+target/
+logs/
+.idea/
+.git/
+.env
+.env.*
+!.env.example
+*.log
+*.gz
+.DS_Store

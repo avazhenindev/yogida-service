@@ -1,40 +1,47 @@
 package com.yogida.meditation.config;
 
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
 
 /**
- * JWT and OAuth2 resource server configuration properties.
+ * JWT and OAuth2 resource server configuration.
+ *
+ * <p>The issuers previously defaulted to the production Keycloak URLs inside this record's
+ * compact constructor. That meant a service started without the environment set would
+ * quietly validate tokens against production instead of failing — the kind of default that
+ * only ever surprises. Every required value is now validated, so a missing one stops
+ * startup and names itself.
+ *
+ * <p>{@code issuer} must match Keycloak's {@code KC_HOSTNAME} exactly. Any difference,
+ * including a trailing slash or {@code http} versus {@code https}, makes every token fail
+ * validation with an error that points at the token rather than at the configuration.
  */
+@Validated
 @ConfigurationProperties(prefix = "app.security.jwt")
 public record JwtProperties(
+
+    @NotBlank(message = "app.security.jwt.issuer must be set (APP_SECURITY_JWT_ISSUER)")
     String issuer,
+
+    @NotBlank(message = "app.security.jwt.admin-issuer must be set (APP_SECURITY_JWT_ADMIN_ISSUER)")
     String adminIssuer,
+
+    @NotBlank(message = "app.security.jwt.audience must be set (APP_SECURITY_JWT_AUDIENCE)")
     String audience,
+
+    @NotBlank(message = "app.security.jwt.admin-client-id must be set")
     String adminClientId,
+
+    @NotBlank(message = "app.security.jwt.client-id must be set")
     String clientId,
+
+    /** Optional. Derived from {@link #issuer} when blank. */
     String jwkSetUri,
+
+    /** Optional. Derived from {@link #adminIssuer} when blank. */
     String adminJwkSetUri
 ) {
-    /**
-     * Creates a JwtProperties instance with default values.
-     */
-    public JwtProperties {
-        if (issuer == null || issuer.isBlank()) {
-            issuer = "https://auth.yogida.example";
-        }
-        if (adminIssuer == null || adminIssuer.isBlank()) {
-            adminIssuer = "https://yogida.org/zxcasdqwe/realms/yogida-admin";
-        }
-        if (audience == null || audience.isBlank()) {
-            audience = "yogida";
-        }
-        if (adminClientId == null || adminClientId.isBlank()) {
-            adminClientId = "yogida-admin";
-        }
-        if (clientId == null || clientId.isBlank()) {
-            clientId = "yogida";
-        }
-    }
 
     public String resolvedJwkSetUri() {
         return resolveJwkSetUri(issuer, jwkSetUri);
