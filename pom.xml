@@ -20,6 +20,9 @@
         <aws.sdk.version>2.32.1</aws.sdk.version>
         <mapstruct.version>1.6.3</mapstruct.version>
         <lombok-mapstruct-binding.version>0.2.0</lombok-mapstruct-binding.version>
+        <!-- 1.21.x or newer: Docker Engine 29 rejects API versions below 1.44, and the
+             docker-java bundled with 1.20.x negotiates below that, failing with a bare 400. -->
+        <testcontainers.version>1.21.4</testcontainers.version>
     </properties>
 
     <dependencyManagement>
@@ -28,6 +31,13 @@
                 <groupId>software.amazon.awssdk</groupId>
                 <artifactId>bom</artifactId>
                 <version>${aws.sdk.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>testcontainers-bom</artifactId>
+                <version>${testcontainers.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -162,10 +172,54 @@
             <artifactId>h2</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!--
+            Testcontainers, for the schema-validation test. H2 cannot serve this purpose: the
+            drift it exists to catch is between the Liquibase changelog and the JPA entities on
+            real PostgreSQL, and H2's type system silently accepts mappings Postgres rejects.
+            The numeric-vs-Boolean drift that reached production was invisible to H2.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
         <plugins>
+            <!--
+                Failsafe runs the *IT integration tests during `verify`, which is what CI
+                invokes. Without it SchemaValidationIT would compile and simply never execute:
+                Surefire only matches *Test / Test* / *Tests, so an IT-suffixed class is
+                silently skipped by `mvn test` and the guard would exist without guarding
+                anything.
+
+                Kept separate from Surefire on purpose — the integration test needs a Docker
+                daemon for Testcontainers, and `mvn test` should stay runnable without one.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
