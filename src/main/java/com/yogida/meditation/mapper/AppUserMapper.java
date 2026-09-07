@@ -21,7 +21,18 @@ public interface AppUserMapper {
 
     List<AppUserEntity> toEntityList(List<AppUserDto> dtos);
 
-    /** Merges non-null DTO fields into the existing entity. Skips server-managed timestamps. */
+    /**
+     * Merges non-null DTO fields into the existing entity.
+     *
+     * <p>Identity is not mergeable. With {@code NullValuePropertyMappingStrategy.IGNORE},
+     * every non-null field in the request body was copied onto the managed entity — including
+     * {@code keycloakUserId}, the claim the whole authentication chain hangs on. A caller
+     * could point one account's row at another subject and inherit that account, its data and
+     * its paid entitlement. {@code userId} is the primary key and equally not the client's to
+     * set.
+     */
+    @Mapping(target = "userId", ignore = true)
+    @Mapping(target = "keycloakUserId", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     void updateEntity(AppUserDto dto, @MappingTarget AppUserEntity entity);

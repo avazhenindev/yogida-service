@@ -20,6 +20,7 @@ import java.util.Optional;
 public class CurrentUserService {
 
     private final AppUserRepository appUserRepository;
+    private final JwtUserProvisioner provisioner;
 
     /**
      * Resolves the current authenticated user from the JWT token.
@@ -48,17 +49,33 @@ public class CurrentUserService {
     }
 
     /**
-     * Resolves the current authenticated user or throws an exception if not found.
+     * Resolves the current authenticated user, creating the local record on first sight.
      *
-     * @return the AppUserEntity for the current authenticated user
-     * @throws IllegalStateException if user is not authenticated or not found in database
+     * <p>A valid token whose subject had no row used to throw, which the error handler turned
+     * into a 500 — and provisioning was the mobile app's job, done over endpoints that let it
+     * claim any identity. The token is authoritative now: if the identity provider vouches for
+     * this subject, the row is created here.
+     *
+     * @throws IllegalStateException when there is no authenticated JWT at all
      */
-    @Transactional(readOnly = true)
+    @Transactional
     public AppUserEntity getCurrentUserOrThrow() {
-        return getCurrentUser()
+        return currentJwt()
+            .map(provisioner::provision)
             .orElseThrow(() -> new IllegalStateException(
                 "Current user not found or not authenticated"
             ));
+    }
+
+    /** The verified JWT of the caller, if this request carries one. */
+    private Optional<Jwt> currentJwt() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()
+                || !(authentication.getPrincipal() instanceof Jwt jwt)) {
+            return Optional.empty();
+        }
+        String subject = jwt.getSubject();
+        return subject == null || subject.isBlank() ? Optional.empty() : Optional.of(jwt);
     }
 
 

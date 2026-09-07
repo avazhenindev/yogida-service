@@ -4,12 +4,12 @@ import com.yogida.meditation.dto.ProfileDto;
 import com.yogida.meditation.entity.ProfileEntity;
 import com.yogida.meditation.exception.EntityNotFoundException;
 import com.yogida.meditation.mapper.ProfileMapper;
-import com.yogida.meditation.repository.AppUserRepository;
 import com.yogida.meditation.repository.ProfileRepository;
 import com.yogida.meditation.service.api.ProfileApi;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,24 +20,38 @@ import java.util.List;
 public class ProfileService implements ProfileApi {
 
     private final ProfileRepository profileRepository;
-    private final AppUserRepository appUserRepository;
     private final ProfileMapper profileMapper;
+    private final CurrentUserService currentUserService;
 
+    /**
+     * Scoped to the authenticated caller, like favourites.
+     *
+     * <p>These methods used to read, write and delete any profile by id, and take the owning
+     * user from the request body. Someone else's profile now reports 404 rather than 403 so
+     * ids stay unenumerable.
+     *
+     * <p>The write paths also had no {@code @Transactional} at all, so a multi-statement
+     * update had no atomicity and every call ran in its own auto-commit.
+     */
     @Override
+    @Transactional(readOnly = true)
     public List<ProfileDto> findAll() {
-        return profileRepository.findAll().stream().map(profileMapper::toDto).toList();
-    }
-
-    @Override
-    public ProfileDto findById(Long id) {
-        return profileRepository.findById(id)
+        return profileRepository.findByUserUserId(currentUserId()).stream()
                 .map(profileMapper::toDto)
-                .orElseThrow(() -> new EntityNotFoundException("Profile", id));
+                .toList();
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public ProfileDto findById(Long id) {
+        return profileMapper.toDto(findOwnedOrThrow(id));
+    }
+
+    @Override
+    @Transactional
     public ProfileDto create(ProfileDto dto) {
-        validateUserExists(dto.getUserId());
+        // Ownership comes from the token; the body's userId is ignored.
+        dto.setUserId(currentUserId());
         ProfileEntity entity = profileMapper.toEntity(dto);
         entity.setProfileId(null);
         entity.setCreatedAt(LocalDateTime.now());
@@ -48,12 +62,10 @@ public class ProfileService implements ProfileApi {
     }
 
     @Override
+    @Transactional
     public ProfileDto update(Long id, ProfileDto dto) {
-        ProfileEntity existing = profileRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Profile", id));
-        if (dto.getUserId() != null) {
-            validateUserExists(dto.getUserId());
-        }
+        ProfileEntity existing = findOwnedOrThrow(id);
+        // The mapper ignores the owner, so an update cannot move the profile to another user.
         profileMapper.updateEntity(dto, existing);
         existing.setUpdatedAt(LocalDateTime.now());
         ProfileEntity saved = profileRepository.save(existing);
@@ -62,18 +74,21 @@ public class ProfileService implements ProfileApi {
     }
 
     @Override
+    @Transactional
     public void delete(Long id) {
-        if (!profileRepository.existsById(id)) {
-            throw new EntityNotFoundException("Profile", id);
-        }
-        profileRepository.deleteById(id);
+        ProfileEntity owned = findOwnedOrThrow(id);
+        profileRepository.delete(owned);
         log.info("ProfileService > Deleted profile with id: {}", id);
     }
 
-    private void validateUserExists(Long userId) {
-        if (userId == null || !appUserRepository.existsById(userId)) {
-            throw new EntityNotFoundException("AppUser", userId);
-        }
+    private Long currentUserId() {
+        return currentUserService.getCurrentUserOrThrow().getUserId();
+    }
+
+    private ProfileEntity findOwnedOrThrow(Long id) {
+        return profileRepository.findById(id)
+                .filter(p -> p.getUser() != null && currentUserId().equals(p.getUser().getUserId()))
+                .orElseThrow(() -> new EntityNotFoundException("Profile", id));
     }
 }
 

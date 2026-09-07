@@ -1,0 +1,37 @@
+databaseChangeLog:
+  - changeSet:
+      id: 033-fix-profile-two-factor-column-type
+      author: migration
+      comment: >
+        Change profile.two_factor_enabled from numeric(1) to boolean.
+
+        ProfileEntity has always declared this field as a Boolean while changeset 003 created
+        the column as number(1), so any insert or update of a profile failed with
+        "column two_factor_enabled is of type numeric but expression is of type boolean".
+        Nothing wrote profiles until server-side provisioning started creating one per user,
+        which is why it went unnoticed: the drift was real from the beginning and simply had
+        no code path to break.
+
+        This is the same defect changeset 013 fixed for user_subscription.auto_renew. The fix
+        was never applied to the sibling table.
+      preConditions:
+        - onFail: MARK_RAN
+        - sqlCheck:
+            expectedResult: "1"
+            sql: >
+              SELECT count(*) FROM information_schema.columns
+              WHERE table_name = 'profile'
+                AND column_name = 'two_factor_enabled'
+                AND data_type = 'numeric'
+      changes:
+        - sql:
+            sql: >
+              ALTER TABLE profile ALTER COLUMN two_factor_enabled DROP DEFAULT;
+              ALTER TABLE profile ALTER COLUMN two_factor_enabled TYPE boolean USING (two_factor_enabled != 0);
+              ALTER TABLE profile ALTER COLUMN two_factor_enabled SET DEFAULT false;
+      rollback:
+        - sql:
+            sql: >
+              ALTER TABLE profile ALTER COLUMN two_factor_enabled DROP DEFAULT;
+              ALTER TABLE profile ALTER COLUMN two_factor_enabled TYPE numeric(1) USING (two_factor_enabled::int);
+              ALTER TABLE profile ALTER COLUMN two_factor_enabled SET DEFAULT 0;

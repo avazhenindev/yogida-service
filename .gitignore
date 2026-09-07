@@ -34,11 +34,12 @@ build/
 
 ### VS Code ###
 .vscode/
-./logs/**
 ./docs
 
 ### GitHub local customization ###
 .github/*
 !.github/workflows/
 !.github/workflows/**
-logs
+# Anchored to the repo root. The previous './logs/**' is not valid gitignore syntax and
+# matched nothing, which is how rotated archives ended up tracked.
+/logs/

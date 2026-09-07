@@ -20,6 +20,14 @@ import java.util.List;
 @Mapper(componentModel = "spring")
 public interface BreathingMapper {
 
+    /**
+     * The premium flag has to be mapped explicitly. The entity's field is {@code isPremium},
+     * which Lombok exposes as the bean property {@code premium}, while the DTO's record
+     * component is named {@code isPremium} — so the names never matched and MapStruct left the
+     * DTO's flag at its default. Every breathing exercise therefore reported itself as free,
+     * whatever the database said. The compiler warned about it: "Unmapped target property".
+     */
+    @Mapping(target = "isPremium", source = "premium")
     @Mapping(target = "icon", source = "iconObject", qualifiedByName = "iconObjectToUrl")
     @Mapping(target = "phases", source = "phases")
     BreathingDto toDto(BreathingEntity entity);

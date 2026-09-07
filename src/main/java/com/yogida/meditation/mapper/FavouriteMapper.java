@@ -23,7 +23,14 @@ public interface FavouriteMapper {
     List<FavouriteDto> toDtoList(List<FavouriteEntity> entities);
 
     /** Merges non-null DTO fields into the existing entity. Skips server-managed timestamps. */
-    @Mapping(source = "userId", target = "user", qualifiedByName = "userIdToUser")
+    /**
+     * Merges non-null DTO fields into the existing entity.
+     *
+     * <p>The owning user is not mergeable: an update must not reassign someone's favourite to
+     * another account. {@code favouriteId} is the primary key and comes from the path.
+     */
+    @Mapping(target = "favouriteId", ignore = true)
+    @Mapping(target = "user", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     void updateEntity(FavouriteDto dto, @MappingTarget FavouriteEntity entity);
 

@@ -3,6 +3,7 @@ package com.yogida.meditation.mapper;
 import com.yogida.meditation.dto.SubscriptionDto;
 import com.yogida.meditation.entity.SubscriptionEntity;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 
@@ -18,5 +19,7 @@ public interface SubscriptionMapper {
     List<SubscriptionDto> toDtoList(List<SubscriptionEntity> entities);
 
     /** Merges non-null fields from {@code dto} into the existing {@code entity}. */
+    /** Merges non-null DTO fields. The primary key comes from the path, not the body. */
+    @Mapping(target = "subscriptionId", ignore = true)
     void updateEntity(SubscriptionDto dto, @MappingTarget SubscriptionEntity entity);
 }

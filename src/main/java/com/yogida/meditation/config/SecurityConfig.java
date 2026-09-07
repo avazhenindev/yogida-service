@@ -26,14 +26,15 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtIss
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfigurationSource;
 
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.Set;
 
 /**
  * Spring Security configuration for OAuth2 Resource Server with JWT validation.
@@ -98,20 +99,20 @@ public class SecurityConfig {
      */
     @Bean
     @ConditionalOnMissingBean(AuthenticationManagerResolver.class)
-    public AuthenticationManagerResolver<HttpServletRequest> authenticationManagerResolver(
-            JwtAuthenticationConverter jwtAuthenticationConverter) {
-        Map<String, String> jwkSetUriByIssuer = Stream
-            .of(
-                new AbstractMap.SimpleEntry<>(jwtProperties.issuer(), jwtProperties.resolvedJwkSetUri()),
-                new AbstractMap.SimpleEntry<>(jwtProperties.adminIssuer(), jwtProperties.resolvedAdminJwkSetUri())
-            )
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (current, ignored) -> current));
-
-        Map<String, AuthenticationManager> managersByIssuer = jwkSetUriByIssuer.entrySet().stream()
-            .collect(Collectors.toMap(
-                Map.Entry::getKey,
-                entry -> jwtAuthenticationManager(entry.getKey(), entry.getValue(), jwtAuthenticationConverter)
-            ));
+    public AuthenticationManagerResolver<HttpServletRequest> authenticationManagerResolver() {
+        // Each issuer gets its own converter, reading roles only from its own client. A single
+        // shared converter used to merge roles from BOTH client ids, so a mobile-realm token
+        // that carried a resource_access.yogida-admin entry would have been granted ROLE_ADMIN
+        // — the mobile realm deciding who is an administrator.
+        Map<String, AuthenticationManager> managersByIssuer = new LinkedHashMap<>();
+        managersByIssuer.put(jwtProperties.issuer(), jwtAuthenticationManager(
+            jwtProperties.issuer(),
+            jwtProperties.resolvedJwkSetUri(),
+            jwtAuthenticationConverter(jwtProperties.clientId())));
+        managersByIssuer.putIfAbsent(jwtProperties.adminIssuer(), jwtAuthenticationManager(
+            jwtProperties.adminIssuer(),
+            jwtProperties.resolvedAdminJwkSetUri(),
+            jwtAuthenticationConverter(jwtProperties.adminClientId())));
 
         return new JwtIssuerAuthenticationManagerResolver(issuer -> {
             log.debug("Resolving JWT authentication manager for issuer: {}", issuer);
@@ -141,40 +142,47 @@ public class SecurityConfig {
     }
 
     /**
-     * Maps Keycloak client roles to Spring Security {@code ROLE_*} authorities, in addition to
-     * the default {@code SCOPE_*} authorities.
-     * <p>
-     * Keycloak places client-specific roles under {@code resource_access.<clientId>.roles}.
-     * Roles are extracted from both the mobile app client ({@code app.security.jwt.client-id})
-     * and the admin client ({@code app.security.jwt.admin-client-id}) and merged into a single
-     * authority collection, so a single converter handles tokens from either realm.
+     * Maps a Keycloak token's roles onto Spring Security authorities, for one client.
+     *
+     * <p>Roles come from two places and both matter: {@code realm_access.roles} holds realm
+     * roles, and {@code resource_access.<clientId>.roles} holds roles assigned on a specific
+     * client. Reading only the second means a realm-only administrator is silently not an
+     * administrator here — every {@code hasRole} check fails with no indication why. The
+     * admin realm grants its role at realm level, so without the union nothing would work.
+     *
+     * <p>Scoped to a single client id on purpose: see
+     * {@link #authenticationManagerResolver()}.
      */
-    @Bean
-    public JwtAuthenticationConverter jwtAuthenticationConverter() {
+    private JwtAuthenticationConverter jwtAuthenticationConverter(String clientId) {
         JwtGrantedAuthoritiesConverter scopes = new JwtGrantedAuthoritiesConverter();
-        List<String> clientIds = List.of(jwtProperties.clientId(), jwtProperties.adminClientId());
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
         converter.setJwtGrantedAuthoritiesConverter(jwt -> {
             Collection<GrantedAuthority> authorities = new ArrayList<>(scopes.convert(jwt));
 
-            // resource_access is a map of clientId → { "roles": [...] }
+            Set<String> roles = new HashSet<>(rolesFrom(jwt.getClaimAsMap("realm_access")));
+
             Map<String, Object> resourceAccess = jwt.getClaimAsMap("resource_access");
-            if (resourceAccess != null) {
-                clientIds.stream()
-                    .filter(id -> resourceAccess.get(id) instanceof Map<?, ?> clientAccess
-                            && clientAccess.get("roles") instanceof List<?>)
-                    .flatMap(id -> {
-                        Map<?, ?> clientAccess = (Map<?, ?>) resourceAccess.get(id);
-                        List<?> roles = (List<?>) clientAccess.get("roles");
-                        return roles.stream()
-                            .map(String::valueOf)
-                            .map(role -> new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()));
-                    })
-                    .forEach(authorities::add);
+            if (resourceAccess != null && resourceAccess.get(clientId) instanceof Map<?, ?> clientAccess) {
+                roles.addAll(rolesFrom(clientAccess));
             }
+
+            roles.stream()
+                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.toUpperCase(Locale.ROOT)))
+                .forEach(authorities::add);
             return authorities;
         });
         return converter;
+    }
+
+    /** Reads the {@code roles} list out of a {@code realm_access} or client-access claim. */
+    private static Collection<String> rolesFrom(Map<?, ?> claim) {
+        if (claim == null || !(claim.get("roles") instanceof List<?> roleList)) {
+            return Set.of();
+        }
+        return roleList.stream()
+            .filter(String.class::isInstance)
+            .map(String.class::cast)
+            .toList();
     }
 
     /**

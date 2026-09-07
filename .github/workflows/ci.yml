@@ -8,6 +8,8 @@ on:
   push:
     branches:
       - main
+      # deploy.yml also ships release branches, so they must be verified first.
+      - release/*
 
 permissions:
   contents: read

@@ -21,7 +21,8 @@ public interface MediaCategoryMapper {
 
     List<MediaCategoryDto> toDtoList(List<MediaCategoryEntity> entities);
 
-    /** Merges non-null fields from {@code request} into the existing {@code entity}. */
+    /** Merges non-null fields from {@code request}. The id comes from the path, not the body. */
+    @Mapping(target = "id", ignore = true)
     void updateEntity(MediaCategoryUpdateRequest request, @MappingTarget MediaCategoryEntity entity);
 }
 

@@ -4,7 +4,6 @@ import com.yogida.meditation.dto.FavouriteDto;
 import com.yogida.meditation.entity.FavouriteEntity;
 import com.yogida.meditation.exception.EntityNotFoundException;
 import com.yogida.meditation.mapper.FavouriteMapper;
-import com.yogida.meditation.repository.AppUserRepository;
 import com.yogida.meditation.repository.FavouriteRepository;
 import com.yogida.meditation.service.api.FavouriteApi;
 import lombok.RequiredArgsConstructor;
@@ -21,21 +20,29 @@ import java.util.List;
 public class FavouriteService implements FavouriteApi {
 
     private final FavouriteRepository favouriteRepository;
-    private final AppUserRepository appUserRepository;
     private final FavouriteMapper favouriteMapper;
+    private final CurrentUserService currentUserService;
 
+    /**
+     * Every method here is scoped to the authenticated caller.
+     *
+     * <p>They used to operate on any row by id, with identity taken from the request body and
+     * only checked for existence — so a signed-in user could list, read, edit and delete
+     * anyone's favourites, and create favourites owned by someone else. Rows belonging to
+     * another user now report 404 rather than 403, so ids stay unenumerable.
+     */
     @Override
     @Transactional(readOnly = true)
     public List<FavouriteDto> findAll() {
-        return favouriteRepository.findAll().stream().map(favouriteMapper::toDto).toList();
+        return favouriteRepository.findByUserUserId(currentUserId()).stream()
+                .map(favouriteMapper::toDto)
+                .toList();
     }
 
     @Override
     @Transactional(readOnly = true)
     public FavouriteDto findById(Long id) {
-        return favouriteRepository.findById(id)
-                .map(favouriteMapper::toDto)
-                .orElseThrow(() -> new EntityNotFoundException("Favourite", id));
+        return favouriteMapper.toDto(findOwnedOrThrow(id));
     }
 
     /**
@@ -45,12 +52,14 @@ public class FavouriteService implements FavouriteApi {
     @Override
     @Transactional
     public FavouriteDto create(FavouriteDto dto) {
-        validateUserExists(dto.getUserId());
+        // Ownership comes from the token. Whatever userId the body carries is ignored.
+        Long ownerId = currentUserId();
+        dto.setUserId(ownerId);
         validateContentData(dto);
 
         // Check for existing favourite
         var existing = favouriteRepository.findByUserUserIdAndContentTypeAndContentId(
-                dto.getUserId(),
+                ownerId,
                 dto.getContentType(),
                 dto.getContentId()
         );
@@ -73,11 +82,8 @@ public class FavouriteService implements FavouriteApi {
     @Override
     @Transactional
     public FavouriteDto update(Long id, FavouriteDto dto) {
-        FavouriteEntity existing = favouriteRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Favourite", id));
-        if (dto.getUserId() != null) {
-            validateUserExists(dto.getUserId());
-        }
+        FavouriteEntity existing = findOwnedOrThrow(id);
+        // The mapper ignores the owner, so an update cannot reassign the row.
         favouriteMapper.updateEntity(dto, existing);
         FavouriteEntity saved = favouriteRepository.save(existing);
         log.info("FavouriteService > Updated favourite with id: {}", saved.getFavouriteId());
@@ -87,19 +93,25 @@ public class FavouriteService implements FavouriteApi {
     @Override
     @Transactional
     public void delete(Long id) {
-        if (!favouriteRepository.existsById(id)) {
-            throw new EntityNotFoundException("Favourite", id);
-        }
-        favouriteRepository.deleteById(id);
+        FavouriteEntity owned = findOwnedOrThrow(id);
+        favouriteRepository.delete(owned);
         log.info("FavouriteService > Deleted favourite with id: {}", id);
     }
 
 
 
-    private void validateUserExists(Long userId) {
-        if (userId == null || !appUserRepository.existsById(userId)) {
-            throw new EntityNotFoundException("AppUser", userId);
-        }
+    private Long currentUserId() {
+        return currentUserService.getCurrentUserOrThrow().getUserId();
+    }
+
+    /**
+     * Loads a favourite only if it belongs to the caller. Reports "not found" for someone
+     * else's row, deliberately: a 403 would confirm the id exists.
+     */
+    private FavouriteEntity findOwnedOrThrow(Long id) {
+        return favouriteRepository.findById(id)
+                .filter(f -> f.getUser() != null && currentUserId().equals(f.getUser().getUserId()))
+                .orElseThrow(() -> new EntityNotFoundException("Favourite", id));
     }
 
     private void validateContentData(FavouriteDto dto) {

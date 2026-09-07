@@ -2,6 +2,7 @@ package com.yogida.meditation.controller;
 
 import com.yogida.meditation.controller.api.MediaRatingControllerApi;
 import com.yogida.meditation.dto.*;
+import com.yogida.meditation.service.CurrentUserService;
 import com.yogida.meditation.service.api.MediaReviewApi;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -16,11 +17,14 @@ import java.util.Set;
 public class MediaRatingController implements MediaRatingControllerApi {
 
     private final MediaReviewApi mediaReviewApi;
+    private final CurrentUserService currentUserService;
 
     @Override
     public ResponseEntity<MediaReviewResponse> save(Long mediaId, MediaReviewSaveRequest request) {
+        // The author is whoever holds the token, never whoever the body claims.
+        Long authorId = currentUserService.getCurrentUserOrThrow().getUserId();
         return ResponseEntity.ok(
-                mediaReviewApi.save(mediaId, request.userId(), request.rating(), request.reviewText()));
+                mediaReviewApi.save(mediaId, authorId, request.rating(), request.reviewText()));
     }
 
     @Override

@@ -4,11 +4,13 @@ import com.yogida.meditation.exception.BreathingNotFoundException;
 import com.yogida.meditation.exception.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
@@ -107,6 +109,52 @@ public class GlobalExceptionHandler {
         }
         String message = ex.getReason() != null ? ex.getReason() : ex.getMessage();
         return buildResponse(status, message, request);
+    }
+
+    /**
+     * A valid token whose subject has no {@code app_user} row.
+     *
+     * <p>{@code CurrentUserService.getCurrentUserOrThrow()} raises this, and nothing handled
+     * it — so the catch-all below turned it into a 500. That is the wrong answer and the wrong
+     * signal: the caller is authenticated but not provisioned, which is a 401 telling the
+     * client to complete sign-in, not a server fault. Reproduced with a real token during the
+     * infrastructure work: every endpoint returned 500 for a user Keycloak knew and the
+     * database did not.
+     */
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<Map<String, Object>> handleIllegalState(IllegalStateException ex,
+                                                                   HttpServletRequest request) {
+        log.warn("Unresolvable caller on [{} {}]: {}", request.getMethod(), request.getRequestURI(), ex.getMessage());
+        return buildResponse(HttpStatus.UNAUTHORIZED, "Authenticated user is not provisioned", request);
+    }
+
+    /**
+     * A database constraint refused the write.
+     *
+     * <p>Unhandled, this surfaced as a 500 for entirely ordinary situations: deleting a media
+     * item that still has reviews (media_review's foreign keys have no cascade), or racing two
+     * identical favourites past the check-then-insert into the unique constraint. 409 says what
+     * actually happened.
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleDataIntegrityViolation(DataIntegrityViolationException ex,
+                                                                             HttpServletRequest request) {
+        log.warn("Constraint violation on [{} {}]: {}", request.getMethod(), request.getRequestURI(),
+            ex.getMostSpecificCause().getMessage());
+        return buildResponse(HttpStatus.CONFLICT,
+            "The request conflicts with existing data or a related record still references it", request);
+    }
+
+    /**
+     * An authenticated caller without the required role. Spring Security raises this from
+     * {@code @PreAuthorize} and the filter chain; letting it reach the catch-all would report
+     * a refusal as a server error.
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<Map<String, Object>> handleAccessDenied(AccessDeniedException ex,
+                                                                    HttpServletRequest request) {
+        log.warn("Access denied on [{} {}]", request.getMethod(), request.getRequestURI());
+        return buildResponse(HttpStatus.FORBIDDEN, "Access denied", request);
     }
 
     @ExceptionHandler(Exception.class)

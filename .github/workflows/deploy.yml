@@ -5,7 +5,8 @@ on:
   push:
     branches:
       - main
-      - feature/refactoring
+      # feature/refactoring was here: any push to that branch deployed straight to
+      # production, and CI does not run on it.
       - release/*
 
 permissions:
