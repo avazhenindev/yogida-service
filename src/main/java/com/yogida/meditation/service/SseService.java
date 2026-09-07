@@ -1,9 +1,7 @@
 package com.yogida.meditation.service;
 
-import com.yogida.meditation.dto.RevenueCatWebhookRequest;
 import com.yogida.meditation.service.api.SseApi;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -81,9 +79,14 @@ public class SseService implements SseApi {
     }
 
     @Override
-    public void publishToUser(String keycloakUserId, String name, RevenueCatWebhookRequest.Event event) {
-        log.debug("SseService > Publishing entitlement update to user {}: {}", event.appUserId(), event);
-        String payload = event.type();
+    public void publishToUser(String keycloakUserId, String eventType) {
+        // Deliberately does not log the RevenueCat event object. It carries the app user id,
+        // product id, store and entitlement ids, and this logger defaults to DEBUG in every
+        // environment — so logging it here would leak subscriber data into the request log
+        // regardless of what the controller does upstream.
+        log.debug("SseService > Publishing entitlement update to user {} (event type {})",
+            keycloakUserId, eventType);
+        String payload = eventType == null ? "" : eventType;
         ConcurrentHashMap<String, SseEmitter> userEmitters = registry.get(keycloakUserId);
         if (userEmitters == null || userEmitters.isEmpty()) {
             enqueuePendingEvent(keycloakUserId, payload);
@@ -94,8 +97,8 @@ public class SseService implements SseApi {
         for (Map.Entry<String, SseEmitter> entry : userEmitters.entrySet()) {
             try {
                 entry.getValue().send(SseEmitter.event()
-                    .name("entitlement-update")
-                    .data(payload, MediaType.APPLICATION_JSON));
+                    .name(ENTITLEMENT_UPDATE_EVENT)
+                    .data(payload));
                 sent++;
             } catch (IOException | IllegalStateException e) {
                 // Dead client (broken pipe surfaces as IllegalStateException from
@@ -150,8 +153,8 @@ public class SseService implements SseApi {
                 keycloakUserId, clientId, event);
             try {
                 emitter.send(SseEmitter.event()
-                    .name("entitlement-update")
-                    .data(event, MediaType.APPLICATION_JSON));
+                    .name(ENTITLEMENT_UPDATE_EVENT)
+                    .data(event));
                 flushed++;
             } catch (IOException | IllegalStateException e) {
                 queue.offerFirst(event); // keep order; retry on the next reconnect

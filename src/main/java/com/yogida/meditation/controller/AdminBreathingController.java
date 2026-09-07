@@ -2,6 +2,7 @@ package com.yogida.meditation.controller;
 
 import com.yogida.meditation.controller.api.AdminBreathingControllerApi;
 import com.yogida.meditation.dto.*;
+import com.yogida.meditation.service.BreathingAudioMigrationService;
 import com.yogida.meditation.service.api.BreathingApi;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -11,13 +12,12 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
-import java.util.List;
-
 @RestController
 @RequiredArgsConstructor
 public class AdminBreathingController implements AdminBreathingControllerApi {
 
     private final BreathingApi breathingApi;
+    private final BreathingAudioMigrationService breathingAudioMigrationService;
 
     @Override
     public ResponseEntity<List<BreathingDto>> getAll() {
@@ -61,5 +61,10 @@ public class AdminBreathingController implements AdminBreathingControllerApi {
     @Override
     public ResponseEntity<BreathingDto> removeAudio(Long phaseId, Long audioObjectId) {
         return ResponseEntity.ok(breathingApi.removeAudioFromPhase(phaseId, audioObjectId));
+    }
+
+    @Override
+    public ResponseEntity<BreathingAudioMigrationResult> migrateAudioToPrivateBucket(boolean dryRun) {
+        return ResponseEntity.ok(breathingAudioMigrationService.migrateToPrivateBucket(dryRun));
     }
 }

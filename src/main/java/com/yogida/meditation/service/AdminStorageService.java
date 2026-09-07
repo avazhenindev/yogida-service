@@ -88,5 +88,38 @@ public class AdminStorageService implements AdminStorageApi {
         return "https://" + r2Properties.accountId() + ".r2.cloudflarestorage.com/"
                 + bucketName + "/" + objectKey;
     }
-}
 
+    /**
+     * Server-side copy between buckets, used by the one-off migration that moves premium
+     * breathing audio out of the public bucket.
+     */
+    @Override
+    public boolean copyObject(String sourceBucket, String sourceKey,
+                              String targetBucket, String targetKey) {
+        try {
+            s3Client.copyObject(CopyObjectRequest.builder()
+                    .sourceBucket(sourceBucket)
+                    .sourceKey(sourceKey)
+                    .destinationBucket(targetBucket)
+                    .destinationKey(targetKey)
+                    .build());
+            return true;
+        } catch (NoSuchKeyException e) {
+            log.warn("AdminStorageService > Copy source missing: {}/{}", sourceBucket, sourceKey);
+            return false;
+        }
+    }
+
+    @Override
+    public boolean objectExists(String bucketName, String objectKey) {
+        try {
+            s3Client.headObject(HeadObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(objectKey)
+                    .build());
+            return true;
+        } catch (NoSuchKeyException e) {
+            return false;
+        }
+    }
+}

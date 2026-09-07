@@ -15,7 +15,10 @@ import java.util.UUID;
 public class MediaPictureStorageService {
 
     private static final String PICTURE_BUCKET_NAME = BucketNames.PUBLIC;
-    private static final String PICTURE_KEY_PREFIX = "{}/".formatted(BucketNames.PICTURES);
+    // Was `"{}/".formatted(BucketNames.PICTURES)`. String.formatted takes %s, not SLF4J's {},
+    // and Java's formatter silently ignores surplus arguments — so the prefix evaluated to the
+    // literal two characters "{}/" and every picture ever uploaded landed at "{}/<uuid>-<name>".
+    private static final String PICTURE_KEY_PREFIX = BucketNames.PICTURES + "/";
 
     private final AdminStorageApi adminStorageApi;
     private final S3ObjectService s3ObjectService;

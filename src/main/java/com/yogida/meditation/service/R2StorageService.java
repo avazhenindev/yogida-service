@@ -26,7 +26,7 @@ public class R2StorageService implements R2StorageApi {
     private final S3Presigner s3Presigner;
     private final R2Properties r2Properties;
 
-    @Value("${app.audio.presigned-url-duration-minutes:15}")
+    @Value("${app.audio.presigned-url-duration-minutes:60}")
     private long presignedUrlDurationMinutes;
 
     @Override

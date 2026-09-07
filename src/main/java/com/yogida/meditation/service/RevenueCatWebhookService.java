@@ -3,7 +3,6 @@ package com.yogida.meditation.service;
 import com.yogida.meditation.dto.RevenueCatWebhookRequest;
 import com.yogida.meditation.entity.AppUserEntity;
 import com.yogida.meditation.enums.RevenueCatEventType;
-import com.yogida.meditation.enums.SseMessageType;
 import com.yogida.meditation.repository.AppUserRepository;
 import com.yogida.meditation.service.api.RevenueCatWebhookApi;
 import com.yogida.meditation.service.api.SseApi;
@@ -14,10 +13,15 @@ import org.springframework.stereotype.Service;
 import java.util.Optional;
 
 /**
- * Processes RevenueCat webhook events by evicting the cached entitlement entry
- * for the affected user and pushing fresh customer info to any connected SSE clients.
- * No local subscription state is written to the database.
- * RevenueCat is the authoritative entitlement source.
+ * Processes RevenueCat webhook events.
+ *
+ * <p>For an entitlement-affecting event the user's entitlement is re-read from the RevenueCat
+ * Subscriber API and written to the durable projection, then connected SSE clients are signalled
+ * so they re-query their own customer info. No subscription state is invented locally —
+ * RevenueCat remains the source of truth and the projection only mirrors it.
+ *
+ * <p>Deliveries are deduplicated by RevenueCat's event id, because RevenueCat retries and the
+ * endpoint's published contract has always claimed idempotency.
  */
 @Log4j2
 @Service
@@ -26,38 +30,37 @@ public class RevenueCatWebhookService implements RevenueCatWebhookApi {
 
     private final AppUserRepository appUserRepository;
     private final EntitlementService entitlementService;
-    private final RevenueCatSubscriberClient subscriberClient;
+    private final EntitlementProjectionService projectionService;
     private final SseApi sseApi;
 
     @Override
     public void processEvent(RevenueCatWebhookRequest request) {
-        log.info("RevenueCatWebhookService > Received webhook event: {}", request);
         RevenueCatWebhookRequest.Event event = request == null ? null : request.event();
         if (event == null || event.type() == null) {
             log.warn("RevenueCatWebhookService > Skipping webhook without event type");
             return;
         }
+        log.info("RevenueCatWebhookService > Processing event {} of type {}", event.id(), event.type());
+
         if (!RevenueCatEventType.isEntitlementAffecting(event.type())) {
             log.debug("RevenueCatWebhookService > Ignoring non-entitlement event type: {}", event.type());
             return;
         }
+
+        // RevenueCat retries; without this a single purchase can be handled several times.
+        // An event with no id cannot be deduplicated, so it is processed rather than dropped.
+        if (event.id() != null && !projectionService.claimEvent(event.id(), event.type(), event.appUserId())) {
+            log.info("RevenueCatWebhookService > Event {} already processed; skipping redelivery", event.id());
+            return;
+        }
+
         resolveKeycloakUserId(event).ifPresentOrElse(
             userId -> {
-                entitlementService.evictUserEntitlement(userId);
-                publishEntitlementUpdate(userId, event);
+                entitlementService.refreshUserEntitlement(userId, event.id());
+                sseApi.publishToUser(userId, event.type());
             },
-            () -> log.warn("RevenueCatWebhookService > No user found for RC app_user_id: {}",
-                event.appUserId())
+            () -> log.warn("RevenueCatWebhookService > No user found for RC app_user_id on event {}", event.id())
         );
-    }
-
-    /**
-     * Fetches fresh customer info from RevenueCat and pushes it to any connected SSE clients.
-     * If the RC API call fails (returns empty), the SSE push is skipped gracefully.
-     */
-    private void publishEntitlementUpdate(String userId, RevenueCatWebhookRequest.Event event) {
-        log.info("RevenueCatWebhookService > Publishing entitlement update to SSE for user {}", userId);
-        sseApi.publishToUser(userId, SseMessageType.TEST.name(), event);
     }
 
     private Optional<String> resolveKeycloakUserId(RevenueCatWebhookRequest.Event event) {
@@ -69,4 +72,3 @@ public class RevenueCatWebhookService implements RevenueCatWebhookApi {
                 .map(AppUserEntity::getKeycloakUserId));
     }
 }
-

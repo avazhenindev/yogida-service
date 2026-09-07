@@ -23,11 +23,18 @@ public class RevenueCatWebhookController implements RevenueCatWebhookControllerA
 
     @Override
     public ResponseEntity<Void> handleWebhook(String authorization, RevenueCatWebhookRequest request) {
-        log.info("RevenueCatWebhookController > Received webhook event: {}", request);
+        // Nothing about the payload is logged before the shared secret is verified: this
+        // endpoint is public by necessity, so anyone on the internet could otherwise write
+        // arbitrary content into the request log by POSTing to it. Even after the check, only
+        // the event id and type are recorded — the full payload carries the subscriber's app
+        // user id, product id, store and entitlement ids.
         if (!isAuthorized(authorization)) {
             log.warn("RevenueCatWebhookController > Rejected webhook with invalid authorization");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
+        log.info("RevenueCatWebhookController > Accepted webhook event {} of type {}",
+            request == null || request.event() == null ? null : request.event().id(),
+            request == null || request.event() == null ? null : request.event().type());
         revenueCatWebhookService.processEvent(request);
         return ResponseEntity.ok().build();
     }

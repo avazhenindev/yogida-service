@@ -97,4 +97,24 @@ public interface AdminBreathingControllerApi {
     ResponseEntity<BreathingDto> removeAudio(
             @Parameter(description = "Phase ID", required = true) @PathVariable Long phaseId,
             @Parameter(description = "S3 audio object ID to remove", required = true) @PathVariable Long audioObjectId);
+
+    @Operation(
+            summary = "Move breathing phase audio into the private bucket",
+            description = "One-off migration. Breathing phase audio was originally uploaded to the "
+                    + "PUBLIC bucket and served by unsigned URL, so premium exercises were readable "
+                    + "by anyone holding the link. New uploads now go to the private bucket; this "
+                    + "moves the objects that predate that change and repoints their s3_object rows. "
+                    + "Idempotent and safe to re-run. Run it with dryRun=true first — the delete of "
+                    + "the public copy is not reversible.",
+            operationId = "migrateBreathingAudioToPrivateBucket"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Migration report"),
+            @ApiResponse(responseCode = "403", description = "Caller is not an administrator"),
+            @ApiResponse(responseCode = "500", description = "Private bucket is not configured")
+    })
+    @PostMapping("/audio/migrate-to-private")
+    ResponseEntity<BreathingAudioMigrationResult> migrateAudioToPrivateBucket(
+            @Parameter(description = "Report what would move without changing anything. Defaults to true.")
+            @RequestParam(defaultValue = "true") boolean dryRun);
 }

@@ -1,9 +1,7 @@
 package com.yogida.meditation.service;
 
-import com.yogida.meditation.dto.RevenueCatSubscriberResponse;
 import com.yogida.meditation.dto.RevenueCatWebhookRequest;
 import com.yogida.meditation.entity.AppUserEntity;
-import com.yogida.meditation.enums.SseMessageType;
 import com.yogida.meditation.repository.AppUserRepository;
 import com.yogida.meditation.service.api.SseApi;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,7 +13,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.Optional;
 
-import static org.mockito.Mockito.mock;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -24,78 +24,105 @@ import static org.mockito.Mockito.when;
 class RevenueCatWebhookServiceTest {
 
     private static final String KEYCLOAK_ID = "kc-user-1";
+    private static final String EVENT_ID = "evt-1";
 
     @Mock private AppUserRepository appUserRepository;
     @Mock private EntitlementService entitlementService;
-    @Mock private RevenueCatSubscriberClient subscriberClient;
+    @Mock private EntitlementProjectionService projectionService;
     @Mock private SseApi sseApi;
 
     private RevenueCatWebhookService service;
 
     @BeforeEach
     void setUp() {
-        service = new RevenueCatWebhookService(appUserRepository, entitlementService, subscriberClient, sseApi);
+        service = new RevenueCatWebhookService(
+                appUserRepository, entitlementService, projectionService, sseApi);
     }
 
     @Test
-    void initialPurchase_evictsCacheAndPushesSSE() {
-        AppUserEntity user = user();
-        when(appUserRepository.findByKeycloakUserId(KEYCLOAK_ID)).thenReturn(Optional.of(user));
-        RevenueCatWebhookRequest request = request("INITIAL_PURCHASE");
+    void initialPurchase_refreshesEntitlementAndSignalsClients() {
+        givenClaimSucceeds();
+        when(appUserRepository.findByKeycloakUserId(KEYCLOAK_ID)).thenReturn(Optional.of(user()));
 
-        service.processEvent(request);
+        service.processEvent(request("INITIAL_PURCHASE"));
 
-        verify(entitlementService).evictUserEntitlement(KEYCLOAK_ID);
-        verify(sseApi).publishToUser(KEYCLOAK_ID, SseMessageType.TEST.name(), request.event());
+        verify(entitlementService).refreshUserEntitlement(KEYCLOAK_ID, EVENT_ID);
+        verify(sseApi).publishToUser(KEYCLOAK_ID, "INITIAL_PURCHASE");
     }
 
     @Test
-    void renewal_evictsCacheAndPushesSSE() {
-        AppUserEntity user = user();
-        when(appUserRepository.findByKeycloakUserId(KEYCLOAK_ID)).thenReturn(Optional.of(user));
-        RevenueCatWebhookRequest request = request("RENEWAL");
+    void renewal_refreshesEntitlementAndSignalsClients() {
+        givenClaimSucceeds();
+        when(appUserRepository.findByKeycloakUserId(KEYCLOAK_ID)).thenReturn(Optional.of(user()));
 
-        service.processEvent(request);
+        service.processEvent(request("RENEWAL"));
 
-        verify(entitlementService).evictUserEntitlement(KEYCLOAK_ID);
-        verify(sseApi).publishToUser(KEYCLOAK_ID, SseMessageType.TEST.name(), request.event());
+        verify(entitlementService).refreshUserEntitlement(KEYCLOAK_ID, EVENT_ID);
+        verify(sseApi).publishToUser(KEYCLOAK_ID, "RENEWAL");
     }
 
     @Test
-    void expiration_evictsCacheAndPushesSSE() {
-        AppUserEntity user = user();
-        when(appUserRepository.findByKeycloakUserId(KEYCLOAK_ID)).thenReturn(Optional.of(user));
-        RevenueCatWebhookRequest request = request("EXPIRATION");
+    void expiration_refreshesEntitlementAndSignalsClients() {
+        givenClaimSucceeds();
+        when(appUserRepository.findByKeycloakUserId(KEYCLOAK_ID)).thenReturn(Optional.of(user()));
 
-        service.processEvent(request);
+        service.processEvent(request("EXPIRATION"));
 
-        verify(entitlementService).evictUserEntitlement(KEYCLOAK_ID);
-        verify(sseApi).publishToUser(KEYCLOAK_ID, SseMessageType.TEST.name(), request.event());
+        verify(entitlementService).refreshUserEntitlement(KEYCLOAK_ID, EVENT_ID);
+        verify(sseApi).publishToUser(KEYCLOAK_ID, "EXPIRATION");
+    }
+
+    /**
+     * RevenueCat retries deliveries. A redelivery must not refresh or notify a second time —
+     * the endpoint's published contract has always claimed this and never implemented it.
+     */
+    @Test
+    void redeliveredEvent_isSkipped() {
+        when(projectionService.claimEvent(EVENT_ID, "RENEWAL", KEYCLOAK_ID)).thenReturn(false);
+
+        service.processEvent(request("RENEWAL"));
+
+        verifyNoInteractions(appUserRepository, entitlementService, sseApi);
+    }
+
+    /** An event with no id cannot be deduplicated, so it is processed rather than dropped. */
+    @Test
+    void eventWithoutId_isProcessedWithoutClaiming() {
+        when(appUserRepository.findByKeycloakUserId(KEYCLOAK_ID)).thenReturn(Optional.of(user()));
+        RevenueCatWebhookRequest.Event event = new RevenueCatWebhookRequest.Event(
+                null, "RENEWAL", KEYCLOAK_ID, KEYCLOAK_ID, "prod_month",
+                "APP_STORE", "PRODUCTION", List.of("premium"), null, null);
+
+        service.processEvent(new RevenueCatWebhookRequest(event, "1.0"));
+
+        verify(projectionService, never()).claimEvent(any(), any(), any());
+        verify(entitlementService).refreshUserEntitlement(KEYCLOAK_ID, null);
     }
 
     @Test
     void testEvent_isIgnored() {
         service.processEvent(request("TEST"));
 
-        verifyNoInteractions(appUserRepository, entitlementService, subscriberClient, sseApi);
+        verifyNoInteractions(appUserRepository, entitlementService, projectionService, sseApi);
     }
 
     @Test
     void experimentEnrollment_isIgnored() {
         service.processEvent(request("EXPERIMENT_ENROLLMENT"));
 
-        verifyNoInteractions(appUserRepository, entitlementService, subscriberClient, sseApi);
+        verifyNoInteractions(appUserRepository, entitlementService, projectionService, sseApi);
     }
 
     @Test
     void unknownEventType_isIgnoredGracefully() {
         service.processEvent(request("FUTURE_UNKNOWN_TYPE"));
 
-        verifyNoInteractions(appUserRepository, entitlementService, subscriberClient, sseApi);
+        verifyNoInteractions(appUserRepository, entitlementService, projectionService, sseApi);
     }
 
     @Test
-    void noUserFound_skipsCacheEvictAndSSE() {
+    void noUserFound_skipsRefreshAndSse() {
+        givenClaimSucceeds();
         when(appUserRepository.findByKeycloakUserId(KEYCLOAK_ID)).thenReturn(Optional.empty());
 
         service.processEvent(request("CANCELLATION"));
@@ -104,37 +131,29 @@ class RevenueCatWebhookServiceTest {
     }
 
     @Test
-    void cacheStillEvicted_andSsePublished_withoutSubscriberClientLookup() {
-        AppUserEntity user = user();
-        when(appUserRepository.findByKeycloakUserId(KEYCLOAK_ID)).thenReturn(Optional.of(user));
-        RevenueCatWebhookRequest request = request("CANCELLATION");
-
-        service.processEvent(request);
-
-        verify(entitlementService).evictUserEntitlement(KEYCLOAK_ID);
-        verify(sseApi).publishToUser(KEYCLOAK_ID, SseMessageType.TEST.name(), request.event());
-        verifyNoInteractions(subscriberClient);
-    }
-
-    @Test
     void nullRequest_isSkipped() {
         service.processEvent(null);
 
-        verifyNoInteractions(appUserRepository, entitlementService, subscriberClient, sseApi);
+        verifyNoInteractions(appUserRepository, entitlementService, projectionService, sseApi);
     }
 
     @Test
     void nullEventType_isSkipped() {
         RevenueCatWebhookRequest.Event event = new RevenueCatWebhookRequest.Event(
-                "evt-1", null, KEYCLOAK_ID, KEYCLOAK_ID, null, null, null, null, null, null);
+                EVENT_ID, null, KEYCLOAK_ID, KEYCLOAK_ID, null, null, null, null, null, null);
+
         service.processEvent(new RevenueCatWebhookRequest(event, "1.0"));
 
-        verifyNoInteractions(appUserRepository, entitlementService, subscriberClient, sseApi);
+        verifyNoInteractions(appUserRepository, entitlementService, projectionService, sseApi);
+    }
+
+    private void givenClaimSucceeds() {
+        when(projectionService.claimEvent(anyString(), anyString(), anyString())).thenReturn(true);
     }
 
     private RevenueCatWebhookRequest request(String type) {
         RevenueCatWebhookRequest.Event event = new RevenueCatWebhookRequest.Event(
-                "evt-1", type, KEYCLOAK_ID, KEYCLOAK_ID, "prod_month",
+                EVENT_ID, type, KEYCLOAK_ID, KEYCLOAK_ID, "prod_month",
                 "APP_STORE", "PRODUCTION", List.of("premium"), null, null);
         return new RevenueCatWebhookRequest(event, "1.0");
     }

@@ -1,12 +1,14 @@
 package com.yogida.meditation.service.api;
 
-import com.yogida.meditation.dto.RevenueCatWebhookRequest;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
  * Contract for user-scoped Server-Sent Events.
  */
 public interface SseApi {
+
+    /** The SSE event name every entitlement notification is published under. */
+    String ENTITLEMENT_UPDATE_EVENT = "entitlement-update";
 
     /**
      * Opens a new SSE stream for the given user and registers it in the emitter registry.
@@ -21,14 +23,20 @@ public interface SseApi {
     SseEmitter subscribe(String keycloakUserId, String clientId);
 
     /**
-     * Pushes a typed {@link com.yogida.meditation.dto.SseEvent} envelope to all active connections
-     * of the given user. Dead emitters are silently removed. When the user has no deliverable
-     * connection, the event is retained in a bounded per-user pending queue and flushed on the
-     * user's next subscribe.
+     * Signals every active connection of the given user that their entitlement may have
+     * changed, so the client re-queries its own customer info.
      *
-     * @param keycloakUserId
-     * @param name
-     * @param event          the event to publish
+     * <p>The payload is deliberately just the originating event type — a hint, not state.
+     * Entitlement itself is never pushed over this channel: the client is the one holding a
+     * RevenueCat SDK session, and a value pushed from here would be a second, racier source
+     * of truth for something the client can read authoritatively.
+     *
+     * <p>Dead emitters are removed. When the user has no deliverable connection the event is
+     * retained in a bounded per-user pending queue and flushed on their next subscribe.
+     *
+     * @param keycloakUserId the user whose connections should be signalled
+     * @param eventType      the originating RevenueCat event type, or a short token for
+     *                       synthetic events; sent verbatim as the SSE data field
      */
-    void publishToUser(String keycloakUserId, String name, RevenueCatWebhookRequest.Event event);
+    void publishToUser(String keycloakUserId, String eventType);
 }

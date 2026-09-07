@@ -1,0 +1,98 @@
+databaseChangeLog:
+  - changeSet:
+      id: 034-create-entitlement-projection-tables
+      author: yogida
+      comment: >
+        Adds the durable entitlement projection and the RevenueCat webhook idempotency ledger.
+
+        user_entitlement is one row per user holding the last authoritative answer from the
+        RevenueCat Subscriber API. It is not a subscription system — changelog 030 dropped
+        those tables deliberately and RevenueCat remains the single source of truth. It exists
+        because the in-memory Caffeine cache cannot survive a restart or reach a second
+        instance, so a missed webhook otherwise leaves entitlement wrong for a full cache TTL
+        with nothing to notice or correct it.
+
+        revenuecat_webhook_event records which event ids have been processed. RevenueCat
+        retries deliveries, and the webhook OpenAPI description has always claimed idempotency
+        that was never implemented.
+      changes:
+
+        - createTable:
+            tableName: user_entitlement
+            columns:
+              - column:
+                  name: keycloak_user_id
+                  type: VARCHAR(100)
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: entitled
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              # Null means the entitlement does not expire (lifetime / non-renewing purchase).
+              - column:
+                  name: expires_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: true
+              - column:
+                  name: product_identifier
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: refreshed_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              # The webhook event that last refreshed this row; null when a read miss did.
+              - column:
+                  name: source_event_id
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: true
+
+        - createTable:
+            tableName: revenuecat_webhook_event
+            columns:
+              - column:
+                  name: rc_event_id
+                  type: VARCHAR(255)
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: event_type
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: rc_app_user_id
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: received_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+
+        # The scheduled purge deletes by age, so it needs this to avoid a full scan.
+        - createIndex:
+            tableName: revenuecat_webhook_event
+            indexName: idx_revenuecat_webhook_event_received_at
+            columns:
+              - column:
+                  name: received_at
+
+      rollback:
+        - dropIndex:
+            tableName: revenuecat_webhook_event
+            indexName: idx_revenuecat_webhook_event_received_at
+        - dropTable:
+            tableName: revenuecat_webhook_event
+        - dropTable:
+            tableName: user_entitlement
