@@ -1,0 +1,57 @@
+databaseChangeLog:
+  - changeSet:
+      id: 035-add-nplusone-supporting-indexes
+      author: yogida
+      comment: >
+        Indexes required by the query changes that removed the N+1 clusters.
+
+        Postgres does not index foreign keys automatically, so the batched "WHERE fk IN (...)"
+        loads that replaced the per-row selects would otherwise sequential-scan — trading an
+        N+1 for a smaller number of much more expensive queries.
+
+        s3_object.object_uri is the lookup used on every playback request. The only existing
+        structure covering it is the unique constraint on (bucket_name, base_url, object_uri),
+        where object_uri is the third column, so a lookup on it alone cannot seek.
+      changes:
+
+        - createIndex:
+            tableName: s3_object
+            indexName: idx_s3_object_object_uri
+            columns:
+              - column:
+                  name: object_uri
+
+        - createIndex:
+            tableName: media
+            indexName: idx_media_media_object_id
+            columns:
+              - column:
+                  name: media_object_id
+
+        - createIndex:
+            tableName: breathing_phase
+            indexName: idx_breathing_phase_breathing_id
+            columns:
+              - column:
+                  name: breathing_id
+
+        - createIndex:
+            tableName: breathing_phase_audio
+            indexName: idx_breathing_phase_audio_phase_id
+            columns:
+              - column:
+                  name: phase_id
+
+      rollback:
+        - dropIndex:
+            tableName: breathing_phase_audio
+            indexName: idx_breathing_phase_audio_phase_id
+        - dropIndex:
+            tableName: breathing_phase
+            indexName: idx_breathing_phase_breathing_id
+        - dropIndex:
+            tableName: media
+            indexName: idx_media_media_object_id
+        - dropIndex:
+            tableName: s3_object
+            indexName: idx_s3_object_object_uri

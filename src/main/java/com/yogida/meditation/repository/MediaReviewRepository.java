@@ -19,10 +19,21 @@ public interface MediaReviewRepository extends JpaRepository<MediaReviewEntity, 
     /** Finds the single review/rating row for a (user, media) pair. */
     Optional<MediaReviewEntity> findByUserAndMedia(AppUserEntity user, MediaEntity media);
 
-    /** Paginated list of all rows for a media item (including rating-only rows), sortable by Pageable. */
+    /**
+     * Paginated list of all rows for a media item (including rating-only rows), sortable by Pageable.
+     *
+     * <p>The user is fetch-joined because the response mapper reads the reviewer's email, which
+     * otherwise initialised one lazy proxy per row of the page. An inner JOIN FETCH is correct
+     * rather than a LEFT one: the association is {@code optional = false}.
+     *
+     * <p>The explicit countQuery must stay — Spring Data cannot derive a count from a query
+     * carrying a fetch join. Note this is a to-one fetch, so it does not trigger Hibernate's
+     * in-memory pagination warning the way a collection fetch on a paged query would.
+     */
     @Query(
         value = """
             SELECT r FROM MediaReviewEntity r
+            JOIN FETCH r.user
             WHERE r.media.id = :mediaId
             """,
         countQuery = """

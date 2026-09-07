@@ -1,5 +1,6 @@
 package com.yogida.meditation.entity;
 
+import org.hibernate.annotations.BatchSize;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -40,6 +41,10 @@ public class BreathingPhaseEntity {
     @Column(name = "display_order", nullable = false)
     private int displayOrder = 0;
 
+    // Batched like BreathingEntity.phases already is. Without it the exercise listing issued
+    // one select per phase to load its audio — the single largest contributor to the breathing
+    // endpoint's query count, and it is on the mobile hot path.
+    @BatchSize(size = 100)
     @OneToMany(mappedBy = "phase", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<BreathingPhaseAudioEntity> audioFiles = new ArrayList<>();
 }

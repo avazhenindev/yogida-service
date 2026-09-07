@@ -39,7 +39,7 @@ public class SecureStreamService {
         AppUserEntity currentUser = currentUserService.getCurrentUserOrThrow();
 
         // Find the media that owns this S3 object
-        MediaEntity media = findMediaByObjectUri(s3ObjectDto.getObjectUri())
+        MediaEntity media = mediaRepository.findFirstByMediaObjectObjectUri(s3ObjectDto.getObjectUri())
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Media not found"));
 
         // Verify entitlement
@@ -55,20 +55,4 @@ public class SecureStreamService {
         return Map.of("url", url);
     }
 
-    /**
-     * Find a media entity by its S3 object URI.
-     * This is a helper method that can be extracted to a repository method if reused.
-     *
-     * @param objectUri the S3 object URI
-     * @return Optional containing the media entity if found
-     */
-    @Transactional(readOnly = true)
-    private java.util.Optional<MediaEntity> findMediaByObjectUri(String objectUri) {
-        // Get all media and filter by media object URI
-        // In a real scenario, this could be optimized with a direct repository query
-        return mediaRepository.findAll().stream()
-            .filter(m -> m.getMediaObject() != null && 
-                        objectUri.equals(m.getMediaObject().getObjectUri()))
-            .findFirst();
-    }
 }

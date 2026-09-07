@@ -37,7 +37,7 @@ public class UserMediaFacadeService {
     @Transactional(readOnly = true)
     public List<MediaDto> findAllActive() {
         AppUserEntity currentUser = currentUserService.getCurrentUserOrThrow();
-        List<MediaEntity> allActive = mediaRepository.findAllByStatusEquals(MediaStatus.ACTIVE);
+        List<MediaEntity> allActive = mediaRepository.findAllByStatusEqualsOrderByIdAsc(MediaStatus.ACTIVE);
         return mediaUserMapper.toDtoListForUser(allActive, currentUser);
     }
 

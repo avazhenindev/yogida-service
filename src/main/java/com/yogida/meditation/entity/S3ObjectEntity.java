@@ -1,5 +1,6 @@
 package com.yogida.meditation.entity;
 
+import org.hibernate.annotations.BatchSize;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -13,6 +14,11 @@ import java.time.LocalDateTime;
 
 @Data
 @Entity
+// Class-level @BatchSize applies to lazy proxies OF this type, so wherever a collection of
+// rows each holds an s3_object reference, Hibernate initialises them as one
+// "... WHERE id IN (?,?,...)" instead of one select apiece. This is what keeps breathing
+// phase audio from costing a query per file.
+@BatchSize(size = 200)
 @Table(name = "s3_object")
 public class S3ObjectEntity {
 

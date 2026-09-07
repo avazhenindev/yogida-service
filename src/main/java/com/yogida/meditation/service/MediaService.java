@@ -46,13 +46,13 @@ public class MediaService implements MediaApi {
     @Override
     @Transactional(readOnly = true)
     public List<MediaDto> findAll() {
-        return mediaMapper.toDtoList(mediaRepository.findAll());
+        return mediaMapper.toDtoList(mediaRepository.findAllByOrderByIdAsc());
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<MediaDto> findAllActive() {
-        return mediaMapper.toDtoList(mediaRepository.findAllByStatus(MediaStatus.ACTIVE));
+        return mediaMapper.toDtoList(mediaRepository.findAllByStatusEqualsOrderByIdAsc(MediaStatus.ACTIVE));
     }
 
     @Override

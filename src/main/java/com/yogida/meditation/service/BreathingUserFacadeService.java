@@ -69,7 +69,7 @@ public class BreathingUserFacadeService {
     @Transactional(readOnly = true)
     public BreathingDto findByIdForCurrentUser(Long id) {
         AppUserEntity user = currentUserService.getCurrentUserOrThrow();
-        BreathingEntity entity = breathingRepository.findById(id)
+        BreathingEntity entity = breathingRepository.findWithGraphById(id)
                 .orElseThrow(() -> new BreathingNotFoundException(id));
         boolean premiumUser = entitlementService.isUserPremium(user.getKeycloakUserId());
         return applyEntitlement(entity, premiumUser);

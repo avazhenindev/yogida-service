@@ -67,3 +67,5 @@ databaseChangeLog:
       file: db/changelog/changes/033-fix-profile-two-factor-column-type.yaml
   - include:
       file: db/changelog/changes/034-create-entitlement-projection-tables.yaml
+  - include:
+      file: db/changelog/changes/035-add-nplusone-supporting-indexes.yaml

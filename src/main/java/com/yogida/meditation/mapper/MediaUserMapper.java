@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BooleanSupplier;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -43,28 +44,64 @@ public class MediaUserMapper {
      * @return the user-facing media DTO
      */
     public MediaDto toDtoForUser(MediaEntity entity, AppUserEntity user) {
-        // First map using the standard mapper (without isPremium from entity)
+        MediaDto dto = mapWithoutFavourite(entity, premiumResolver(user));
+        // Single-item path: one query for one row is the right shape.
+        enrichWithFavourite(dto, user, entity.getId());
+        return dto;
+    }
+
+    /**
+     * Maps one entity and applies entitlement, without touching favourites.
+     *
+     * <p>Split out so the list path can apply favourites from a single batch query instead of
+     * one query per item — the list used to call the single-item path and then immediately
+     * overwrite both favourite fields from the batch map, so every one of those N queries was
+     * issued and discarded.
+     *
+     * @param premiumUser resolved lazily; see {@link #premiumResolver(AppUserEntity)}
+     */
+    private MediaDto mapWithoutFavourite(MediaEntity entity, BooleanSupplier premiumUser) {
         MediaDto dto = mediaMapper.toDto(entity);
 
         // Suppress admin-only field from user-facing responses
         dto.setRequiresPremiumSubscription(null);
 
-        // Determine entitlement
         boolean isPremium = entitlementService.isPremium(entity);
-        boolean isEntitled = user != null && entitlementService.isEntitled(user, entity);
+        // Free media short-circuits before the supplier is touched, which is what keeps a
+        // catalogue containing no premium items at zero entitlement resolutions.
+        boolean isEntitled = !isPremium || premiumUser.getAsBoolean();
 
-        // Set isPremium based on user entitlement
         dto.setIsPremium(isPremium && !isEntitled);
 
-        // Withhold media URL if not entitled
         if (isPremium && !isEntitled && dto.getMediaObject() != null) {
             dto.getMediaObject().setUrl(null);
         }
-
-        // Enrich with favourite data
-        enrichWithFavourite(dto, user, entity.getId());
-
         return dto;
+    }
+
+    /**
+     * A once-per-request entitlement resolution, deferred until a premium item is actually seen.
+     *
+     * <p>Entitlement is a property of the user, not of the item, so resolving it per item repeats
+     * identical work. Resolving it eagerly instead would be a different regression: a listing with
+     * no premium content would start paying for a lookup it never previously made — and on a cache
+     * miss that lookup is a RevenueCat round trip.
+     */
+    private BooleanSupplier premiumResolver(AppUserEntity user) {
+        if (user == null) {
+            return () -> false;
+        }
+        return new BooleanSupplier() {
+            private Boolean resolved;
+
+            @Override
+            public boolean getAsBoolean() {
+                if (resolved == null) {
+                    resolved = entitlementService.isUserPremium(user.getKeycloakUserId());
+                }
+                return resolved;
+            }
+        };
     }
 
     /**
@@ -79,13 +116,13 @@ public class MediaUserMapper {
             return Collections.emptyList();
         }
 
-        // Build a map of media ID -> favourite ID for efficient lookup
+        // One query for every favourite the user has, instead of one per media item.
         Map<Long, Long> favouriteMap = buildFavouriteMap(user);
+        BooleanSupplier premiumUser = premiumResolver(user);
 
         return entities.stream()
             .map(entity -> {
-                MediaDto dto = toDtoForUser(entity, user);
-                // Override favourite data with pre-fetched map for batch efficiency
+                MediaDto dto = mapWithoutFavourite(entity, premiumUser);
                 applyFavouriteFromMap(dto, favouriteMap);
                 return dto;
             })

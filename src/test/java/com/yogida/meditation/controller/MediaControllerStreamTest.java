@@ -64,9 +64,10 @@ class MediaControllerStreamTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))
             .andExpect(status().isForbidden())
+            // RFC 9457 ProblemDetail: `message` became `detail`, `error` became `title`.
             .andExpect(jsonPath("$.status").value(403))
-            .andExpect(jsonPath("$.message").value("Not entitled to access this media"))
-            .andExpect(jsonPath("$.error").value("Forbidden"));
+            .andExpect(jsonPath("$.detail").value("Not entitled to access this media"))
+            .andExpect(jsonPath("$.title").value("Forbidden"));
     }
 
     @Test
@@ -83,7 +84,7 @@ class MediaControllerStreamTest {
                 .content(objectMapper.writeValueAsString(dto)))
             .andExpect(status().isNotFound())
             .andExpect(jsonPath("$.status").value(404))
-            .andExpect(jsonPath("$.message").value("Media not found"));
+            .andExpect(jsonPath("$.detail").value("Media not found"));
     }
 
     @Test
