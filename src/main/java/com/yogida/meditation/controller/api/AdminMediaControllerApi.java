@@ -17,12 +17,14 @@ import java.util.List;
 @RequestMapping("/admin/media")
 public interface AdminMediaControllerApi {
 
-    @Operation(summary = "List all media", description = "Returns all media records regardless of status.")
+    @Operation(summary = "List all media", description = "Returns all media records regardless of status.",
+            operationId = "listAdminMedia")
     @ApiResponses(@ApiResponse(responseCode = "200", description = "Media list retrieved"))
     @GetMapping
     ResponseEntity<List<MediaDto>> getAll();
 
-    @Operation(summary = "Get media by ID")
+    @Operation(summary = "Get media by ID",
+            operationId = "getAdminMediaById")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Media found"),
             @ApiResponse(responseCode = "404", description = "Media not found")
@@ -32,7 +34,8 @@ public interface AdminMediaControllerApi {
             @Parameter(description = "Media ID", required = true) @PathVariable Long id);
 
     @Operation(summary = "Create media record and upload S3 object",
-               description = "Uploads the file to S3 and creates the media catalog entry in one step.")
+               description = "Uploads the file to S3 and creates the media catalog entry in one step.",
+            operationId = "createMedia")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Media created"),
             @ApiResponse(responseCode = "400", description = "Invalid request")
@@ -41,7 +44,8 @@ public interface AdminMediaControllerApi {
     ResponseEntity<MediaDto> create(@Valid @ModelAttribute MediaCreateRequest request);
 
     @Operation(summary = "Update media record",
-               description = "Updates metadata. If a new file is provided and the object key differs, uploads it to S3 and removes the old object.")
+               description = "Updates metadata. If a new file is provided and the object key differs, uploads it to S3 and removes the old object.",
+            operationId = "updateMedia")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Media updated"),
             @ApiResponse(responseCode = "404", description = "Media not found")
@@ -52,7 +56,8 @@ public interface AdminMediaControllerApi {
             @Valid @ModelAttribute MediaFileUpdateRequest request);
 
     @Operation(summary = "Delete media record and its S3 object",
-               description = "Removes the DB record and deletes the associated S3 object. S3 deletion failure is logged but does not affect the response.")
+               description = "Removes the DB record and deletes the associated S3 object. S3 deletion failure is logged but does not affect the response.",
+            operationId = "deleteMedia")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Media deleted"),
             @ApiResponse(responseCode = "404", description = "Media not found")

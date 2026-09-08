@@ -15,12 +15,14 @@ import java.util.List;
 @RequestMapping("/subscriptions")
 public interface SubscriptionControllerApi {
 
-    @Operation(summary = "Get all subscription plans")
+    @Operation(summary = "Get all subscription plans",
+            operationId = "listSubscriptionPlans")
     @ApiResponses(@ApiResponse(responseCode = "200", description = "Subscription plans retrieved successfully"))
     @GetMapping
     ResponseEntity<List<SubscriptionDto>> getAll();
 
-    @Operation(summary = "Find subscription plan by name")
+    @Operation(summary = "Find subscription plan by name",
+            operationId = "findSubscriptionPlanByName")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Subscription plan found"),
             @ApiResponse(responseCode = "404", description = "Subscription plan not found")
@@ -29,7 +31,8 @@ public interface SubscriptionControllerApi {
     ResponseEntity<SubscriptionDto> getByName(
             @Parameter(description = "Subscription name", required = true) @RequestParam String name);
 
-    @Operation(summary = "Get subscription plan by ID")
+    @Operation(summary = "Get subscription plan by ID",
+            operationId = "getSubscriptionPlanById")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Subscription plan found"),
             @ApiResponse(responseCode = "404", description = "Subscription plan not found")
@@ -38,12 +41,14 @@ public interface SubscriptionControllerApi {
     ResponseEntity<SubscriptionDto> getById(
             @Parameter(description = "Subscription ID", required = true) @PathVariable Long id);
 
-    @Operation(summary = "Create a new subscription plan")
+    @Operation(summary = "Create a new subscription plan",
+            operationId = "createSubscriptionPlan")
     @ApiResponses(@ApiResponse(responseCode = "201", description = "Subscription plan created successfully"))
     @PostMapping
     ResponseEntity<SubscriptionDto> create(@RequestBody SubscriptionDto dto);
 
-    @Operation(summary = "Update an existing subscription plan")
+    @Operation(summary = "Update an existing subscription plan",
+            operationId = "updateSubscriptionPlan")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Subscription plan updated successfully"),
             @ApiResponse(responseCode = "404", description = "Subscription plan not found")
@@ -53,7 +58,8 @@ public interface SubscriptionControllerApi {
             @Parameter(description = "Subscription ID", required = true) @PathVariable Long id,
             @RequestBody SubscriptionDto dto);
 
-    @Operation(summary = "Delete a subscription plan")
+    @Operation(summary = "Delete a subscription plan",
+            operationId = "deleteSubscriptionPlan")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Subscription plan deleted successfully"),
             @ApiResponse(responseCode = "404", description = "Subscription plan not found")

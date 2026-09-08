@@ -15,12 +15,14 @@ import java.util.List;
 @RequestMapping("/profiles")
 public interface ProfileControllerApi {
 
-    @Operation(summary = "Get all profiles", description = "Returns a list of all user profiles.")
+    @Operation(summary = "Get all profiles", description = "Returns a list of all user profiles.",
+            operationId = "listProfiles")
     @ApiResponses(@ApiResponse(responseCode = "200", description = "Profiles retrieved successfully"))
     @GetMapping
     ResponseEntity<List<ProfileDto>> getAll();
 
-    @Operation(summary = "Get profile by ID", description = "Returns a single profile by its ID.")
+    @Operation(summary = "Get profile by ID", description = "Returns a single profile by its ID.",
+            operationId = "getProfileById")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Profile found"),
             @ApiResponse(responseCode = "404", description = "Profile not found")
@@ -29,12 +31,14 @@ public interface ProfileControllerApi {
     ResponseEntity<ProfileDto> getById(
             @Parameter(description = "Profile ID", required = true) @PathVariable Long id);
 
-    @Operation(summary = "Create a new profile", description = "Creates a new user profile.")
+    @Operation(summary = "Create a new profile", description = "Creates a new user profile.",
+            operationId = "createProfile")
     @ApiResponses(@ApiResponse(responseCode = "201", description = "Profile created successfully"))
     @PostMapping
     ResponseEntity<ProfileDto> create(@RequestBody ProfileDto dto);
 
-    @Operation(summary = "Update an existing profile", description = "Updates profile details by ID.")
+    @Operation(summary = "Update an existing profile", description = "Updates profile details by ID.",
+            operationId = "updateProfile")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Profile updated successfully"),
             @ApiResponse(responseCode = "404", description = "Profile not found")
@@ -44,7 +48,8 @@ public interface ProfileControllerApi {
             @Parameter(description = "Profile ID", required = true) @PathVariable Long id,
             @RequestBody ProfileDto dto);
 
-    @Operation(summary = "Delete a profile", description = "Removes a profile by ID.")
+    @Operation(summary = "Delete a profile", description = "Removes a profile by ID.",
+            operationId = "deleteProfile")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Profile deleted successfully"),
             @ApiResponse(responseCode = "404", description = "Profile not found")

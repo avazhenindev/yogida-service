@@ -17,12 +17,14 @@ import java.util.List;
 @RequestMapping("/breathing")
 public interface BreathingControllerApi {
 
-    @Operation(summary = "List all breathing exercises", description = "Returns all exercises ordered by displayOrder ascending.")
+    @Operation(summary = "List all breathing exercises", description = "Returns all exercises ordered by displayOrder ascending.",
+            operationId = "listBreathingExercises")
     @ApiResponses(@ApiResponse(responseCode = "200", description = "Exercises retrieved"))
     @GetMapping
     ResponseEntity<List<BreathingDto>> getAll();
 
-    @Operation(summary = "Get a breathing exercise by ID")
+    @Operation(summary = "Get a breathing exercise by ID",
+            operationId = "getBreathingExerciseById")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Exercise found"),
             @ApiResponse(responseCode = "404", description = "Exercise not found")

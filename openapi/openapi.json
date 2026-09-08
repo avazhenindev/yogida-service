@@ -1,0 +1,3193 @@
+{
+  "components": {
+    "schemas": {
+      "AppUserDto": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "keycloakUserId": {
+            "type": "string"
+          },
+          "lastLogin": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "userId": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "BreathingAudioMigrationResult": {
+        "properties": {
+          "dryRun": {
+            "type": "boolean"
+          },
+          "failed": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "moved": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "skipped": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "targetBucket": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "BreathingCreateRequest": {
+        "properties": {
+          "color": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "cycles": {
+            "format": "int32",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "description": {
+            "type": "string"
+          },
+          "displayOrder": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "isPremium": {
+            "type": "boolean"
+          },
+          "name": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "phases": {
+            "items": {
+              "$ref": "#/components/schemas/BreathingPhaseCreateRequest"
+            },
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "cycles",
+          "phases"
+        ],
+        "type": "object"
+      },
+      "BreathingDto": {
+        "properties": {
+          "color": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "cycles": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "description": {
+            "type": "string"
+          },
+          "displayOrder": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "isPremium": {
+            "type": "boolean"
+          },
+          "locked": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "phases": {
+            "items": {
+              "$ref": "#/components/schemas/BreathingPhaseDto"
+            },
+            "type": "array"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "BreathingPhaseAudioDto": {
+        "properties": {
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "BreathingPhaseCreateRequest": {
+        "properties": {
+          "audioObjectIdsToRemove": {
+            "items": {
+              "format": "int64",
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "color": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "displayOrder": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "durationSeconds": {
+            "format": "int32",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "label": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "name": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "newAudioFileIndices": {
+            "items": {
+              "format": "int32",
+              "type": "integer"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "durationSeconds"
+        ],
+        "type": "object"
+      },
+      "BreathingPhaseDto": {
+        "properties": {
+          "audioFiles": {
+            "items": {
+              "$ref": "#/components/schemas/BreathingPhaseAudioDto"
+            },
+            "type": "array"
+          },
+          "color": {
+            "type": "string"
+          },
+          "displayOrder": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "duration": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "label": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "BreathingReorderItem": {
+        "properties": {
+          "displayOrder": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "displayOrder",
+          "id"
+        ],
+        "type": "object"
+      },
+      "BreathingUpdateRequest": {
+        "properties": {
+          "color": {
+            "type": "string"
+          },
+          "cycles": {
+            "format": "int32",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "description": {
+            "type": "string"
+          },
+          "displayOrder": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "isPremium": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "phases": {
+            "items": {
+              "$ref": "#/components/schemas/BreathingPhaseCreateRequest"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "BucketDto": {
+        "properties": {
+          "creationDate": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "Event": {
+        "properties": {
+          "app_user_id": {
+            "type": "string"
+          },
+          "entitlement_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "environment": {
+            "type": "string"
+          },
+          "expiration_at_ms": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "id": {
+            "type": "string"
+          },
+          "original_app_user_id": {
+            "type": "string"
+          },
+          "product_id": {
+            "type": "string"
+          },
+          "purchased_at_ms": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "store": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "FavouriteDto": {
+        "properties": {
+          "contentId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "contentType": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "favouriteId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "userId": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "MediaCategoryCreateRequest": {
+        "properties": {
+          "description": {
+            "maxLength": 255,
+            "minLength": 0,
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 100,
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "MediaCategoryDto": {
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "MediaCategoryUpdateRequest": {
+        "properties": {
+          "description": {
+            "maxLength": 255,
+            "minLength": 0,
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 100,
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "MediaCreateRequest": {
+        "properties": {
+          "bucketName": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "categoryId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "description": {
+            "type": "string"
+          },
+          "durationSeconds": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "file": {
+            "format": "binary",
+            "type": "string"
+          },
+          "name": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "picture": {
+            "format": "binary",
+            "type": "string"
+          },
+          "requiresPremiumSubscription": {
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "ACTIVE",
+              "ERROR"
+            ],
+            "type": "string"
+          },
+          "tagIds": {
+            "items": {
+              "format": "int64",
+              "type": "integer"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "type": "object"
+      },
+      "MediaDto": {
+        "properties": {
+          "averageRating": {
+            "format": "double",
+            "type": "number"
+          },
+          "bucketName": {
+            "type": "string"
+          },
+          "category": {
+            "$ref": "#/components/schemas/MediaCategoryDto"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "durationSeconds": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "favouriteId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "isFavourite": {
+            "type": "boolean"
+          },
+          "isPremium": {
+            "type": "boolean"
+          },
+          "mediaObject": {
+            "$ref": "#/components/schemas/S3ObjectDto"
+          },
+          "name": {
+            "type": "string"
+          },
+          "pictureObject": {
+            "$ref": "#/components/schemas/S3ObjectDto"
+          },
+          "requiresPremiumSubscription": {
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "ACTIVE",
+              "ERROR"
+            ],
+            "type": "string"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "MediaFileUpdateRequest": {
+        "properties": {
+          "bucketName": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "categoryId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "description": {
+            "type": "string"
+          },
+          "durationSeconds": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "file": {
+            "format": "binary",
+            "type": "string"
+          },
+          "name": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "picture": {
+            "format": "binary",
+            "type": "string"
+          },
+          "requiresPremiumSubscription": {
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "ACTIVE",
+              "ERROR"
+            ],
+            "type": "string"
+          },
+          "tagIds": {
+            "items": {
+              "format": "int64",
+              "type": "integer"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "MediaRatingSummaryResponse": {
+        "properties": {
+          "averageRating": {
+            "format": "double",
+            "type": "number"
+          },
+          "mediaId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "ratingCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "starBreakdown": {
+            "additionalProperties": {
+              "format": "int64",
+              "type": "integer"
+            },
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "MediaReviewResponse": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "mediaId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "rating": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "reviewText": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "userId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "userInitial": {
+            "type": "string"
+          },
+          "userName": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "MediaReviewSaveRequest": {
+        "properties": {
+          "rating": {
+            "format": "int32",
+            "maximum": 5,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "reviewText": {
+            "maxLength": 2000,
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "PageMediaReviewResponse": {
+        "properties": {
+          "content": {
+            "items": {
+              "$ref": "#/components/schemas/MediaReviewResponse"
+            },
+            "type": "array"
+          },
+          "empty": {
+            "type": "boolean"
+          },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
+          "number": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "numberOfElements": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
+          "size": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
+          },
+          "totalElements": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "totalPages": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "Pageable": {
+        "properties": {
+          "page": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "size": {
+            "format": "int32",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "sort": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "PageableObject": {
+        "properties": {
+          "offset": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "pageNumber": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "pageSize": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "paged": {
+            "type": "boolean"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
+          },
+          "unpaged": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "ProfileDto": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "language": {
+            "type": "string"
+          },
+          "notificationPreferences": {
+            "type": "string"
+          },
+          "profileId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "themePreference": {
+            "type": "string"
+          },
+          "twoFactorEnabled": {
+            "type": "boolean"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "userId": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "RevenueCatWebhookRequest": {
+        "properties": {
+          "api_version": {
+            "type": "string"
+          },
+          "event": {
+            "$ref": "#/components/schemas/Event"
+          }
+        },
+        "type": "object"
+      },
+      "S3ObjectDto": {
+        "properties": {
+          "baseUrl": {
+            "type": "string"
+          },
+          "bucketName": {
+            "type": "string"
+          },
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "objectUri": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "SortObject": {
+        "properties": {
+          "empty": {
+            "type": "boolean"
+          },
+          "sorted": {
+            "type": "boolean"
+          },
+          "unsorted": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "SseEmitter": {
+        "properties": {
+          "timeout": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "StorageReconciliationReport": {
+        "properties": {
+          "bucketsFailed": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "bucketsInspected": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "missingObjects": {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "type": "object"
+          },
+          "orphanedObjects": {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "type": "object"
+          },
+          "orphanedRows": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "SubscriptionDto": {
+        "properties": {
+          "currency": {
+            "enum": [
+              "USD",
+              "KZT"
+            ],
+            "type": "string"
+          },
+          "details": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "periodDays": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "price": {
+            "type": "number"
+          },
+          "status": {
+            "enum": [
+              "ACTIVE",
+              "INACTIVE",
+              "EXPIRED"
+            ],
+            "type": "string"
+          },
+          "subscriptionId": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "bearerFormat": "JWT",
+        "description": "Keycloak-issued access token. Two realms are accepted, the mobile realm and the admin realm; the token's issuer selects which. Endpoints under /admin additionally require the ADMIN role.",
+        "scheme": "bearer",
+        "type": "http"
+      }
+    }
+  },
+  "info": {
+    "contact": {
+      "name": "Yogida Team",
+      "url": "https://github.com/yogida"
+    },
+    "description": "REST API for the Yogida meditation platform. \nProvides presigned Cloudflare R2 streaming URLs and a catalog of available meditation media grouped by bucket.",
+    "title": "Meditation Service API",
+    "version": "v1"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/admin/breathing": {
+      "get": {
+        "operationId": "listAdminBreathingExercises",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BreathingDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Exercises retrieved"
+          }
+        },
+        "summary": "List all breathing exercises",
+        "tags": [
+          "Admin — Breathing"
+        ]
+      },
+      "post": {
+        "description": "Creates a new exercise. Send as multipart/form-data: part 'meta' (JSON, BreathingCreateRequest) + part 'iconFile' (required image). Audio files are added separately via POST /admin/breathing/phases/{phaseId}/audio.",
+        "operationId": "createBreathingExercise",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "audioFiles": {
+                    "items": {
+                      "format": "binary",
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "iconFile": {
+                    "format": "binary",
+                    "type": "string"
+                  },
+                  "meta": {
+                    "$ref": "#/components/schemas/BreathingCreateRequest"
+                  }
+                },
+                "required": [
+                  "iconFile",
+                  "meta"
+                ],
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BreathingDto"
+                }
+              }
+            },
+            "description": "Exercise created"
+          },
+          "400": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BreathingDto"
+                }
+              }
+            },
+            "description": "Validation error"
+          }
+        },
+        "summary": "Create a breathing exercise",
+        "tags": [
+          "Admin — Breathing"
+        ]
+      }
+    },
+    "/admin/breathing/audio/migrate-to-private": {
+      "post": {
+        "description": "One-off migration. Breathing phase audio was originally uploaded to the PUBLIC bucket and served by unsigned URL, so premium exercises were readable by anyone holding the link. New uploads now go to the private bucket; this moves the objects that predate that change and repoints their s3_object rows. Idempotent and safe to re-run. Run it with dryRun=true first — the delete of the public copy is not reversible.",
+        "operationId": "migrateBreathingAudioToPrivateBucket",
+        "parameters": [
+          {
+            "description": "Report what would move without changing anything. Defaults to true.",
+            "in": "query",
+            "name": "dryRun",
+            "required": false,
+            "schema": {
+              "default": true,
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BreathingAudioMigrationResult"
+                }
+              }
+            },
+            "description": "Migration report"
+          },
+          "403": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BreathingAudioMigrationResult"
+                }
+              }
+            },
+            "description": "Caller is not an administrator"
+          },
+          "500": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BreathingAudioMigrationResult"
+                }
+              }
+            },
+            "description": "Private bucket is not configured"
+          }
+        },
+        "summary": "Move breathing phase audio into the private bucket",
+        "tags": [
+          "Admin — Breathing"
+        ]
+      }
+    },
+    "/admin/breathing/phases/{phaseId}/audio": {
+      "post": {
+        "description": "Uploads one audio file and links it to the specified phase. Multiple calls add multiple audio options; the mobile client picks one at random.",
+        "operationId": "addBreathingPhaseAudio",
+        "parameters": [
+          {
+            "description": "Phase ID",
+            "in": "path",
+            "name": "phaseId",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "audioFile": {
+                    "format": "binary",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "audioFile"
+                ],
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BreathingDto"
+                }
+              }
+            },
+            "description": "Audio added; returns updated exercise"
+          },
+          "404": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BreathingDto"
+                }
+              }
+            },
+            "description": "Phase not found"
+          }
+        },
+        "summary": "Upload an audio file to a phase",
+        "tags": [
+          "Admin — Breathing"
+        ]
+      }
+    },
+    "/admin/breathing/phases/{phaseId}/audio/{audioObjectId}": {
+      "delete": {
+        "operationId": "removeBreathingPhaseAudio",
+        "parameters": [
+          {
+            "description": "Phase ID",
+            "in": "path",
+            "name": "phaseId",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "S3 audio object ID to remove",
+            "in": "path",
+            "name": "audioObjectId",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BreathingDto"
+                }
+              }
+            },
+            "description": "Audio removed; returns updated exercise"
+          },
+          "404": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BreathingDto"
+                }
+              }
+            },
+            "description": "Phase or audio object not found"
+          }
+        },
+        "summary": "Remove an audio file from a phase",
+        "tags": [
+          "Admin — Breathing"
+        ]
+      }
+    },
+    "/admin/breathing/reorder": {
+      "put": {
+        "description": "Bulk-updates the displayOrder of exercises. Send the full ordered list with new positions.",
+        "operationId": "reorderBreathingExercises",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "items": {
+                  "$ref": "#/components/schemas/BreathingReorderItem"
+                },
+                "type": "array"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Reorder applied"
+          }
+        },
+        "summary": "Reorder breathing exercises",
+        "tags": [
+          "Admin — Breathing"
+        ]
+      }
+    },
+    "/admin/breathing/{id}": {
+      "delete": {
+        "operationId": "deleteBreathingExercise",
+        "parameters": [
+          {
+            "description": "Breathing exercise ID",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Exercise deleted"
+          },
+          "404": {
+            "description": "Exercise not found"
+          }
+        },
+        "summary": "Delete a breathing exercise",
+        "tags": [
+          "Admin — Breathing"
+        ]
+      },
+      "get": {
+        "operationId": "getAdminBreathingExerciseById",
+        "parameters": [
+          {
+            "description": "Breathing exercise ID",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BreathingDto"
+                }
+              }
+            },
+            "description": "Exercise found"
+          },
+          "404": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BreathingDto"
+                }
+              }
+            },
+            "description": "Exercise not found"
+          }
+        },
+        "summary": "Get a breathing exercise by ID",
+        "tags": [
+          "Admin — Breathing"
+        ]
+      },
+      "put": {
+        "description": "Partially updates the exercise. Send as multipart/form-data: part 'meta' (JSON, BreathingUpdateRequest) + optional part 'iconFile' (replaces current icon). If phases are provided they fully replace the current phase list.",
+        "operationId": "updateBreathingExercise",
+        "parameters": [
+          {
+            "description": "Breathing exercise ID",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "audioFiles": {
+                    "items": {
+                      "format": "binary",
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "iconFile": {
+                    "format": "binary",
+                    "type": "string"
+                  },
+                  "meta": {
+                    "$ref": "#/components/schemas/BreathingUpdateRequest"
+                  }
+                },
+                "required": [
+                  "meta"
+                ],
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BreathingDto"
+                }
+              }
+            },
+            "description": "Exercise updated"
+          },
+          "404": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BreathingDto"
+                }
+              }
+            },
+            "description": "Exercise not found"
+          }
+        },
+        "summary": "Update a breathing exercise",
+        "tags": [
+          "Admin — Breathing"
+        ]
+      }
+    },
+    "/admin/media": {
+      "get": {
+        "description": "Returns all media records regardless of status.",
+        "operationId": "listAdminMedia",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MediaDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Media list retrieved"
+          }
+        },
+        "summary": "List all media",
+        "tags": [
+          "Admin — Media"
+        ]
+      },
+      "post": {
+        "description": "Uploads the file to S3 and creates the media catalog entry in one step.",
+        "operationId": "createMedia",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/MediaCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaDto"
+                }
+              }
+            },
+            "description": "Media created"
+          },
+          "400": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaDto"
+                }
+              }
+            },
+            "description": "Invalid request"
+          }
+        },
+        "summary": "Create media record and upload S3 object",
+        "tags": [
+          "Admin — Media"
+        ]
+      }
+    },
+    "/admin/media/{id}": {
+      "delete": {
+        "description": "Removes the DB record and deletes the associated S3 object. S3 deletion failure is logged but does not affect the response.",
+        "operationId": "deleteMedia",
+        "parameters": [
+          {
+            "description": "Media ID",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Media deleted"
+          },
+          "404": {
+            "description": "Media not found"
+          }
+        },
+        "summary": "Delete media record and its S3 object",
+        "tags": [
+          "Admin — Media"
+        ]
+      },
+      "get": {
+        "operationId": "getAdminMediaById",
+        "parameters": [
+          {
+            "description": "Media ID",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaDto"
+                }
+              }
+            },
+            "description": "Media found"
+          },
+          "404": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaDto"
+                }
+              }
+            },
+            "description": "Media not found"
+          }
+        },
+        "summary": "Get media by ID",
+        "tags": [
+          "Admin — Media"
+        ]
+      },
+      "put": {
+        "description": "Updates metadata. If a new file is provided and the object key differs, uploads it to S3 and removes the old object.",
+        "operationId": "updateMedia",
+        "parameters": [
+          {
+            "description": "Media ID",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/MediaFileUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaDto"
+                }
+              }
+            },
+            "description": "Media updated"
+          },
+          "404": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaDto"
+                }
+              }
+            },
+            "description": "Media not found"
+          }
+        },
+        "summary": "Update media record",
+        "tags": [
+          "Admin — Media"
+        ]
+      }
+    },
+    "/admin/s3/buckets": {
+      "get": {
+        "operationId": "listBuckets",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BucketDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Buckets retrieved"
+          }
+        },
+        "summary": "List all buckets",
+        "tags": [
+          "Admin — S3 Buckets"
+        ]
+      }
+    },
+    "/admin/s3/buckets/{bucketName}": {
+      "delete": {
+        "description": "Bucket must be empty before deletion.",
+        "operationId": "deleteBucket",
+        "parameters": [
+          {
+            "description": "Bucket name",
+            "in": "path",
+            "name": "bucketName",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Bucket deleted"
+          },
+          "404": {
+            "description": "Bucket not found"
+          },
+          "409": {
+            "description": "Bucket is not empty"
+          }
+        },
+        "summary": "Delete a bucket",
+        "tags": [
+          "Admin — S3 Buckets"
+        ]
+      },
+      "post": {
+        "operationId": "createBucket",
+        "parameters": [
+          {
+            "description": "Bucket name",
+            "in": "path",
+            "name": "bucketName",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Bucket created"
+          },
+          "400": {
+            "description": "Invalid bucket name or bucket already exists"
+          }
+        },
+        "summary": "Create a bucket",
+        "tags": [
+          "Admin — S3 Buckets"
+        ]
+      }
+    },
+    "/admin/storage/reconciliation": {
+      "get": {
+        "description": "Reports three things: s3_object rows nothing references (each one permanently blocks its own key, because of the unique constraint on bucket/base_url/uri), object keys in a bucket with no row (wasted storage), and rows pointing at objects that are not there (a 404 at playback). Changes nothing — deleting storage on the strength of a query is how a bug turns into data loss.",
+        "operationId": "reconcileStorage",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageReconciliationReport"
+                }
+              }
+            },
+            "description": "Reconciliation report"
+          },
+          "403": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageReconciliationReport"
+                }
+              }
+            },
+            "description": "Caller is not an administrator"
+          }
+        },
+        "summary": "Reconcile s3_object rows against bucket contents",
+        "tags": [
+          "Admin — Storage reconciliation"
+        ]
+      }
+    },
+    "/breathing": {
+      "get": {
+        "description": "Returns all exercises ordered by displayOrder ascending.",
+        "operationId": "listBreathingExercises",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BreathingDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Exercises retrieved"
+          }
+        },
+        "summary": "List all breathing exercises",
+        "tags": [
+          "Breathing"
+        ]
+      }
+    },
+    "/breathing/{id}": {
+      "get": {
+        "operationId": "getBreathingExerciseById",
+        "parameters": [
+          {
+            "description": "Breathing exercise ID",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BreathingDto"
+                }
+              }
+            },
+            "description": "Exercise found"
+          },
+          "404": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BreathingDto"
+                }
+              }
+            },
+            "description": "Exercise not found"
+          }
+        },
+        "summary": "Get a breathing exercise by ID",
+        "tags": [
+          "Breathing"
+        ]
+      }
+    },
+    "/entitlement/stream": {
+      "get": {
+        "description": "Opens a per-user SSE stream. The authenticated user receives a push event whenever their RevenueCat entitlement changes (purchase, renewal, cancellation, expiration, etc.).",
+        "operationId": "subscribeToEntitlementStream",
+        "parameters": [
+          {
+            "description": "Stable per-app-instance connection id; reconnects with the same id replace the previous emitter instead of accumulating stale ones",
+            "in": "header",
+            "name": "X-Sse-Client-Id",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/SseEmitter"
+                }
+              }
+            },
+            "description": "SSE stream opened"
+          },
+          "401": {
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/SseEmitter"
+                }
+              }
+            },
+            "description": "Missing or invalid JWT"
+          }
+        },
+        "summary": "Subscribe to entitlement updates",
+        "tags": [
+          "Entitlement SSE"
+        ]
+      }
+    },
+    "/entitlement/test-message": {
+      "post": {
+        "description": "Pushes a TEST event to all active connections of the calling administrator. A diagnostic for verifying that the SSE path survives the reverse proxy; it carries no entitlement meaning and is restricted to the ADMIN role.",
+        "operationId": "sendTestMessage",
+        "responses": {
+          "204": {
+            "description": "Test message sent"
+          },
+          "401": {
+            "description": "Missing or invalid JWT"
+          },
+          "403": {
+            "description": "Caller is not an administrator"
+          }
+        },
+        "summary": "Send a test SSE message",
+        "tags": [
+          "Entitlement SSE"
+        ]
+      }
+    },
+    "/favourites": {
+      "get": {
+        "description": "Returns a list of all favourites.",
+        "operationId": "listFavourites",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/FavouriteDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Favourites retrieved successfully"
+          }
+        },
+        "summary": "Get all favourites",
+        "tags": [
+          "Favourites"
+        ]
+      },
+      "post": {
+        "description": "Creates a new user favourite.",
+        "operationId": "createFavourite",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FavouriteDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/FavouriteDto"
+                }
+              }
+            },
+            "description": "Favourite created successfully"
+          }
+        },
+        "summary": "Create a new favourite",
+        "tags": [
+          "Favourites"
+        ]
+      }
+    },
+    "/favourites/{id}": {
+      "delete": {
+        "description": "Removes a favourite by ID.",
+        "operationId": "deleteFavourite",
+        "parameters": [
+          {
+            "description": "Favourite ID",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Favourite deleted successfully"
+          },
+          "404": {
+            "description": "Favourite not found"
+          }
+        },
+        "summary": "Delete a favourite",
+        "tags": [
+          "Favourites"
+        ]
+      },
+      "get": {
+        "description": "Returns a single favourite by its ID.",
+        "operationId": "getFavouriteById",
+        "parameters": [
+          {
+            "description": "Favourite ID",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/FavouriteDto"
+                }
+              }
+            },
+            "description": "Favourite found"
+          },
+          "404": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/FavouriteDto"
+                }
+              }
+            },
+            "description": "Favourite not found"
+          }
+        },
+        "summary": "Get favourite by ID",
+        "tags": [
+          "Favourites"
+        ]
+      },
+      "put": {
+        "description": "Updates favourite details by ID.",
+        "operationId": "updateFavourite",
+        "parameters": [
+          {
+            "description": "Favourite ID",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FavouriteDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/FavouriteDto"
+                }
+              }
+            },
+            "description": "Favourite updated successfully"
+          },
+          "404": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/FavouriteDto"
+                }
+              }
+            },
+            "description": "Favourite not found"
+          }
+        },
+        "summary": "Update an existing favourite",
+        "tags": [
+          "Favourites"
+        ]
+      }
+    },
+    "/media": {
+      "get": {
+        "description": "Returns all media catalog entries with ACTIVE status.",
+        "operationId": "listActiveMedia",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MediaDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Media list retrieved"
+          }
+        },
+        "summary": "List all active media",
+        "tags": [
+          "Media"
+        ]
+      }
+    },
+    "/media-categories": {
+      "get": {
+        "operationId": "listMediaCategories",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MediaCategoryDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Media categories retrieved successfully"
+          }
+        },
+        "summary": "Get all media categories",
+        "tags": [
+          "Media Categories"
+        ]
+      },
+      "post": {
+        "operationId": "createMediaCategory",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MediaCategoryCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaCategoryDto"
+                }
+              }
+            },
+            "description": "Media category created successfully"
+          }
+        },
+        "summary": "Create a new media category",
+        "tags": [
+          "Media Categories"
+        ]
+      }
+    },
+    "/media-categories/{id}": {
+      "delete": {
+        "operationId": "deleteMediaCategory",
+        "parameters": [
+          {
+            "description": "Media category ID",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Media category deleted successfully"
+          },
+          "404": {
+            "description": "Media category not found"
+          }
+        },
+        "summary": "Delete a media category",
+        "tags": [
+          "Media Categories"
+        ]
+      },
+      "get": {
+        "operationId": "getMediaCategoryById",
+        "parameters": [
+          {
+            "description": "Media category ID",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaCategoryDto"
+                }
+              }
+            },
+            "description": "Media category found"
+          },
+          "404": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaCategoryDto"
+                }
+              }
+            },
+            "description": "Media category not found"
+          }
+        },
+        "summary": "Get media category by ID",
+        "tags": [
+          "Media Categories"
+        ]
+      },
+      "put": {
+        "operationId": "updateMediaCategory",
+        "parameters": [
+          {
+            "description": "Media category ID",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MediaCategoryUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaCategoryDto"
+                }
+              }
+            },
+            "description": "Media category updated successfully"
+          },
+          "404": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaCategoryDto"
+                }
+              }
+            },
+            "description": "Media category not found"
+          }
+        },
+        "summary": "Update an existing media category",
+        "tags": [
+          "Media Categories"
+        ]
+      }
+    },
+    "/media/stream": {
+      "post": {
+        "description": "Returns a time-limited presigned URL for streaming the media object.",
+        "operationId": "getMediaStreamUrl",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/S3ObjectDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "url": "https://r2.example.com/bucket/media.mp3?X-Amz-Signature=..."
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Presigned URL generated"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "error": "Forbidden",
+                    "message": "Not entitled to access this media",
+                    "path": "/api/media/stream",
+                    "status": 403,
+                    "timestamp": "2026-07-24T10:00:00"
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "User is not entitled to access this media"
+          },
+          "404": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Media not found"
+          }
+        },
+        "summary": "Get presigned streaming URL",
+        "tags": [
+          "Media"
+        ]
+      }
+    },
+    "/media/{id}": {
+      "get": {
+        "description": "Returns a single media item by its database ID.",
+        "operationId": "getMediaById",
+        "parameters": [
+          {
+            "description": "Media ID",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaDto"
+                }
+              }
+            },
+            "description": "Media found"
+          },
+          "404": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaDto"
+                }
+              }
+            },
+            "description": "Media not found"
+          }
+        },
+        "summary": "Get media by ID",
+        "tags": [
+          "Media"
+        ]
+      }
+    },
+    "/media/{mediaId}/rating-summary": {
+      "get": {
+        "description": "Returns the average rating, total rating count, and per-star breakdown (keys 1–5) for a media item.\nAll keys 1–5 are present in `starBreakdown` (missing stars have a count of 0).\n",
+        "operationId": "getMediaRatingSummary",
+        "parameters": [
+          {
+            "description": "Media ID",
+            "in": "path",
+            "name": "mediaId",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaRatingSummaryResponse"
+                }
+              }
+            },
+            "description": "Rating summary returned"
+          },
+          "404": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaRatingSummaryResponse"
+                }
+              }
+            },
+            "description": "Media not found"
+          }
+        },
+        "summary": "Get rating summary",
+        "tags": [
+          "Media — Ratings & Reviews"
+        ]
+      }
+    },
+    "/media/{mediaId}/review": {
+      "put": {
+        "description": "Creates or updates the review/rating row for the given user and media item.\n`rating` updates the star rating (1–5) on every call.\n`reviewText` is written on first save only; subsequent saves do not change it.\n",
+        "operationId": "saveMediaReview",
+        "parameters": [
+          {
+            "description": "Media ID",
+            "in": "path",
+            "name": "mediaId",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MediaReviewSaveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaReviewResponse"
+                }
+              }
+            },
+            "description": "Review saved"
+          },
+          "400": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaReviewResponse"
+                }
+              }
+            },
+            "description": "Invalid request"
+          },
+          "404": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaReviewResponse"
+                }
+              }
+            },
+            "description": "Media or user not found"
+          }
+        },
+        "summary": "Save review and/or rating",
+        "tags": [
+          "Media — Ratings & Reviews"
+        ]
+      }
+    },
+    "/media/{mediaId}/reviews": {
+      "get": {
+        "description": "Returns a paginated list of reviews for a media item.\nEach entry may have a null `rating` (text-only review) or null `reviewText` (rating-only entry).\n`userName` is derived from the user email prefix; `userInitial` is the first uppercase character.\nSupported sort fields: `createdAt` (default, desc), `rating` (asc or desc).\nExample: GET /media/1/reviews?page=0&size=10&sort=rating,desc\n",
+        "operationId": "listMediaReviews",
+        "parameters": [
+          {
+            "description": "Media ID",
+            "in": "path",
+            "name": "mediaId",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pageable",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Pageable"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageMediaReviewResponse"
+                }
+              }
+            },
+            "description": "Reviews page returned"
+          },
+          "400": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageMediaReviewResponse"
+                }
+              }
+            },
+            "description": "Unsupported sort field"
+          },
+          "404": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageMediaReviewResponse"
+                }
+              }
+            },
+            "description": "Media not found"
+          }
+        },
+        "summary": "List reviews",
+        "tags": [
+          "Media — Ratings & Reviews"
+        ]
+      }
+    },
+    "/profiles": {
+      "get": {
+        "description": "Returns a list of all user profiles.",
+        "operationId": "listProfiles",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProfileDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Profiles retrieved successfully"
+          }
+        },
+        "summary": "Get all profiles",
+        "tags": [
+          "Profiles"
+        ]
+      },
+      "post": {
+        "description": "Creates a new user profile.",
+        "operationId": "createProfile",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileDto"
+                }
+              }
+            },
+            "description": "Profile created successfully"
+          }
+        },
+        "summary": "Create a new profile",
+        "tags": [
+          "Profiles"
+        ]
+      }
+    },
+    "/profiles/{id}": {
+      "delete": {
+        "description": "Removes a profile by ID.",
+        "operationId": "deleteProfile",
+        "parameters": [
+          {
+            "description": "Profile ID",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Profile deleted successfully"
+          },
+          "404": {
+            "description": "Profile not found"
+          }
+        },
+        "summary": "Delete a profile",
+        "tags": [
+          "Profiles"
+        ]
+      },
+      "get": {
+        "description": "Returns a single profile by its ID.",
+        "operationId": "getProfileById",
+        "parameters": [
+          {
+            "description": "Profile ID",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileDto"
+                }
+              }
+            },
+            "description": "Profile found"
+          },
+          "404": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileDto"
+                }
+              }
+            },
+            "description": "Profile not found"
+          }
+        },
+        "summary": "Get profile by ID",
+        "tags": [
+          "Profiles"
+        ]
+      },
+      "put": {
+        "description": "Updates profile details by ID.",
+        "operationId": "updateProfile",
+        "parameters": [
+          {
+            "description": "Profile ID",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileDto"
+                }
+              }
+            },
+            "description": "Profile updated successfully"
+          },
+          "404": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileDto"
+                }
+              }
+            },
+            "description": "Profile not found"
+          }
+        },
+        "summary": "Update an existing profile",
+        "tags": [
+          "Profiles"
+        ]
+      }
+    },
+    "/subscriptions": {
+      "get": {
+        "operationId": "listSubscriptionPlans",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SubscriptionDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Subscription plans retrieved successfully"
+          }
+        },
+        "summary": "Get all subscription plans",
+        "tags": [
+          "Subscriptions"
+        ]
+      },
+      "post": {
+        "operationId": "createSubscriptionPlan",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionDto"
+                }
+              }
+            },
+            "description": "Subscription plan created successfully"
+          }
+        },
+        "summary": "Create a new subscription plan",
+        "tags": [
+          "Subscriptions"
+        ]
+      }
+    },
+    "/subscriptions/search": {
+      "get": {
+        "operationId": "findSubscriptionPlanByName",
+        "parameters": [
+          {
+            "description": "Subscription name",
+            "in": "query",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionDto"
+                }
+              }
+            },
+            "description": "Subscription plan found"
+          },
+          "404": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionDto"
+                }
+              }
+            },
+            "description": "Subscription plan not found"
+          }
+        },
+        "summary": "Find subscription plan by name",
+        "tags": [
+          "Subscriptions"
+        ]
+      }
+    },
+    "/subscriptions/{id}": {
+      "delete": {
+        "operationId": "deleteSubscriptionPlan",
+        "parameters": [
+          {
+            "description": "Subscription ID",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Subscription plan deleted successfully"
+          },
+          "404": {
+            "description": "Subscription plan not found"
+          }
+        },
+        "summary": "Delete a subscription plan",
+        "tags": [
+          "Subscriptions"
+        ]
+      },
+      "get": {
+        "operationId": "getSubscriptionPlanById",
+        "parameters": [
+          {
+            "description": "Subscription ID",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionDto"
+                }
+              }
+            },
+            "description": "Subscription plan found"
+          },
+          "404": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionDto"
+                }
+              }
+            },
+            "description": "Subscription plan not found"
+          }
+        },
+        "summary": "Get subscription plan by ID",
+        "tags": [
+          "Subscriptions"
+        ]
+      },
+      "put": {
+        "operationId": "updateSubscriptionPlan",
+        "parameters": [
+          {
+            "description": "Subscription ID",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionDto"
+                }
+              }
+            },
+            "description": "Subscription plan updated successfully"
+          },
+          "404": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionDto"
+                }
+              }
+            },
+            "description": "Subscription plan not found"
+          }
+        },
+        "summary": "Update an existing subscription plan",
+        "tags": [
+          "Subscriptions"
+        ]
+      }
+    },
+    "/users": {
+      "get": {
+        "description": "Administrative. Returns every registered user.",
+        "operationId": "listUsers",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AppUserDto"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Users retrieved successfully"
+          }
+        },
+        "summary": "Get all users",
+        "tags": [
+          "Users"
+        ]
+      },
+      "post": {
+        "description": "Administrative. Clients do not need this: signing in provisions the account.",
+        "operationId": "createUser",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppUserDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppUserDto"
+                }
+              }
+            },
+            "description": "User created successfully"
+          }
+        },
+        "summary": "Create a new user",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/users/me": {
+      "get": {
+        "description": "Returns the account belonging to the bearer token, creating it on first sight.\nThis is the only user endpoint a client application needs: identity comes from the\ntoken, so nothing has to be looked up or supplied by the caller.\n",
+        "operationId": "getCurrentUser",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppUserDto"
+                }
+              }
+            },
+            "description": "Current user returned"
+          }
+        },
+        "summary": "Get the signed-in user",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/users/search": {
+      "get": {
+        "description": "Administrative. Returns a single user matching the given email address.",
+        "operationId": "findUserByEmail",
+        "parameters": [
+          {
+            "description": "User email",
+            "in": "query",
+            "name": "email",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppUserDto"
+                }
+              }
+            },
+            "description": "User found"
+          },
+          "404": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppUserDto"
+                }
+              }
+            },
+            "description": "User not found"
+          }
+        },
+        "summary": "Find user by email",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/users/{id}": {
+      "delete": {
+        "description": "Administrative.",
+        "operationId": "deleteUser",
+        "parameters": [
+          {
+            "description": "User ID",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "User deleted successfully"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        },
+        "summary": "Delete a user",
+        "tags": [
+          "Users"
+        ]
+      },
+      "get": {
+        "description": "Administrative. Returns a single user by their ID.",
+        "operationId": "getUserById",
+        "parameters": [
+          {
+            "description": "User ID",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppUserDto"
+                }
+              }
+            },
+            "description": "User found"
+          },
+          "404": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppUserDto"
+                }
+              }
+            },
+            "description": "User not found"
+          }
+        },
+        "summary": "Get user by ID",
+        "tags": [
+          "Users"
+        ]
+      },
+      "put": {
+        "description": "Administrative. Identity fields are ignored; they are not client-settable.",
+        "operationId": "updateUser",
+        "parameters": [
+          {
+            "description": "User ID",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "int64",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppUserDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppUserDto"
+                }
+              }
+            },
+            "description": "User updated successfully"
+          },
+          "404": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppUserDto"
+                }
+              }
+            },
+            "description": "User not found"
+          }
+        },
+        "summary": "Update an existing user",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/webhooks/revenuecat": {
+      "post": {
+        "description": "Authenticated by a shared secret in the Authorization header. Idempotent per event id.",
+        "operationId": "handleRevenueCatWebhook",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Authorization",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevenueCatWebhookRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Event accepted"
+          },
+          "401": {
+            "description": "Missing or invalid webhook authorization"
+          }
+        },
+        "summary": "Process a RevenueCat webhook event",
+        "tags": [
+          "RevenueCat Webhooks"
+        ]
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "servers": [
+    {
+      "description": "Current environment",
+      "url": "/api"
+    }
+  ],
+  "tags": [
+    {
+      "description": "Breathing exercises for authenticated mobile users",
+      "name": "Breathing"
+    },
+    {
+      "description": "Public endpoints for browsing and streaming meditation media",
+      "name": "Media"
+    },
+    {
+      "description": "Endpoints for submitting and retrieving media ratings and written reviews",
+      "name": "Media — Ratings & Reviews"
+    },
+    {
+      "description": "CRUD endpoints for user profiles",
+      "name": "Profiles"
+    },
+    {
+      "description": "Inbound RevenueCat webhook processing",
+      "name": "RevenueCat Webhooks"
+    },
+    {
+      "description": "CRUD endpoints for subscription plan catalog",
+      "name": "Subscriptions"
+    },
+    {
+      "description": "Admin CRUD for media catalog entries with integrated S3 object lifecycle",
+      "name": "Admin — Media"
+    },
+    {
+      "description": "Server-Sent Events for real-time entitlement updates",
+      "name": "Entitlement SSE"
+    },
+    {
+      "description": "CRUD endpoints for user favourites",
+      "name": "Favourites"
+    },
+    {
+      "description": "CRUD endpoints for the media category dictionary",
+      "name": "Media Categories"
+    },
+    {
+      "description": "Admin endpoints for managing S3/R2 buckets",
+      "name": "Admin — S3 Buckets"
+    },
+    {
+      "description": "Admin CRUD for breathing exercises including icon/audio upload and display-order management",
+      "name": "Admin — Breathing"
+    },
+    {
+      "description": "Read-only comparison of the s3_object table against what the buckets hold",
+      "name": "Admin — Storage reconciliation"
+    },
+    {
+      "description": "The caller's own account, plus administrative user management",
+      "name": "Users"
+    }
+  ]
+}

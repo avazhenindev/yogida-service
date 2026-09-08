@@ -19,12 +19,14 @@ import java.util.Map;
 @RequestMapping("/media")
 public interface MediaControllerApi {
 
-    @Operation(summary = "List all active media", description = "Returns all media catalog entries with ACTIVE status.")
+    @Operation(summary = "List all active media", description = "Returns all media catalog entries with ACTIVE status.",
+            operationId = "listActiveMedia")
     @ApiResponses(@ApiResponse(responseCode = "200", description = "Media list retrieved"))
     @GetMapping
     ResponseEntity<List<MediaDto>> getAll();
 
-    @Operation(summary = "Get media by ID", description = "Returns a single media item by its database ID.")
+    @Operation(summary = "Get media by ID", description = "Returns a single media item by its database ID.",
+            operationId = "getMediaById")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Media found"),
         @ApiResponse(responseCode = "404", description = "Media not found")
@@ -33,7 +35,8 @@ public interface MediaControllerApi {
     ResponseEntity<MediaDto> getById(
         @Parameter(description = "Media ID", required = true) @PathVariable Long id);
 
-    @Operation(summary = "Get presigned streaming URL", description = "Returns a time-limited presigned URL for streaming the media object.")
+    @Operation(summary = "Get presigned streaming URL", description = "Returns a time-limited presigned URL for streaming the media object.",
+            operationId = "getMediaStreamUrl")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Presigned URL generated",
             content = @Content(mediaType = "application/json",

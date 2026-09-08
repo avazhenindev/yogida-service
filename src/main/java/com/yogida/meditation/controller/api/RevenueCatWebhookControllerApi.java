@@ -16,7 +16,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public interface RevenueCatWebhookControllerApi {
 
     @Operation(summary = "Process a RevenueCat webhook event",
-            description = "Authenticated by a shared secret in the Authorization header. Idempotent per event id.")
+            description = "Authenticated by a shared secret in the Authorization header. Idempotent per event id.",
+            operationId = "handleRevenueCatWebhook")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Event accepted"),
             @ApiResponse(responseCode = "401", description = "Missing or invalid webhook authorization")

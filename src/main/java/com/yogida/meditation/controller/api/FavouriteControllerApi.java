@@ -15,12 +15,14 @@ import java.util.List;
 @RequestMapping("/favourites")
 public interface FavouriteControllerApi {
 
-    @Operation(summary = "Get all favourites", description = "Returns a list of all favourites.")
+    @Operation(summary = "Get all favourites", description = "Returns a list of all favourites.",
+            operationId = "listFavourites")
     @ApiResponses(@ApiResponse(responseCode = "200", description = "Favourites retrieved successfully"))
     @GetMapping
     ResponseEntity<List<FavouriteDto>> getAll();
 
-    @Operation(summary = "Get favourite by ID", description = "Returns a single favourite by its ID.")
+    @Operation(summary = "Get favourite by ID", description = "Returns a single favourite by its ID.",
+            operationId = "getFavouriteById")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Favourite found"),
             @ApiResponse(responseCode = "404", description = "Favourite not found")
@@ -29,12 +31,14 @@ public interface FavouriteControllerApi {
     ResponseEntity<FavouriteDto> getById(
             @Parameter(description = "Favourite ID", required = true) @PathVariable Long id);
 
-    @Operation(summary = "Create a new favourite", description = "Creates a new user favourite.")
+    @Operation(summary = "Create a new favourite", description = "Creates a new user favourite.",
+            operationId = "createFavourite")
     @ApiResponses(@ApiResponse(responseCode = "201", description = "Favourite created successfully"))
     @PostMapping
     ResponseEntity<FavouriteDto> create(@RequestBody FavouriteDto dto);
 
-    @Operation(summary = "Update an existing favourite", description = "Updates favourite details by ID.")
+    @Operation(summary = "Update an existing favourite", description = "Updates favourite details by ID.",
+            operationId = "updateFavourite")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Favourite updated successfully"),
             @ApiResponse(responseCode = "404", description = "Favourite not found")
@@ -44,7 +48,8 @@ public interface FavouriteControllerApi {
             @Parameter(description = "Favourite ID", required = true) @PathVariable Long id,
             @RequestBody FavouriteDto dto);
 
-    @Operation(summary = "Delete a favourite", description = "Removes a favourite by ID.")
+    @Operation(summary = "Delete a favourite", description = "Removes a favourite by ID.",
+            operationId = "deleteFavourite")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Favourite deleted successfully"),
             @ApiResponse(responseCode = "404", description = "Favourite not found")

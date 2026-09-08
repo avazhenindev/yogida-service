@@ -24,7 +24,8 @@ public interface MediaRatingControllerApi {
             `rating` updates the star rating (1–5) on every call.
             `reviewText` is written on first save only; subsequent saves do not change it.
             """
-    )
+    ,
+            operationId = "saveMediaReview")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Review saved"),
         @ApiResponse(responseCode = "400", description = "Invalid request"),
@@ -41,7 +42,8 @@ public interface MediaRatingControllerApi {
             Returns the average rating, total rating count, and per-star breakdown (keys 1–5) for a media item.
             All keys 1–5 are present in `starBreakdown` (missing stars have a count of 0).
             """
-    )
+    ,
+            operationId = "getMediaRatingSummary")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Rating summary returned"),
         @ApiResponse(responseCode = "404", description = "Media not found")
@@ -59,7 +61,8 @@ public interface MediaRatingControllerApi {
             Supported sort fields: `createdAt` (default, desc), `rating` (asc or desc).
             Example: GET /media/1/reviews?page=0&size=10&sort=rating,desc
             """
-    )
+    ,
+            operationId = "listMediaReviews")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Reviews page returned"),
         @ApiResponse(responseCode = "400", description = "Unsupported sort field"),

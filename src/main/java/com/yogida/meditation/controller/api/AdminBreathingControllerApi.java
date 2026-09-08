@@ -18,12 +18,14 @@ import java.util.List;
 @RequestMapping("/admin/breathing")
 public interface AdminBreathingControllerApi {
 
-    @Operation(summary = "List all breathing exercises")
+    @Operation(summary = "List all breathing exercises",
+            operationId = "listAdminBreathingExercises")
     @ApiResponses(@ApiResponse(responseCode = "200", description = "Exercises retrieved"))
     @GetMapping
     ResponseEntity<List<BreathingDto>> getAll();
 
-    @Operation(summary = "Get a breathing exercise by ID")
+    @Operation(summary = "Get a breathing exercise by ID",
+            operationId = "getAdminBreathingExerciseById")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Exercise found"),
             @ApiResponse(responseCode = "404", description = "Exercise not found")
@@ -35,7 +37,8 @@ public interface AdminBreathingControllerApi {
     @Operation(summary = "Create a breathing exercise",
                description = "Creates a new exercise. Send as multipart/form-data: " +
                              "part 'meta' (JSON, BreathingCreateRequest) + part 'iconFile' (required image). " +
-                             "Audio files are added separately via POST /admin/breathing/phases/{phaseId}/audio.")
+                             "Audio files are added separately via POST /admin/breathing/phases/{phaseId}/audio.",
+            operationId = "createBreathingExercise")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Exercise created"),
             @ApiResponse(responseCode = "400", description = "Validation error")
@@ -49,7 +52,8 @@ public interface AdminBreathingControllerApi {
     @Operation(summary = "Update a breathing exercise",
                description = "Partially updates the exercise. Send as multipart/form-data: " +
                              "part 'meta' (JSON, BreathingUpdateRequest) + optional part 'iconFile' (replaces current icon). " +
-                             "If phases are provided they fully replace the current phase list.")
+                             "If phases are provided they fully replace the current phase list.",
+            operationId = "updateBreathingExercise")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Exercise updated"),
             @ApiResponse(responseCode = "404", description = "Exercise not found")
@@ -61,7 +65,8 @@ public interface AdminBreathingControllerApi {
             @RequestPart(value = "iconFile", required = false) MultipartFile iconFile,
             @RequestPart(value = "audioFiles", required = false) List<MultipartFile> audioFiles);
 
-    @Operation(summary = "Delete a breathing exercise")
+    @Operation(summary = "Delete a breathing exercise",
+            operationId = "deleteBreathingExercise")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Exercise deleted"),
             @ApiResponse(responseCode = "404", description = "Exercise not found")
@@ -71,14 +76,16 @@ public interface AdminBreathingControllerApi {
             @Parameter(description = "Breathing exercise ID", required = true) @PathVariable Long id);
 
     @Operation(summary = "Reorder breathing exercises",
-               description = "Bulk-updates the displayOrder of exercises. Send the full ordered list with new positions.")
+               description = "Bulk-updates the displayOrder of exercises. Send the full ordered list with new positions.",
+            operationId = "reorderBreathingExercises")
     @ApiResponses(@ApiResponse(responseCode = "204", description = "Reorder applied"))
     @PutMapping("/reorder")
     ResponseEntity<Void> reorder(@Valid @RequestBody List<BreathingReorderItem> items);
 
     @Operation(summary = "Upload an audio file to a phase",
                description = "Uploads one audio file and links it to the specified phase. " +
-                             "Multiple calls add multiple audio options; the mobile client picks one at random.")
+                             "Multiple calls add multiple audio options; the mobile client picks one at random.",
+            operationId = "addBreathingPhaseAudio")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Audio added; returns updated exercise"),
             @ApiResponse(responseCode = "404", description = "Phase not found")
@@ -88,7 +95,8 @@ public interface AdminBreathingControllerApi {
             @Parameter(description = "Phase ID", required = true) @PathVariable Long phaseId,
             @RequestPart("audioFile") MultipartFile audioFile);
 
-    @Operation(summary = "Remove an audio file from a phase")
+    @Operation(summary = "Remove an audio file from a phase",
+            operationId = "removeBreathingPhaseAudio")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Audio removed; returns updated exercise"),
             @ApiResponse(responseCode = "404", description = "Phase or audio object not found")

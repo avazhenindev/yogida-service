@@ -18,12 +18,14 @@ import java.util.List;
 @RequestMapping("/media-categories")
 public interface MediaCategoryControllerApi {
 
-    @Operation(summary = "Get all media categories")
+    @Operation(summary = "Get all media categories",
+            operationId = "listMediaCategories")
     @ApiResponses(@ApiResponse(responseCode = "200", description = "Media categories retrieved successfully"))
     @GetMapping
     ResponseEntity<List<MediaCategoryDto>> getAll();
 
-    @Operation(summary = "Get media category by ID")
+    @Operation(summary = "Get media category by ID",
+            operationId = "getMediaCategoryById")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Media category found"),
             @ApiResponse(responseCode = "404", description = "Media category not found")
@@ -32,12 +34,14 @@ public interface MediaCategoryControllerApi {
     ResponseEntity<MediaCategoryDto> getById(
             @Parameter(description = "Media category ID", required = true) @PathVariable Long id);
 
-    @Operation(summary = "Create a new media category")
+    @Operation(summary = "Create a new media category",
+            operationId = "createMediaCategory")
     @ApiResponses(@ApiResponse(responseCode = "201", description = "Media category created successfully"))
     @PostMapping
     ResponseEntity<MediaCategoryDto> create(@Valid @RequestBody MediaCategoryCreateRequest request);
 
-    @Operation(summary = "Update an existing media category")
+    @Operation(summary = "Update an existing media category",
+            operationId = "updateMediaCategory")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Media category updated successfully"),
             @ApiResponse(responseCode = "404", description = "Media category not found")
@@ -47,7 +51,8 @@ public interface MediaCategoryControllerApi {
             @Parameter(description = "Media category ID", required = true) @PathVariable Long id,
             @Valid @RequestBody MediaCategoryUpdateRequest request);
 
-    @Operation(summary = "Delete a media category")
+    @Operation(summary = "Delete a media category",
+            operationId = "deleteMediaCategory")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Media category deleted successfully"),
             @ApiResponse(responseCode = "404", description = "Media category not found")
