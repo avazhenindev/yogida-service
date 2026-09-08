@@ -17,7 +17,6 @@ import java.util.List;
 public record MediaCreateRequest(
         @NotBlank String name,
         @NotBlank String bucketName,
-        @NotBlank String objectKey,
         @NotNull MultipartFile file,
         String description,
         Long categoryId,

@@ -26,6 +26,7 @@ import java.time.Instant;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -60,6 +61,9 @@ class MediaFacadeServiceTest {
     private MediaFacadeService mediaFacadeService;
 
     @Captor
+    private ArgumentCaptor<String> mediaObjectKeyCaptor;
+
+    @Captor
     private ArgumentCaptor<MediaUpdateRequest> mediaUpdateRequestCaptor;
 
     @Test
@@ -79,7 +83,6 @@ class MediaFacadeServiceTest {
         MediaCreateRequest request = new MediaCreateRequest(
                 "Focus",
                 "audio",
-                "focus.mp3",
                 audioFile,
                 "desc",
                 7L,
@@ -90,11 +93,12 @@ class MediaFacadeServiceTest {
                 false
         );
 
-        when(adminStorageApi.uploadObject(eq("audio"), eq("focus.mp3"), eq(audioFile)))
-                .thenReturn(new ObjectMetadataDto("focus.mp3", 5L, Instant.now(), "etag-audio", "https://acct.r2.cloudflarestorage.com/audio/focus.mp3"));
+        // The key is generated server-side now, so it cannot be matched as a literal.
+        when(adminStorageApi.uploadObject(eq("audio"), mediaObjectKeyCaptor.capture(), eq(audioFile)))
+                .thenReturn(new ObjectMetadataDto("generated", 5L, Instant.now(), "etag-audio", "https://acct.r2.cloudflarestorage.com/audio/generated"));
         S3ObjectEntity mediaObject = s3Object(31L, "audio", "https://acct.r2.cloudflarestorage.com/audio", "focus.mp3");
         S3ObjectEntity pictureObject = s3Object(32L, "pictures", PUBLIC_PICTURE_BASE_URL, "media/generated-cover.png");
-        when(s3ObjectService.createMediaObject("audio", "focus.mp3")).thenReturn(mediaObject);
+        when(s3ObjectService.createMediaObject(eq("audio"), anyString())).thenReturn(mediaObject);
         when(mediaPictureStorageService.uploadPicture(eq(pictureFile))).thenReturn(pictureObject);
         when(mediaApi.create(mediaUpdateRequestCaptor.capture()))
                 .thenReturn(new MediaDto(15L, "Focus", "audio", s3ObjectDto(mediaObject), MediaStatus.ACTIVE, "desc", null, null, null, null, 180, 0.0, false, false, null, false, null));
@@ -104,7 +108,16 @@ class MediaFacadeServiceTest {
 
         assertThat(mediaUpdateRequestCaptor.getValue().mediaObjectId()).isEqualTo(31L);
         assertThat(mediaUpdateRequestCaptor.getValue().pictureObjectId()).isEqualTo(32L);
-    }
+    
+        // The key must be generated, not taken from the upload's filename: two media items whose
+        // files are both called "focus.mp3" used to resolve to one R2 object, so the second
+        // upload overwrote the first item's audio.
+        String generatedKey = mediaObjectKeyCaptor.getValue();
+        assertThat(generatedKey)
+                .startsWith("media/")
+                .endsWith("-focus.mp3")
+                .isNotEqualTo("focus.mp3");
+}
 
     @Test
     void createPropagatesPictureUploadFailure() {
@@ -123,7 +136,6 @@ class MediaFacadeServiceTest {
         MediaCreateRequest request = new MediaCreateRequest(
                 "Focus",
                 "audio",
-                "focus.mp3",
                 audioFile,
                 "desc",
                 7L,
@@ -134,10 +146,11 @@ class MediaFacadeServiceTest {
                 false
         );
 
-        when(adminStorageApi.uploadObject(eq("audio"), eq("focus.mp3"), eq(audioFile)))
-                .thenReturn(new ObjectMetadataDto("focus.mp3", 5L, Instant.now(), "etag-audio", "https://acct.r2.cloudflarestorage.com/audio/focus.mp3"));
-        when(s3ObjectService.createMediaObject("audio", "focus.mp3"))
-                .thenReturn(s3Object(31L, "audio", "https://acct.r2.cloudflarestorage.com/audio", "focus.mp3"));
+        // The key is generated server-side now, so it cannot be matched as a literal.
+        when(adminStorageApi.uploadObject(eq("audio"), mediaObjectKeyCaptor.capture(), eq(audioFile)))
+                .thenReturn(new ObjectMetadataDto("generated", 5L, Instant.now(), "etag-audio", "https://acct.r2.cloudflarestorage.com/audio/generated"));
+        when(s3ObjectService.createMediaObject(eq("audio"), anyString()))
+                .thenReturn(s3Object(31L, "audio", "https://acct.r2.cloudflarestorage.com/audio", "generated"));
         when(mediaPictureStorageService.uploadPicture(eq(pictureFile)))
                 .thenThrow(new IllegalStateException("Public picture base URL is not configured"));
 

@@ -3,6 +3,7 @@ package com.yogida.meditation.service;
 import com.yogida.meditation.dto.*;
 import com.yogida.meditation.entity.MediaEntity;
 import com.yogida.meditation.entity.S3ObjectEntity;
+import com.yogida.meditation.service.storage.StorageKeys;
 import com.yogida.meditation.exception.EntityNotFoundException;
 import com.yogida.meditation.repository.MediaRepository;
 import com.yogida.meditation.service.api.*;
@@ -56,8 +57,11 @@ public class MediaFacadeService implements MediaFacadeApi {
     @Override
     @Transactional
     public MediaDto create(MediaCreateRequest request) {
-        adminStorageApi.uploadObject(request.bucketName(), request.objectKey(), request.file());
-        S3ObjectEntity mediaObject = s3ObjectService.createMediaObject(request.bucketName(), request.objectKey());
+        // Server-generated: see StorageKeys. The client used to supply this and collisions
+        // silently overwrote another item's audio.
+        String objectKey = StorageKeys.mediaKey(request.file() == null ? null : request.file().getOriginalFilename());
+        adminStorageApi.uploadObject(request.bucketName(), objectKey, request.file());
+        S3ObjectEntity mediaObject = s3ObjectService.createMediaObject(request.bucketName(), objectKey);
 
         S3ObjectEntity pictureObject = mediaPictureStorageService.uploadPicture(request.picture());
 
@@ -83,12 +87,13 @@ public class MediaFacadeService implements MediaFacadeApi {
         S3ObjectEntity oldPictureObject = existingEntity.getPictureObject();
 
         S3ObjectEntity newMediaObject = oldMediaObject;
-        if (request.file() != null) {
-            String oldKey = oldMediaObject.getObjectUri();
-            if (!request.objectKey().equals(oldKey)) {
-                adminStorageApi.uploadObject(request.bucketName(), request.objectKey(), request.file());
-                newMediaObject = s3ObjectService.createMediaObject(request.bucketName(), request.objectKey());
-            }
+        if (request.file() != null && !request.file().isEmpty()) {
+            // Unconditional. This used to be guarded by "only if the submitted key differs from
+            // the stored one", so re-uploading a file under the same name kept the OLD audio and
+            // reported success. With server-generated keys there is no same-name case left.
+            String objectKey = StorageKeys.mediaKey(request.file().getOriginalFilename());
+            adminStorageApi.uploadObject(request.bucketName(), objectKey, request.file());
+            newMediaObject = s3ObjectService.createMediaObject(request.bucketName(), objectKey);
         }
 
         S3ObjectEntity newPictureObject = oldPictureObject;
