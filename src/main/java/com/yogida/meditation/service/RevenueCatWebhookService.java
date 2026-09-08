@@ -29,7 +29,7 @@ public class RevenueCatWebhookService {
     private final AppUserRepository appUserRepository;
     private final EntitlementService entitlementService;
     private final EntitlementProjectionService projectionService;
-    private final SseService sseApi;
+    private final SseService sseService;
 
     public void processEvent(RevenueCatWebhookRequest request) {
         RevenueCatWebhookRequest.Event event = request == null ? null : request.event();
@@ -54,7 +54,7 @@ public class RevenueCatWebhookService {
         resolveKeycloakUserId(event).ifPresentOrElse(
             userId -> {
                 entitlementService.refreshUserEntitlement(userId, event.id());
-                sseApi.publishToUser(userId, event.type());
+                sseService.publishToUser(userId, event.type());
             },
             () -> log.warn("RevenueCatWebhookService > No user found for RC app_user_id on event {}", event.id())
         );

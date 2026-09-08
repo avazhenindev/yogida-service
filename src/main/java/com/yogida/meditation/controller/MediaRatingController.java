@@ -16,7 +16,7 @@ import com.yogida.meditation.service.MediaReviewService;
 @RequiredArgsConstructor
 public class MediaRatingController implements MediaRatingControllerApi {
 
-    private final MediaReviewService mediaReviewApi;
+    private final MediaReviewService mediaReviewService;
     private final CurrentUserService currentUserService;
 
     @Override
@@ -24,12 +24,12 @@ public class MediaRatingController implements MediaRatingControllerApi {
         // The author is whoever holds the token, never whoever the body claims.
         Long authorId = currentUserService.getCurrentUserId();
         return ResponseEntity.ok(
-                mediaReviewApi.save(mediaId, authorId, request.rating(), request.reviewText()));
+                mediaReviewService.save(mediaId, authorId, request.rating(), request.reviewText()));
     }
 
     @Override
     public ResponseEntity<MediaRatingSummaryResponse> getRatingSummary(Long mediaId) {
-        return ResponseEntity.ok(mediaReviewApi.getRatingSummary(mediaId));
+        return ResponseEntity.ok(mediaReviewService.getRatingSummary(mediaId));
     }
 
     @Override
@@ -40,6 +40,6 @@ public class MediaRatingController implements MediaRatingControllerApi {
                 throw new IllegalArgumentException("Unsupported sort field: " + order.getProperty());
             }
         });
-        return ResponseEntity.ok(mediaReviewApi.findReviewsByMediaId(mediaId, pageable));
+        return ResponseEntity.ok(mediaReviewService.findReviewsByMediaId(mediaId, pageable));
     }
 }

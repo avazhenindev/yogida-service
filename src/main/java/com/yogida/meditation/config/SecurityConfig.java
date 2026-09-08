@@ -14,9 +14,6 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
-import org.springframework.security.oauth2.core.OAuth2Error;
-import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
@@ -186,42 +183,5 @@ public class SecurityConfig {
             .filter(String.class::isInstance)
             .map(String.class::cast)
             .toList();
-    }
-
-    /**
-     * Custom OAuth2 token validator for audience (aud) claim.
-     */
-    private static class AudienceValidator implements org.springframework.security.oauth2.core.OAuth2TokenValidator<Jwt> {
-        private final String expectedAudience;
-
-        AudienceValidator(String expectedAudience) {
-            this.expectedAudience = expectedAudience;
-        }
-
-        @Override
-        public OAuth2TokenValidatorResult validate(Jwt token) {
-            Object aud = token.getClaim("aud");
-            if (aud == null) {
-                return OAuth2TokenValidatorResult.failure(new OAuth2Error(
-                    "invalid_token", "Audience claim missing", null
-                ));
-            }
-
-            // Check if audience claim contains the expected value
-            // JWT RFC allows aud to be either a string or an array of strings
-            boolean isValid = aud instanceof List<?> audList
-                ? audList.stream()
-                    .map(String::valueOf)
-                    .anyMatch(expectedAudience::equals)
-                : expectedAudience.equals(aud.toString());
-
-            if (!isValid) {
-                return OAuth2TokenValidatorResult.failure(new OAuth2Error(
-                    "invalid_token", "Invalid audience claim", null
-                ));
-            }
-
-            return OAuth2TokenValidatorResult.success();
-        }
     }
 }

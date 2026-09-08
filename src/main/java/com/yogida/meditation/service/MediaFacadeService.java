@@ -21,24 +21,24 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class MediaFacadeService {
 
-    private final MediaService mediaApi;
+    private final MediaService mediaService;
     private final MediaPictureStorageService mediaPictureStorageService;
     private final S3ObjectService s3ObjectService;
     private final MediaRepository mediaRepository;
-    private final MediaReviewService mediaReviewApi;
-    private final MediaDurationService mediaDurationApi;
+    private final MediaReviewService mediaReviewService;
+    private final MediaDurationService mediaDurationService;
 
     @Transactional(readOnly = true)
     public List<MediaDto> findAll() {
-        List<MediaDto> dtos = mediaApi.findAll();
+        List<MediaDto> dtos = mediaService.findAll();
         enrichWithAverageRating(dtos);
         return dtos;
     }
 
     @Transactional(readOnly = true)
     public Optional<MediaDto> findById(Long id) {
-        return mediaApi.findById(id).map(dto -> {
-            dto.setAverageRating(mediaReviewApi.findAverageRatingByMediaId(id));
+        return mediaService.findById(id).map(dto -> {
+            dto.setAverageRating(mediaReviewService.findAverageRatingByMediaId(id));
             return dto;
         });
     }
@@ -57,14 +57,14 @@ public class MediaFacadeService {
 
         int durationSeconds = request.durationSeconds() != null && request.durationSeconds() > 0
                 ? request.durationSeconds()
-                : mediaDurationApi.extractDurationSeconds(request.file());
+                : mediaDurationService.extractDurationSeconds(request.file());
 
         MediaUpdateRequest mediaRequest = new MediaUpdateRequest(
             request.name(), mediaObject.getId(), pictureObject == null ? null : pictureObject.getId(),
             request.description(), request.categoryId(), request.status(),
             durationSeconds, request.tagIds(), request.requiresPremiumSubscription());
 
-        MediaDto dto = mediaApi.create(mediaRequest);
+        MediaDto dto = mediaService.create(mediaRequest);
         dto.setAverageRating(0.0);
         return dto;
     }
@@ -97,7 +97,7 @@ public class MediaFacadeService {
         if (request.durationSeconds() != null && request.durationSeconds() > 0) {
             durationSeconds = request.durationSeconds();
         } else if (request.file() != null && !request.file().isEmpty()) {
-            durationSeconds = mediaDurationApi.extractDurationSeconds(request.file());
+            durationSeconds = mediaDurationService.extractDurationSeconds(request.file());
         } else {
             durationSeconds = existingEntity.getDurationSeconds();
         }
@@ -106,7 +106,7 @@ public class MediaFacadeService {
             request.name(), newMediaObject.getId(), newPictureObject == null ? null : newPictureObject.getId(),
             request.description(), request.categoryId(), request.status(),
             durationSeconds, request.tagIds(), request.requiresPremiumSubscription());
-        MediaDto dto = mediaApi.update(id, mediaRequest);
+        MediaDto dto = mediaService.update(id, mediaRequest);
 
         if (!newMediaObject.getId().equals(oldMediaObject.getId())) {
             s3ObjectService.deleteObjectAfterCommit(oldMediaObject);
@@ -116,7 +116,7 @@ public class MediaFacadeService {
             s3ObjectService.deleteObjectAfterCommit(oldPictureObject);
         }
 
-        dto.setAverageRating(mediaReviewApi.findAverageRatingByMediaId(id));
+        dto.setAverageRating(mediaReviewService.findAverageRatingByMediaId(id));
         return dto;
     }
 
@@ -126,7 +126,7 @@ public class MediaFacadeService {
         S3ObjectEntity mediaObject = entity.getMediaObject();
         S3ObjectEntity pictureObject = entity.getPictureObject();
 
-        mediaApi.delete(id);
+        mediaService.delete(id);
 
         s3ObjectService.deleteObjectAfterCommit(mediaObject);
         s3ObjectService.deleteObjectAfterCommit(pictureObject);
@@ -137,7 +137,7 @@ public class MediaFacadeService {
             return;
         }
         List<Long> ids = dtos.stream().map(MediaDto::getId).toList();
-        Map<Long, Double> ratingByMediaId = mediaReviewApi.findAverageRatingsByMediaIds(ids).stream()
+        Map<Long, Double> ratingByMediaId = mediaReviewService.findAverageRatingsByMediaIds(ids).stream()
                 .collect(Collectors.toMap(MediaRatingSummary::mediaId, MediaRatingSummary::averageRating));
         dtos.forEach(dto -> dto.setAverageRating(ratingByMediaId.getOrDefault(dto.getId(), 0.0)));
     }

@@ -81,94 +81,118 @@ public class BreathingService {
                                List<MultipartFile> audioFiles) {
         BreathingEntity entity = loadOrThrow(id);
 
-        if (request.name() != null) entity.setName(request.name());
-        if (request.description() != null) entity.setDescription(request.description());
-        if (request.color() != null) entity.setColor(request.color());
-        if (request.cycles() != null) entity.setCycles(request.cycles());
-        if (request.isPremium() != null) entity.setPremium(request.isPremium());
-        if (request.displayOrder() != null) entity.setDisplayOrder(request.displayOrder());
+        applyScalarFields(entity, request);
 
         if (iconFile != null && !iconFile.isEmpty()) {
-            S3ObjectEntity oldIcon = entity.getIconObject();
-            entity.setIconObject(breathingStorageService.uploadIcon(iconFile));
-            s3ObjectService.deleteObjectAfterCommit(oldIcon);
+            replaceIcon(entity, iconFile);
         }
 
         if (request.phases() != null) {
             List<BreathingPhaseEntity> existingPhases = new ArrayList<>(entity.getPhases());
-
-            // Determine which existing phase IDs are still present in the request
-            Set<Long> keptIds = request.phases().stream()
-                    .filter(r -> r.id() != null)
-                    .map(BreathingPhaseCreateRequest::id)
-                    .collect(Collectors.toSet());
-
-            // Delete phases that were removed by the user (cascade deletes their audio rows via DB FK)
-            existingPhases.stream()
-                    .filter(p -> !keptIds.contains(p.getId()))
-                    .forEach(p -> {
-                        // The referencing rows must be gone and flushed BEFORE the object
-                        // cleanup is registered: it counts remaining referents to decide whether
-                        // the s3_object row can go too, and would otherwise still see this one.
-                        List<S3ObjectEntity> orphanCandidates = p.getAudioFiles().stream()
-                                .map(BreathingPhaseAudioEntity::getAudioObject)
-                                .filter(java.util.Objects::nonNull)
-                                .toList();
-                        entity.getPhases().remove(p);
-                        breathingPhaseRepository.delete(p);
-                        breathingPhaseRepository.flush();
-                        orphanCandidates.forEach(s3ObjectService::deleteObjectAfterCommit);
-                    });
-
-            // Process each phase in the request (ordered by request position = new displayOrder)
-            for (int i = 0; i < request.phases().size(); i++) {
-                BreathingPhaseCreateRequest req = request.phases().get(i);
-
-                if (req.id() != null) {
-                    // Update existing phase in-place — preserves all audio not explicitly removed
-                    BreathingPhaseEntity existing = existingPhases.stream()
-                            .filter(p -> p.getId().equals(req.id()))
-                            .findFirst()
-                            .orElseThrow(() -> new BreathingNotFoundException(
-                                    "Phase not found with id: " + req.id()));
-
-                    existing.setName(req.name());
-                    existing.setLabel(req.label( ));
-                    existing.setDurationSeconds(req.durationSeconds());
-                    existing.setColor(req.color());
-                    existing.setDisplayOrder(req.displayOrder() != null ? req.displayOrder() : i);
-                    breathingPhaseRepository.save(existing);
-
-                    // Remove audio files the user deleted
-                    if (req.audioObjectIdsToRemove() != null) {
-                        for (Long audioObjId : req.audioObjectIdsToRemove()) {
-                            breathingPhaseAudioRepository
-                                    .findByPhaseIdAndAudioObjectId(existing.getId(), audioObjId)
-                                    .ifPresent(entry -> {
-                                        // Same ordering requirement as above.
-                                        S3ObjectEntity orphanCandidate = entry.getAudioObject();
-                                        breathingPhaseAudioRepository.delete(entry);
-                                        breathingPhaseAudioRepository.flush();
-                                        s3ObjectService.deleteObjectAfterCommit(orphanCandidate);
-                                    });
-                        }
-                    }
-
-                    // Add new audio files
-                    attachAudioFiles(existing, req, audioFiles);
-                } else {
-                    // New phase
-                    BreathingPhaseEntity newPhase = buildPhase(req, i, entity);
-                    breathingPhaseRepository.save(newPhase);
-                    attachAudioFiles(newPhase, req, audioFiles);
-                }
-            }
+            deleteRemovedPhases(entity, existingPhases, request);
+            upsertPhases(entity, existingPhases, request, audioFiles);
         }
 
         entity.setUpdatedAt(LocalDateTime.now());
         breathingRepository.flush();
         log.info("BreathingService > Updated breathing exercise id={}", id);
         return breathingMapper.toDto(loadOrThrow(id));
+    }
+
+    /** Null means "leave alone" on update, so every field is guarded rather than overwritten. */
+    private void applyScalarFields(BreathingEntity entity, BreathingUpdateRequest request) {
+        if (request.name() != null) entity.setName(request.name());
+        if (request.description() != null) entity.setDescription(request.description());
+        if (request.color() != null) entity.setColor(request.color());
+        if (request.cycles() != null) entity.setCycles(request.cycles());
+        if (request.isPremium() != null) entity.setPremium(request.isPremium());
+        if (request.displayOrder() != null) entity.setDisplayOrder(request.displayOrder());
+    }
+
+    private void replaceIcon(BreathingEntity entity, MultipartFile iconFile) {
+        S3ObjectEntity oldIcon = entity.getIconObject();
+        entity.setIconObject(breathingStorageService.uploadIcon(iconFile));
+        s3ObjectService.deleteObjectAfterCommit(oldIcon);
+    }
+
+    /**
+     * Removes phases the request no longer mentions. Their audio rows go with them by
+     * {@code ON DELETE CASCADE}.
+     *
+     * <p>The delete/flush/cleanup order inside the loop is load-bearing, not stylistic: the S3
+     * cleanup counts remaining referents to decide whether the {@code s3_object} row can go too,
+     * so the referencing rows must be gone AND flushed before it is registered — otherwise it
+     * still sees this one and keeps an object nothing points at.
+     */
+    private void deleteRemovedPhases(BreathingEntity entity, List<BreathingPhaseEntity> existingPhases,
+                                     BreathingUpdateRequest request) {
+        Set<Long> keptIds = request.phases().stream()
+                .filter(r -> r.id() != null)
+                .map(BreathingPhaseCreateRequest::id)
+                .collect(Collectors.toSet());
+
+        existingPhases.stream()
+                .filter(p -> !keptIds.contains(p.getId()))
+                .forEach(p -> {
+                    List<S3ObjectEntity> orphanCandidates = p.getAudioFiles().stream()
+                            .map(BreathingPhaseAudioEntity::getAudioObject)
+                            .filter(java.util.Objects::nonNull)
+                            .toList();
+                    entity.getPhases().remove(p);
+                    breathingPhaseRepository.delete(p);
+                    breathingPhaseRepository.flush();
+                    orphanCandidates.forEach(s3ObjectService::deleteObjectAfterCommit);
+                });
+    }
+
+    /**
+     * Updates the phases the request still carries and creates the ones it adds, in request order
+     * — position in the list is the new display order when the request does not state one.
+     */
+    private void upsertPhases(BreathingEntity entity, List<BreathingPhaseEntity> existingPhases,
+                              BreathingUpdateRequest request, List<MultipartFile> audioFiles) {
+        for (int i = 0; i < request.phases().size(); i++) {
+            BreathingPhaseCreateRequest req = request.phases().get(i);
+
+            if (req.id() == null) {
+                BreathingPhaseEntity newPhase = buildPhase(req, i, entity);
+                breathingPhaseRepository.save(newPhase);
+                attachAudioFiles(newPhase, req, audioFiles);
+                continue;
+            }
+
+            // Update in place — this preserves all audio not explicitly removed.
+            BreathingPhaseEntity existing = existingPhases.stream()
+                    .filter(p -> p.getId().equals(req.id()))
+                    .findFirst()
+                    .orElseThrow(() -> new BreathingNotFoundException(
+                            "Phase not found with id: " + req.id()));
+
+            existing.setName(req.name());
+            existing.setLabel(req.label( ));
+            existing.setDurationSeconds(req.durationSeconds());
+            existing.setColor(req.color());
+            existing.setDisplayOrder(req.displayOrder() != null ? req.displayOrder() : i);
+            breathingPhaseRepository.save(existing);
+
+            removePhaseAudio(existing, req);
+            attachAudioFiles(existing, req, audioFiles);
+        }
+    }
+
+    /** Same flush-before-cleanup ordering requirement as {@link #deleteRemovedPhases}. */
+    private void removePhaseAudio(BreathingPhaseEntity phase, BreathingPhaseCreateRequest req) {
+        if (req.audioObjectIdsToRemove() == null) return;
+        for (Long audioObjId : req.audioObjectIdsToRemove()) {
+            breathingPhaseAudioRepository
+                    .findByPhaseIdAndAudioObjectId(phase.getId(), audioObjId)
+                    .ifPresent(entry -> {
+                        S3ObjectEntity orphanCandidate = entry.getAudioObject();
+                        breathingPhaseAudioRepository.delete(entry);
+                        breathingPhaseAudioRepository.flush();
+                        s3ObjectService.deleteObjectAfterCommit(orphanCandidate);
+                    });
+        }
     }
 
     @Transactional

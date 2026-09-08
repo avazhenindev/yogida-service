@@ -16,31 +16,31 @@ import com.yogida.meditation.service.MediaCategoryService;
 @RequiredArgsConstructor
 public class MediaCategoryController implements MediaCategoryControllerApi {
 
-    private final MediaCategoryService mediaCategoryApi;
+    private final MediaCategoryService mediaCategoryService;
 
     @Override
     public ResponseEntity<List<MediaCategoryDto>> getAll() {
-        return ResponseEntity.ok(mediaCategoryApi.findAll());
+        return ResponseEntity.ok(mediaCategoryService.findAll());
     }
 
     @Override
     public ResponseEntity<MediaCategoryDto> getById(Long id) {
-        return ResponseEntity.ok(mediaCategoryApi.findById(id));
+        return ResponseEntity.ok(mediaCategoryService.findById(id));
     }
 
     @Override
     public ResponseEntity<MediaCategoryDto> create(MediaCategoryCreateRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(mediaCategoryApi.create(request));
+        return ResponseEntity.status(HttpStatus.CREATED).body(mediaCategoryService.create(request));
     }
 
     @Override
     public ResponseEntity<MediaCategoryDto> update(Long id, MediaCategoryUpdateRequest request) {
-        return ResponseEntity.ok(mediaCategoryApi.update(id, request));
+        return ResponseEntity.ok(mediaCategoryService.update(id, request));
     }
 
     @Override
     public ResponseEntity<Void> delete(Long id) {
-        mediaCategoryApi.delete(id);
+        mediaCategoryService.delete(id);
         return ResponseEntity.noContent().build();
     }
 }

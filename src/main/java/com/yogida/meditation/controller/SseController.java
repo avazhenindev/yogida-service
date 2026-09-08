@@ -18,7 +18,7 @@ import com.yogida.meditation.service.SseService;
 public class SseController implements SseControllerApi {
 
     private final CurrentUserService currentUserService;
-    private final SseService sseApi;
+    private final SseService sseService;
 
     @Override
     public ResponseEntity<SseEmitter> stream(String clientId) {
@@ -33,14 +33,14 @@ public class SseController implements SseControllerApi {
                 // nginx holds SSE bytes in its proxy buffer and clients never see events.
                 .header("X-Accel-Buffering", "no")
                 .cacheControl(CacheControl.noCache())
-                .body(sseApi.subscribe(keycloakUserId, effectiveClientId));
+                .body(sseService.subscribe(keycloakUserId, effectiveClientId));
     }
 
     @Override
     public ResponseEntity<Void> sendTestMessage() {
         String keycloakUserId = currentUserService.getCurrentUserOrThrow().getKeycloakUserId();
         log.info("SseController > Sending TEST message to user {}", keycloakUserId);
-        sseApi.publishToUser(keycloakUserId, TEST_EVENT_TYPE);
+        sseService.publishToUser(keycloakUserId, TEST_EVENT_TYPE);
         return ResponseEntity.noContent().build();
     }
 }

@@ -17,19 +17,19 @@ import com.yogida.meditation.service.MediaFacadeService;
 @RequiredArgsConstructor
 public class AdminMediaController implements AdminMediaControllerApi {
 
-    private final MediaFacadeService mediaFacadeApi;
+    private final MediaFacadeService mediaFacadeService;
 
     @Value("${app.media.max-picture-size-bytes:512000}")
     private long maxPictureSizeBytes;
 
     @Override
     public ResponseEntity<List<MediaDto>> getAll() {
-        return ResponseEntity.ok(mediaFacadeApi.findAll());
+        return ResponseEntity.ok(mediaFacadeService.findAll());
     }
 
     @Override
     public ResponseEntity<MediaDto> getById(Long id) {
-        return mediaFacadeApi.findById(id)
+        return mediaFacadeService.findById(id)
                 .map(ResponseEntity::ok)
                 .orElseThrow(() -> new EntityNotFoundException("Media", id));
     }
@@ -37,18 +37,18 @@ public class AdminMediaController implements AdminMediaControllerApi {
     @Override
     public ResponseEntity<MediaDto> create(MediaCreateRequest request) {
         validatePictureSize(request.picture());
-        return ResponseEntity.status(HttpStatus.CREATED).body(mediaFacadeApi.create(request));
+        return ResponseEntity.status(HttpStatus.CREATED).body(mediaFacadeService.create(request));
     }
 
     @Override
     public ResponseEntity<MediaDto> update(Long id, MediaFileUpdateRequest request) {
         validatePictureSize(request.picture());
-        return ResponseEntity.ok(mediaFacadeApi.update(id, request));
+        return ResponseEntity.ok(mediaFacadeService.update(id, request));
     }
 
     @Override
     public ResponseEntity<Void> delete(Long id) {
-        mediaFacadeApi.delete(id);
+        mediaFacadeService.delete(id);
         return ResponseEntity.noContent().build();
     }
 

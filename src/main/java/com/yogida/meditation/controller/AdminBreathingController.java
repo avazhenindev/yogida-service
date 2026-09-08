@@ -16,51 +16,51 @@ import com.yogida.meditation.service.BreathingService;
 @RequiredArgsConstructor
 public class AdminBreathingController implements AdminBreathingControllerApi {
 
-    private final BreathingService breathingApi;
+    private final BreathingService breathingService;
     private final BreathingAudioMigrationService breathingAudioMigrationService;
 
     @Override
     public ResponseEntity<List<BreathingDto>> getAll() {
-        return ResponseEntity.ok(breathingApi.findAll());
+        return ResponseEntity.ok(breathingService.findAll());
     }
 
     @Override
     public ResponseEntity<BreathingDto> getById(Long id) {
-        return ResponseEntity.ok(breathingApi.findById(id));
+        return ResponseEntity.ok(breathingService.findById(id));
     }
 
     @Override
     public ResponseEntity<BreathingDto> create(BreathingCreateRequest meta, MultipartFile iconFile,
                                                List<MultipartFile> audioFiles) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(breathingApi.create(meta, iconFile, audioFiles));
+        return ResponseEntity.status(HttpStatus.CREATED).body(breathingService.create(meta, iconFile, audioFiles));
     }
 
     @Override
     public ResponseEntity<BreathingDto> update(Long id, BreathingUpdateRequest meta, MultipartFile iconFile,
                                                List<MultipartFile> audioFiles) {
-        return ResponseEntity.ok(breathingApi.update(id, meta, iconFile, audioFiles));
+        return ResponseEntity.ok(breathingService.update(id, meta, iconFile, audioFiles));
     }
 
     @Override
     public ResponseEntity<Void> delete(Long id) {
-        breathingApi.delete(id);
+        breathingService.delete(id);
         return ResponseEntity.noContent().build();
     }
 
     @Override
     public ResponseEntity<Void> reorder(List<BreathingReorderItem> items) {
-        breathingApi.reorder(items);
+        breathingService.reorder(items);
         return ResponseEntity.noContent().build();
     }
 
     @Override
     public ResponseEntity<BreathingDto> addAudio(Long phaseId, MultipartFile audioFile) {
-        return ResponseEntity.ok(breathingApi.addAudioToPhase(phaseId, audioFile));
+        return ResponseEntity.ok(breathingService.addAudioToPhase(phaseId, audioFile));
     }
 
     @Override
     public ResponseEntity<BreathingDto> removeAudio(Long phaseId, Long audioObjectId) {
-        return ResponseEntity.ok(breathingApi.removeAudioFromPhase(phaseId, audioObjectId));
+        return ResponseEntity.ok(breathingService.removeAudioFromPhase(phaseId, audioObjectId));
     }
 
     @Override
