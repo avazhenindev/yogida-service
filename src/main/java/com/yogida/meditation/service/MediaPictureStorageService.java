@@ -29,14 +29,31 @@ public class MediaPictureStorageService {
     @Value("${cloudflare.r2.public-picture-base-url:}")
     private String publicPictureBaseUrl;
 
+    /**
+     * Rejects an oversized picture.
+     *
+     * <p>Public because callers need it BEFORE any upload happens: the facade uploads the media
+     * audio first, so leaving the only check in {@link #uploadPicture} meant an oversized picture
+     * was caught after that object had already been written to R2 and had to be rolled back.
+     *
+     * <p>The check previously existed twice — here and in AdminMediaController, each with its own
+     * @Value binding of the same property and its own wording. This is the controller's message,
+     * since that is the one this path has been returning.
+     */
+    public void validateSize(MultipartFile picture) {
+        if (picture != null && picture.getSize() > maxPictureSizeBytes) {
+            throw new IllegalArgumentException(
+                String.format("Picture size exceeds maximum allowed size of %d bytes", maxPictureSizeBytes)
+            );
+        }
+    }
+
     public S3ObjectEntity uploadPicture(MultipartFile picture) {
         if (picture == null || picture.isEmpty()) {
             return null;
         }
 
-        if (picture.getSize() > maxPictureSizeBytes) {
-            throw new IllegalArgumentException("Picture exceeds max size of " + maxPictureSizeBytes + " bytes");
-        }
+        validateSize(picture);
 
         if (!hasText(publicPictureBaseUrl)) {
             throw new IllegalStateException("Public picture base URL is not configured");

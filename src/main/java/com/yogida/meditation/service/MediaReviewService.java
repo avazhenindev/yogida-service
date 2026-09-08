@@ -21,6 +21,7 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -28,6 +29,16 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class MediaReviewService {
+
+    /**
+     * Sort fields a caller may ask for.
+     *
+     * <p>An allowlist rather than a filter: Spring Data turns a sort property straight into a
+     * JPQL path, so an unchecked value both leaks which columns exist and lets a client sort by
+     * a field that has no index. It lives here rather than in MediaRatingController so it holds
+     * for every caller of this method, not just the one that remembered to check.
+     */
+    private static final Set<String> SORTABLE_FIELDS = Set.of("createdAt", "rating");
 
     private final MediaReviewRepository mediaReviewRepository;
     private final MediaRepository mediaRepository;
@@ -73,6 +84,11 @@ public class MediaReviewService {
         if (!mediaRepository.existsById(mediaId)) {
             throw new EntityNotFoundException("Media", mediaId);
         }
+        pageable.getSort().forEach(order -> {
+            if (!SORTABLE_FIELDS.contains(order.getProperty())) {
+                throw new IllegalArgumentException("Unsupported sort field: " + order.getProperty());
+            }
+        });
         return mediaReviewRepository.findAllByMediaId(mediaId, pageable)
                 .map(this::toResponse);
     }

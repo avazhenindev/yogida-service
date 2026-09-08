@@ -9,7 +9,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Set;
 import com.yogida.meditation.service.MediaReviewService;
 
 @RestController
@@ -34,12 +33,6 @@ public class MediaRatingController implements MediaRatingControllerApi {
 
     @Override
     public ResponseEntity<Page<MediaReviewResponse>> getReviews(Long mediaId, Pageable pageable) {
-        Set<String> allowed = Set.of("createdAt", "rating");
-        pageable.getSort().forEach(order -> {
-            if (!allowed.contains(order.getProperty())) {
-                throw new IllegalArgumentException("Unsupported sort field: " + order.getProperty());
-            }
-        });
         return ResponseEntity.ok(mediaReviewService.findReviewsByMediaId(mediaId, pageable));
     }
 }

@@ -45,6 +45,8 @@ public class MediaFacadeService {
 
     @Transactional
     public MediaDto create(MediaCreateRequest request) {
+        // Before any upload: an oversized picture should not cost a media upload and a rollback.
+        mediaPictureStorageService.validateSize(request.picture());
         // Server-generated: see StorageKeys. The client used to supply this and collisions
         // silently overwrote another item's audio.
         String objectKey = StorageKeys.mediaKey(request.file() == null ? null : request.file().getOriginalFilename());
@@ -71,6 +73,8 @@ public class MediaFacadeService {
 
     @Transactional
     public MediaDto update(Long id, MediaFileUpdateRequest request) {
+        // Before any upload: an oversized picture should not cost a media upload and a rollback.
+        mediaPictureStorageService.validateSize(request.picture());
         MediaEntity existingEntity = resolveEntity(id);
         S3ObjectEntity oldMediaObject = existingEntity.getMediaObject();
         S3ObjectEntity oldPictureObject = existingEntity.getPictureObject();

@@ -4,11 +4,9 @@ import com.yogida.meditation.controller.api.AdminMediaControllerApi;
 import com.yogida.meditation.dto.*;
 import com.yogida.meditation.exception.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import com.yogida.meditation.service.MediaFacadeService;
@@ -19,8 +17,6 @@ public class AdminMediaController implements AdminMediaControllerApi {
 
     private final MediaFacadeService mediaFacadeService;
 
-    @Value("${app.media.max-picture-size-bytes:512000}")
-    private long maxPictureSizeBytes;
 
     @Override
     public ResponseEntity<List<MediaDto>> getAll() {
@@ -36,13 +32,11 @@ public class AdminMediaController implements AdminMediaControllerApi {
 
     @Override
     public ResponseEntity<MediaDto> create(MediaCreateRequest request) {
-        validatePictureSize(request.picture());
         return ResponseEntity.status(HttpStatus.CREATED).body(mediaFacadeService.create(request));
     }
 
     @Override
     public ResponseEntity<MediaDto> update(Long id, MediaFileUpdateRequest request) {
-        validatePictureSize(request.picture());
         return ResponseEntity.ok(mediaFacadeService.update(id, request));
     }
 
@@ -52,11 +46,4 @@ public class AdminMediaController implements AdminMediaControllerApi {
         return ResponseEntity.noContent().build();
     }
 
-    private void validatePictureSize(MultipartFile picture) {
-        if (picture != null && picture.getSize() > maxPictureSizeBytes) {
-            throw new IllegalArgumentException(
-                String.format("Picture size exceeds maximum allowed size of %d bytes", maxPictureSizeBytes)
-            );
-        }
-    }
 }
