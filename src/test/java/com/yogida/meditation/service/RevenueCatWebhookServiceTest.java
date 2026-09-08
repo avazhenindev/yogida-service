@@ -3,7 +3,6 @@ package com.yogida.meditation.service;
 import com.yogida.meditation.dto.RevenueCatWebhookRequest;
 import com.yogida.meditation.entity.AppUserEntity;
 import com.yogida.meditation.repository.AppUserRepository;
-import com.yogida.meditation.service.api.SseApi;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,7 +28,7 @@ class RevenueCatWebhookServiceTest {
     @Mock private AppUserRepository appUserRepository;
     @Mock private EntitlementService entitlementService;
     @Mock private EntitlementProjectionService projectionService;
-    @Mock private SseApi sseApi;
+    @Mock private SseService sseApi;
 
     private RevenueCatWebhookService service;
 

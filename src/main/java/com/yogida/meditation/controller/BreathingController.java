@@ -9,12 +9,13 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import com.yogida.meditation.service.BreathingService;
 
 @RestController
 @RequiredArgsConstructor
 public class BreathingController implements BreathingControllerApi {
 
-    // The user-facing facade, not BreathingApi: BreathingApi is the admin read path and
+    // The user-facing facade, not BreathingService: BreathingService is the admin read path and
     // returns every audio URL unconditionally.
     private final BreathingUserFacadeService breathingUserFacadeService;
 

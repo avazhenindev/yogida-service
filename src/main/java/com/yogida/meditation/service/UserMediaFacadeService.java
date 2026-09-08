@@ -55,16 +55,4 @@ public class UserMediaFacadeService {
         return media.map(entity -> mediaUserMapper.toDtoForUser(entity, currentUser));
     }
 
-    /**
-     * Returns a single media by ID or throws EntityNotFoundException if not found.
-     *
-     * @param id the media ID
-     * @return the user-facing media DTO
-     * @throws EntityNotFoundException if media not found
-     */
-    @Transactional(readOnly = true)
-    public MediaDto findByIdOrThrow(Long id) {
-        return findById(id)
-            .orElseThrow(() -> new EntityNotFoundException("Media", id));
-    }
 }

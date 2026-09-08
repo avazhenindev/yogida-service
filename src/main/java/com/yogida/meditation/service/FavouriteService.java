@@ -5,7 +5,6 @@ import com.yogida.meditation.entity.FavouriteEntity;
 import com.yogida.meditation.exception.EntityNotFoundException;
 import com.yogida.meditation.mapper.FavouriteMapper;
 import com.yogida.meditation.repository.FavouriteRepository;
-import com.yogida.meditation.service.api.FavouriteApi;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
@@ -17,7 +16,7 @@ import java.util.List;
 @Log4j2
 @Service
 @RequiredArgsConstructor
-public class FavouriteService implements FavouriteApi {
+public class FavouriteService {
 
     private final FavouriteRepository favouriteRepository;
     private final FavouriteMapper favouriteMapper;
@@ -31,7 +30,6 @@ public class FavouriteService implements FavouriteApi {
      * anyone's favourites, and create favourites owned by someone else. Rows belonging to
      * another user now report 404 rather than 403, so ids stay unenumerable.
      */
-    @Override
     @Transactional(readOnly = true)
     public List<FavouriteDto> findAll() {
         return favouriteRepository.findByUserUserId(currentUserId()).stream()
@@ -39,7 +37,6 @@ public class FavouriteService implements FavouriteApi {
                 .toList();
     }
 
-    @Override
     @Transactional(readOnly = true)
     public FavouriteDto findById(Long id) {
         return favouriteMapper.toDto(findOwnedOrThrow(id));
@@ -49,7 +46,6 @@ public class FavouriteService implements FavouriteApi {
      * Create a favourite. Idempotent: if a duplicate favourite already exists for the same
      * user/content pair, returns the existing favourite instead of creating a new one.
      */
-    @Override
     @Transactional
     public FavouriteDto create(FavouriteDto dto) {
         // Ownership comes from the token. Whatever userId the body carries is ignored.
@@ -79,7 +75,6 @@ public class FavouriteService implements FavouriteApi {
         return favouriteMapper.toDto(saved);
     }
 
-    @Override
     @Transactional
     public FavouriteDto update(Long id, FavouriteDto dto) {
         FavouriteEntity existing = findOwnedOrThrow(id);
@@ -90,7 +85,6 @@ public class FavouriteService implements FavouriteApi {
         return favouriteMapper.toDto(saved);
     }
 
-    @Override
     @Transactional
     public void delete(Long id) {
         FavouriteEntity owned = findOwnedOrThrow(id);

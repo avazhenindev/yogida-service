@@ -6,7 +6,6 @@ import com.yogida.meditation.exception.EntityNotFoundException;
 import com.yogida.meditation.mapper.AppUserMapper;
 import com.yogida.meditation.repository.AppUserRepository;
 import com.yogida.meditation.repository.UserEntitlementRepository;
-import com.yogida.meditation.service.api.AppUserApi;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
@@ -18,20 +17,18 @@ import java.util.List;
 @Log4j2
 @Service
 @RequiredArgsConstructor
-public class AppUserService implements AppUserApi {
+public class AppUserService {
 
     private final AppUserRepository appUserRepository;
     private final AppUserMapper appUserMapper;
     private final UserEntitlementRepository userEntitlementRepository;
     private final EntitlementService entitlementService;
 
-    @Override
     @Transactional(readOnly = true)
     public List<AppUserDto> findAll() {
         return appUserRepository.findAll().stream().map(appUserMapper::toDto).toList();
     }
 
-    @Override
     @Transactional(readOnly = true)
     public AppUserDto findById(Long id) {
         return appUserRepository.findById(id)
@@ -39,7 +36,12 @@ public class AppUserService implements AppUserApi {
                 .orElseThrow(() -> new EntityNotFoundException("AppUser", id));
     }
 
-    @Override
+    /**
+     * {@code @Transactional} moved here from {@code UserFacadeService.onboardUser}, which was
+     * the only thing wrapping POST /users in a transaction and is deleted with this change. Its
+     * siblings on this class are already annotated; this one was not.
+     */
+    @Transactional
     public AppUserDto create(AppUserDto dto) {
         AppUserEntity entity = appUserMapper.toEntity(dto);
         entity.setUserId(null);
@@ -50,7 +52,6 @@ public class AppUserService implements AppUserApi {
         return appUserMapper.toDto(saved);
     }
 
-    @Override
     public AppUserDto update(Long id, AppUserDto dto) {
         AppUserEntity existing = appUserRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("AppUser", id));
@@ -61,7 +62,6 @@ public class AppUserService implements AppUserApi {
         return appUserMapper.toDto(saved);
     }
 
-    @Override
     /**
      * Deletes a user and everything keyed to them.
      *
@@ -85,7 +85,6 @@ public class AppUserService implements AppUserApi {
         log.info("AppUserService > Deleted user with id: {} and its entitlement projection", id);
     }
 
-    @Override
     @Transactional(readOnly = true)
     public AppUserDto findByEmail(String email) {
         return appUserRepository.findByEmail(email)

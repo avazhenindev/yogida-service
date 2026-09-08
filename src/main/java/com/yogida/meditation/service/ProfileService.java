@@ -5,7 +5,6 @@ import com.yogida.meditation.entity.ProfileEntity;
 import com.yogida.meditation.exception.EntityNotFoundException;
 import com.yogida.meditation.mapper.ProfileMapper;
 import com.yogida.meditation.repository.ProfileRepository;
-import com.yogida.meditation.service.api.ProfileApi;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
@@ -18,7 +17,7 @@ import java.util.List;
 @Log4j2
 @Service
 @RequiredArgsConstructor
-public class ProfileService implements ProfileApi {
+public class ProfileService {
 
     private final ProfileRepository profileRepository;
     private final ProfileMapper profileMapper;
@@ -34,7 +33,6 @@ public class ProfileService implements ProfileApi {
      * <p>The write paths also had no {@code @Transactional} at all, so a multi-statement
      * update had no atomicity and every call ran in its own auto-commit.
      */
-    @Override
     @Transactional(readOnly = true)
     public List<ProfileDto> findAll() {
         return profileRepository.findByUserUserId(currentUserId()).stream()
@@ -42,7 +40,6 @@ public class ProfileService implements ProfileApi {
                 .toList();
     }
 
-    @Override
     @Transactional(readOnly = true)
     public ProfileDto findById(Long id) {
         return profileMapper.toDto(findOwnedOrThrow(id));
@@ -60,7 +57,6 @@ public class ProfileService implements ProfileApi {
      *
      * <p>Mirrors the same decision already made in {@code FavouriteService.create}.
      */
-    @Override
     @Transactional
     public ProfileDto create(ProfileDto dto) {
         Long userId = currentUserId();
@@ -82,7 +78,6 @@ public class ProfileService implements ProfileApi {
         return profileMapper.toDto(saved);
     }
 
-    @Override
     @Transactional
     public ProfileDto update(Long id, ProfileDto dto) {
         ProfileEntity existing = findOwnedOrThrow(id);
@@ -94,7 +89,6 @@ public class ProfileService implements ProfileApi {
         return profileMapper.toDto(saved);
     }
 
-    @Override
     @Transactional
     public void delete(Long id) {
         ProfileEntity owned = findOwnedOrThrow(id);

@@ -1,6 +1,5 @@
 package com.yogida.meditation.service;
 
-import com.yogida.meditation.service.api.SseApi;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -25,7 +24,16 @@ import java.util.concurrent.ConcurrentLinkedDeque;
  */
 @Log4j2
 @Service
-public class SseService implements SseApi {
+public class SseService {
+
+    /**
+     * The SSE event name every entitlement notification is published under.
+     *
+     * <p>Moved here from the interface it used to live on. It was referenced unqualified in this
+     * class, resolved only by interface inheritance, so it had to come across before the
+     * interface could be deleted.
+     */
+    public static final String ENTITLEMENT_UPDATE_EVENT = "entitlement-update";
 
     /**
      * Upper bound of undelivered events retained per user; oldest are dropped first.
@@ -38,7 +46,6 @@ public class SseService implements SseApi {
     private final ConcurrentHashMap<String, ConcurrentLinkedDeque<String>> pendingEvents =
         new ConcurrentHashMap<>();
 
-    @Override
     public SseEmitter subscribe(String keycloakUserId, String clientId) {
         SseEmitter emitter = new SseEmitter(0L);
         ConcurrentHashMap<String, SseEmitter> userEmitters =
@@ -78,7 +85,6 @@ public class SseService implements SseApi {
         return emitter;
     }
 
-    @Override
     public void publishToUser(String keycloakUserId, String eventType) {
         // Deliberately does not log the RevenueCat event object. It carries the app user id,
         // product id, store and entitlement ids, and this logger defaults to DEBUG in every

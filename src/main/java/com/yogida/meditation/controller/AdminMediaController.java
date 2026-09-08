@@ -3,7 +3,6 @@ package com.yogida.meditation.controller;
 import com.yogida.meditation.controller.api.AdminMediaControllerApi;
 import com.yogida.meditation.dto.*;
 import com.yogida.meditation.exception.EntityNotFoundException;
-import com.yogida.meditation.service.api.MediaFacadeApi;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -12,12 +11,13 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import com.yogida.meditation.service.MediaFacadeService;
 
 @RestController
 @RequiredArgsConstructor
 public class AdminMediaController implements AdminMediaControllerApi {
 
-    private final MediaFacadeApi mediaFacadeApi;
+    private final MediaFacadeService mediaFacadeApi;
 
     @Value("${app.media.max-picture-size-bytes:512000}")
     private long maxPictureSizeBytes;

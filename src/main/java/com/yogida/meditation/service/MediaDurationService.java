@@ -1,7 +1,6 @@
 package com.yogida.meditation.service;
 
 import com.yogida.meditation.config.MediaDurationProperties;
-import com.yogida.meditation.service.api.MediaDurationApi;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
@@ -22,11 +21,10 @@ import java.util.concurrent.TimeUnit;
 @Log4j2
 @Service
 @RequiredArgsConstructor
-public class MediaDurationService implements MediaDurationApi {
+public class MediaDurationService {
 
     private final MediaDurationProperties properties;
 
-    @Override
     public int extractDurationSeconds(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("Cannot extract duration: media file is empty");

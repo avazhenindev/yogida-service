@@ -81,8 +81,11 @@ public class SecurityConfig {
                 // Admin endpoints require the Keycloak realm role 'admin'
                 .requestMatchers("/admin/**").hasRole("ADMIN")
                 // User-facing endpoints require a valid JWT
+                // "/media-subscriptions/**" was listed here with no controller, entity,
+                // repository or DTO behind it anywhere. Removing it changes nothing:
+                // anyRequest().authenticated() below already covers any path not named.
                 .requestMatchers("/media/**", "/entitlement/**", "/media-categories/**", "/users/**",
-                    "/favourites/**", "/profiles/**", "/subscriptions/**", "/media-subscriptions/**")
+                    "/favourites/**", "/profiles/**", "/subscriptions/**")
                 .authenticated()
                 // Deny-by-default for any future endpoints
                 .anyRequest().authenticated()

@@ -10,7 +10,6 @@ import com.yogida.meditation.mapper.BreathingMapper;
 import com.yogida.meditation.repository.BreathingPhaseAudioRepository;
 import com.yogida.meditation.repository.BreathingPhaseRepository;
 import com.yogida.meditation.repository.BreathingRepository;
-import com.yogida.meditation.service.api.BreathingApi;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
@@ -27,7 +26,7 @@ import java.util.stream.Collectors;
 @Log4j2
 @Service
 @RequiredArgsConstructor
-public class BreathingService implements BreathingApi {
+public class BreathingService {
 
     private final BreathingRepository breathingRepository;
     private final BreathingPhaseRepository breathingPhaseRepository;
@@ -36,19 +35,16 @@ public class BreathingService implements BreathingApi {
     private final S3ObjectService s3ObjectService;
     private final BreathingMapper breathingMapper;
 
-    @Override
     @Transactional(readOnly = true)
     public List<BreathingDto> findAll() {
         return breathingMapper.toDtoList(breathingRepository.findAllByOrderByDisplayOrderAsc());
     }
 
-    @Override
     @Transactional(readOnly = true)
     public BreathingDto findById(Long id) {
         return breathingMapper.toDto(loadOrThrow(id));
     }
 
-    @Override
     @Transactional
     public BreathingDto create(BreathingCreateRequest request, MultipartFile iconFile, List<MultipartFile> audioFiles) {
         S3ObjectEntity iconObject = breathingStorageService.uploadIcon(iconFile);
@@ -80,7 +76,6 @@ public class BreathingService implements BreathingApi {
         return breathingMapper.toDto(loadOrThrow(saved.getId()));
     }
 
-    @Override
     @Transactional
     public BreathingDto update(Long id, BreathingUpdateRequest request, MultipartFile iconFile,
                                List<MultipartFile> audioFiles) {
@@ -176,7 +171,6 @@ public class BreathingService implements BreathingApi {
         return breathingMapper.toDto(loadOrThrow(id));
     }
 
-    @Override
     @Transactional
     public void delete(Long id) {
         BreathingEntity entity = loadOrThrow(id);
@@ -194,7 +188,6 @@ public class BreathingService implements BreathingApi {
         log.info("BreathingService > Deleted breathing exercise id={}, cleaning {} audio object(s) from R2", id, audioObjects.size());
     }
 
-    @Override
     @Transactional
     public void reorder(List<BreathingReorderItem> items) {
         for (BreathingReorderItem item : items) {
@@ -205,7 +198,6 @@ public class BreathingService implements BreathingApi {
         log.info("BreathingService > Reordered {} breathing exercises", items.size());
     }
 
-    @Override
     @Transactional
     public BreathingDto addAudioToPhase(Long phaseId, MultipartFile audioFile) {
         BreathingPhaseEntity phase = findPhaseOrThrow(phaseId);
@@ -224,7 +216,6 @@ public class BreathingService implements BreathingApi {
         return breathingMapper.toDto(loadOrThrow(phase.getBreathing().getId()));
     }
 
-    @Override
     @Transactional
     public BreathingDto removeAudioFromPhase(Long phaseId, Long audioObjectId) {
         BreathingPhaseEntity phase = findPhaseOrThrow(phaseId);

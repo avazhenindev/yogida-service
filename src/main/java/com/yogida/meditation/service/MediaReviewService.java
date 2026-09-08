@@ -10,7 +10,6 @@ import com.yogida.meditation.exception.EntityNotFoundException;
 import com.yogida.meditation.repository.AppUserRepository;
 import com.yogida.meditation.repository.MediaRepository;
 import com.yogida.meditation.repository.MediaReviewRepository;
-import com.yogida.meditation.service.api.MediaReviewApi;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.data.domain.Page;
@@ -29,13 +28,12 @@ import java.util.stream.Collectors;
 @Log4j2
 @Service
 @RequiredArgsConstructor
-public class MediaReviewService implements MediaReviewApi {
+public class MediaReviewService {
 
     private final MediaReviewRepository mediaReviewRepository;
     private final MediaRepository mediaRepository;
     private final AppUserRepository appUserRepository;
 
-    @Override
     @Transactional
     public MediaReviewResponse save(Long mediaId, Long userId, Integer rating, String reviewText) {
         if (rating != null && (rating < 1 || rating > 5)) {
@@ -71,7 +69,6 @@ public class MediaReviewService implements MediaReviewApi {
         return toResponse(saved);
     }
 
-    @Override
     @Transactional(readOnly = true)
     public Page<MediaReviewResponse> findReviewsByMediaId(Long mediaId, Pageable pageable) {
         if (!mediaRepository.existsById(mediaId)) {
@@ -81,7 +78,6 @@ public class MediaReviewService implements MediaReviewApi {
                 .map(this::toResponse);
     }
 
-    @Override
     @Transactional(readOnly = true)
     public Optional<MediaReviewResponse> findUserReview(Long mediaId, Long userId) {
         MediaEntity media = mediaRepository.findById(mediaId)
@@ -92,7 +88,6 @@ public class MediaReviewService implements MediaReviewApi {
                 .map(this::toResponse);
     }
 
-    @Override
     @Transactional(readOnly = true)
     public MediaRatingSummaryResponse getRatingSummary(Long mediaId) {
         if (!mediaRepository.existsById(mediaId)) {
@@ -114,13 +109,11 @@ public class MediaReviewService implements MediaReviewApi {
         return new MediaRatingSummaryResponse(mediaId, avgRating, count, breakdown);
     }
 
-    @Override
     @Transactional(readOnly = true)
     public double findAverageRatingByMediaId(Long mediaId) {
         return mediaReviewRepository.findAverageRatingByMediaId(mediaId).orElse(0.0);
     }
 
-    @Override
     @Transactional(readOnly = true)
     public List<MediaRatingSummary> findAverageRatingsByMediaIds(Collection<Long> mediaIds) {
         if (mediaIds == null || mediaIds.isEmpty()) {

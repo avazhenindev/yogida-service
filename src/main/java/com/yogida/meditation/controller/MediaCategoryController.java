@@ -4,19 +4,19 @@ import com.yogida.meditation.controller.api.MediaCategoryControllerApi;
 import com.yogida.meditation.dto.MediaCategoryCreateRequest;
 import com.yogida.meditation.dto.MediaCategoryDto;
 import com.yogida.meditation.dto.MediaCategoryUpdateRequest;
-import com.yogida.meditation.service.api.MediaCategoryApi;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import com.yogida.meditation.service.MediaCategoryService;
 
 @RestController
 @RequiredArgsConstructor
 public class MediaCategoryController implements MediaCategoryControllerApi {
 
-    private final MediaCategoryApi mediaCategoryApi;
+    private final MediaCategoryService mediaCategoryApi;
 
     @Override
     public ResponseEntity<List<MediaCategoryDto>> getAll() {

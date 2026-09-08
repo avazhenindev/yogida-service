@@ -4,8 +4,6 @@ import com.yogida.meditation.dto.RevenueCatWebhookRequest;
 import com.yogida.meditation.entity.AppUserEntity;
 import com.yogida.meditation.enums.RevenueCatEventType;
 import com.yogida.meditation.repository.AppUserRepository;
-import com.yogida.meditation.service.api.RevenueCatWebhookApi;
-import com.yogida.meditation.service.api.SseApi;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
@@ -26,14 +24,13 @@ import java.util.Optional;
 @Log4j2
 @Service
 @RequiredArgsConstructor
-public class RevenueCatWebhookService implements RevenueCatWebhookApi {
+public class RevenueCatWebhookService {
 
     private final AppUserRepository appUserRepository;
     private final EntitlementService entitlementService;
     private final EntitlementProjectionService projectionService;
-    private final SseApi sseApi;
+    private final SseService sseApi;
 
-    @Override
     public void processEvent(RevenueCatWebhookRequest request) {
         RevenueCatWebhookRequest.Event event = request == null ? null : request.event();
         if (event == null || event.type() == null) {

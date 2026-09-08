@@ -5,7 +5,6 @@ import com.yogida.meditation.entity.SubscriptionEntity;
 import com.yogida.meditation.exception.EntityNotFoundException;
 import com.yogida.meditation.mapper.SubscriptionMapper;
 import com.yogida.meditation.repository.SubscriptionRepository;
-import com.yogida.meditation.service.api.SubscriptionApi;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
@@ -16,18 +15,16 @@ import java.util.List;
 @Log4j2
 @Service
 @RequiredArgsConstructor
-public class SubscriptionService implements SubscriptionApi {
+public class SubscriptionService {
 
     private final SubscriptionRepository subscriptionRepository;
     private final SubscriptionMapper subscriptionMapper;
 
-    @Override
     @Transactional(readOnly = true)
     public List<SubscriptionDto> findAll() {
         return subscriptionMapper.toDtoList(subscriptionRepository.findAll());
     }
 
-    @Override
     @Transactional(readOnly = true)
     public SubscriptionDto findByName(String name) {
         return subscriptionRepository.findByName(name)
@@ -35,7 +32,6 @@ public class SubscriptionService implements SubscriptionApi {
                 .orElseThrow(() -> new EntityNotFoundException("Subscription with name '" + name + "' not found"));
     }
 
-    @Override
     @Transactional(readOnly = true)
     public SubscriptionDto findById(Long id) {
         return subscriptionRepository.findById(id)
@@ -43,7 +39,6 @@ public class SubscriptionService implements SubscriptionApi {
                 .orElseThrow(() -> new EntityNotFoundException("Subscription", id));
     }
 
-    @Override
     @Transactional
     public SubscriptionDto create(SubscriptionDto dto) {
         SubscriptionEntity entity = subscriptionMapper.toEntity(dto);
@@ -53,7 +48,6 @@ public class SubscriptionService implements SubscriptionApi {
         return subscriptionMapper.toDto(saved);
     }
 
-    @Override
     @Transactional
     public SubscriptionDto update(Long id, SubscriptionDto dto) {
         SubscriptionEntity existing = subscriptionRepository.findById(id)
@@ -64,7 +58,6 @@ public class SubscriptionService implements SubscriptionApi {
         return subscriptionMapper.toDto(saved);
     }
 
-    @Override
     @Transactional
     public void delete(Long id) {
         if (!subscriptionRepository.existsById(id)) {

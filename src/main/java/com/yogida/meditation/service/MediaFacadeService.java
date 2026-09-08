@@ -19,17 +19,16 @@ import java.util.stream.Collectors;
 @Log4j2
 @Service
 @RequiredArgsConstructor
-public class MediaFacadeService implements MediaFacadeApi {
+public class MediaFacadeService {
 
-    private final MediaApi mediaApi;
+    private final MediaService mediaApi;
     private final AdminStorageApi adminStorageApi;
     private final MediaPictureStorageService mediaPictureStorageService;
     private final S3ObjectService s3ObjectService;
     private final MediaRepository mediaRepository;
-    private final MediaReviewApi mediaReviewApi;
-    private final MediaDurationApi mediaDurationApi;
+    private final MediaReviewService mediaReviewApi;
+    private final MediaDurationService mediaDurationApi;
 
-    @Override
     @Transactional(readOnly = true)
     public List<MediaDto> findAll() {
         List<MediaDto> dtos = mediaApi.findAll();
@@ -37,15 +36,6 @@ public class MediaFacadeService implements MediaFacadeApi {
         return dtos;
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<MediaDto> findAllActive() {
-        List<MediaDto> dtos = mediaApi.findAllActive();
-        enrichWithAverageRating(dtos);
-        return dtos;
-    }
-
-    @Override
     @Transactional(readOnly = true)
     public Optional<MediaDto> findById(Long id) {
         return mediaApi.findById(id).map(dto -> {
@@ -54,7 +44,6 @@ public class MediaFacadeService implements MediaFacadeApi {
         });
     }
 
-    @Override
     @Transactional
     public MediaDto create(MediaCreateRequest request) {
         // Server-generated: see StorageKeys. The client used to supply this and collisions
@@ -82,7 +71,6 @@ public class MediaFacadeService implements MediaFacadeApi {
         return dto;
     }
 
-    @Override
     @Transactional
     public MediaDto update(Long id, MediaFileUpdateRequest request) {
         MediaEntity existingEntity = resolveEntity(id);
@@ -135,7 +123,6 @@ public class MediaFacadeService implements MediaFacadeApi {
         return dto;
     }
 
-    @Override
     @Transactional
     public void delete(Long id) {
         MediaEntity entity = resolveEntity(id);

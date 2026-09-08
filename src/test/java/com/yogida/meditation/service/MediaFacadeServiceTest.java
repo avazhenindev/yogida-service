@@ -10,9 +10,6 @@ import com.yogida.meditation.entity.S3ObjectEntity;
 import com.yogida.meditation.enums.MediaStatus;
 import com.yogida.meditation.repository.MediaRepository;
 import com.yogida.meditation.service.api.AdminStorageApi;
-import com.yogida.meditation.service.api.MediaApi;
-import com.yogida.meditation.service.api.MediaDurationApi;
-import com.yogida.meditation.service.api.MediaReviewApi;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -37,7 +34,7 @@ class MediaFacadeServiceTest {
     private static final String PUBLIC_PICTURE_BASE_URL = "https://images.example.com";
 
     @Mock
-    private MediaApi mediaApi;
+    private MediaService mediaApi;
 
     @Mock
     private AdminStorageApi adminStorageApi;
@@ -52,10 +49,10 @@ class MediaFacadeServiceTest {
     private MediaRepository mediaRepository;
 
     @Mock
-    private MediaReviewApi mediaReviewApi;
+    private MediaReviewService mediaReviewApi;
 
     @Mock
-    private MediaDurationApi mediaDurationApi;
+    private MediaDurationService mediaDurationApi;
 
     @InjectMocks
     private MediaFacadeService mediaFacadeService;

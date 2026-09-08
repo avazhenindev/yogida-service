@@ -3,7 +3,6 @@ package com.yogida.meditation.controller;
 import com.yogida.meditation.controller.api.MediaRatingControllerApi;
 import com.yogida.meditation.dto.*;
 import com.yogida.meditation.service.CurrentUserService;
-import com.yogida.meditation.service.api.MediaReviewApi;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -11,12 +10,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Set;
+import com.yogida.meditation.service.MediaReviewService;
 
 @RestController
 @RequiredArgsConstructor
 public class MediaRatingController implements MediaRatingControllerApi {
 
-    private final MediaReviewApi mediaReviewApi;
+    private final MediaReviewService mediaReviewApi;
     private final CurrentUserService currentUserService;
 
     @Override

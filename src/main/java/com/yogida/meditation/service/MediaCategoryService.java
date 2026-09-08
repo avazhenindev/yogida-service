@@ -7,7 +7,6 @@ import com.yogida.meditation.entity.MediaCategoryEntity;
 import com.yogida.meditation.exception.EntityNotFoundException;
 import com.yogida.meditation.mapper.MediaCategoryMapper;
 import com.yogida.meditation.repository.MediaCategoryRepository;
-import com.yogida.meditation.service.api.MediaCategoryApi;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
@@ -18,18 +17,16 @@ import java.util.List;
 @Log4j2
 @Service
 @RequiredArgsConstructor
-public class MediaCategoryService implements MediaCategoryApi {
+public class MediaCategoryService {
 
     private final MediaCategoryRepository mediaCategoryRepository;
     private final MediaCategoryMapper mediaCategoryMapper;
 
-    @Override
     @Transactional(readOnly = true)
     public List<MediaCategoryDto> findAll() {
         return mediaCategoryMapper.toDtoList(mediaCategoryRepository.findAll());
     }
 
-    @Override
     @Transactional(readOnly = true)
     public MediaCategoryDto findById(Long id) {
         return mediaCategoryRepository.findById(id)
@@ -37,7 +34,6 @@ public class MediaCategoryService implements MediaCategoryApi {
                 .orElseThrow(() -> new EntityNotFoundException("MediaCategory", id));
     }
 
-    @Override
     @Transactional
     public MediaCategoryDto create(MediaCategoryCreateRequest request) {
         MediaCategoryEntity entity = mediaCategoryMapper.toEntity(request);
@@ -46,7 +42,6 @@ public class MediaCategoryService implements MediaCategoryApi {
         return mediaCategoryMapper.toDto(saved);
     }
 
-    @Override
     @Transactional
     public MediaCategoryDto update(Long id, MediaCategoryUpdateRequest request) {
         MediaCategoryEntity entity = mediaCategoryRepository.findById(id)
@@ -57,7 +52,6 @@ public class MediaCategoryService implements MediaCategoryApi {
         return mediaCategoryMapper.toDto(saved);
     }
 
-    @Override
     @Transactional
     public void delete(Long id) {
         if (!mediaCategoryRepository.existsById(id)) {

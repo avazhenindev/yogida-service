@@ -3,7 +3,6 @@ package com.yogida.meditation.controller;
 import com.yogida.meditation.config.RevenueCatProperties;
 import com.yogida.meditation.controller.api.RevenueCatWebhookControllerApi;
 import com.yogida.meditation.dto.RevenueCatWebhookRequest;
-import com.yogida.meditation.service.api.RevenueCatWebhookApi;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpStatus;
@@ -12,13 +11,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import com.yogida.meditation.service.RevenueCatWebhookService;
 
 @Log4j2
 @RestController
 @RequiredArgsConstructor
 public class RevenueCatWebhookController implements RevenueCatWebhookControllerApi {
 
-    private final RevenueCatWebhookApi revenueCatWebhookService;
+    private final RevenueCatWebhookService revenueCatWebhookService;
     private final RevenueCatProperties revenueCatProperties;
 
     @Override

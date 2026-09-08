@@ -3,7 +3,6 @@ package com.yogida.meditation.controller;
 import com.yogida.meditation.controller.api.AdminBreathingControllerApi;
 import com.yogida.meditation.dto.*;
 import com.yogida.meditation.service.BreathingAudioMigrationService;
-import com.yogida.meditation.service.api.BreathingApi;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,12 +10,13 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import com.yogida.meditation.service.BreathingService;
 
 @RestController
 @RequiredArgsConstructor
 public class AdminBreathingController implements AdminBreathingControllerApi {
 
-    private final BreathingApi breathingApi;
+    private final BreathingService breathingApi;
     private final BreathingAudioMigrationService breathingAudioMigrationService;
 
     @Override
