@@ -22,7 +22,6 @@ import java.util.stream.Collectors;
 public class MediaFacadeService {
 
     private final MediaService mediaApi;
-    private final AdminStorageApi adminStorageApi;
     private final MediaPictureStorageService mediaPictureStorageService;
     private final S3ObjectService s3ObjectService;
     private final MediaRepository mediaRepository;
@@ -49,10 +48,9 @@ public class MediaFacadeService {
         // Server-generated: see StorageKeys. The client used to supply this and collisions
         // silently overwrote another item's audio.
         String objectKey = StorageKeys.mediaKey(request.file() == null ? null : request.file().getOriginalFilename());
-        adminStorageApi.uploadObject(request.bucketName(), objectKey, request.file());
         // If anything after this point fails — validation, ffprobe, a constraint — the object
         // would otherwise stay in R2 with no row pointing at it, and permanently hold its key.
-        s3ObjectService.deleteObjectOnRollback(request.bucketName(), objectKey);
+        s3ObjectService.uploadStaged(request.bucketName(), objectKey, request.file());
         S3ObjectEntity mediaObject = s3ObjectService.createMediaObject(request.bucketName(), objectKey);
 
         S3ObjectEntity pictureObject = mediaPictureStorageService.uploadPicture(request.picture());
@@ -83,8 +81,7 @@ public class MediaFacadeService {
             // the stored one", so re-uploading a file under the same name kept the OLD audio and
             // reported success. With server-generated keys there is no same-name case left.
             String objectKey = StorageKeys.mediaKey(request.file().getOriginalFilename());
-            adminStorageApi.uploadObject(request.bucketName(), objectKey, request.file());
-            s3ObjectService.deleteObjectOnRollback(request.bucketName(), objectKey);
+            s3ObjectService.uploadStaged(request.bucketName(), objectKey, request.file());
             newMediaObject = s3ObjectService.createMediaObject(request.bucketName(), objectKey);
         }
 

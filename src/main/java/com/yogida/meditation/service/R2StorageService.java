@@ -2,6 +2,7 @@ package com.yogida.meditation.service;
 
 import com.yogida.meditation.config.r2.R2Properties;
 import com.yogida.meditation.service.api.R2StorageApi;
+import com.yogida.meditation.service.storage.S3Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -44,15 +45,7 @@ public class R2StorageService implements R2StorageApi {
 
     @Override
     public boolean objectExists(String bucketName, String objectKey) {
-        try {
-            s3Client.headObject(HeadObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(objectKey)
-                    .build());
-            return true;
-        } catch (NoSuchKeyException | NoSuchBucketException e) {
-            return false;
-        }
+        return S3Objects.existsAllowingMissingBucket(s3Client, bucketName, objectKey);
     }
 
 

@@ -2,7 +2,6 @@ package com.yogida.meditation.service;
 
 import com.yogida.meditation.constants.BucketNames;
 import com.yogida.meditation.entity.S3ObjectEntity;
-import com.yogida.meditation.service.api.AdminStorageApi;
 import com.yogida.meditation.service.storage.StorageConfigs;
 import com.yogida.meditation.service.storage.StorageKeys;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +21,6 @@ public class MediaPictureStorageService {
     // literal two characters "{}/" and every picture ever uploaded landed at "{}/<uuid>-<name>".
     private static final String PICTURE_KEY_PREFIX = BucketNames.PICTURES + "/";
 
-    private final AdminStorageApi adminStorageApi;
     private final S3ObjectService s3ObjectService;
 
     @Value("${app.media.max-picture-size-bytes:512000}")
@@ -46,8 +44,7 @@ public class MediaPictureStorageService {
 
         String pictureObjectKey = PICTURE_KEY_PREFIX + UUID.randomUUID() + "-"
                 + StorageKeys.sanitise(picture.getOriginalFilename(), "picture");
-        adminStorageApi.uploadObject(PICTURE_BUCKET_NAME, pictureObjectKey, picture);
-        s3ObjectService.deleteObjectOnRollback(PICTURE_BUCKET_NAME, pictureObjectKey);
+        s3ObjectService.uploadStaged(PICTURE_BUCKET_NAME, pictureObjectKey, picture);
         return s3ObjectService.createObject(PICTURE_BUCKET_NAME, StorageConfigs.normalizeBaseUrl(publicPictureBaseUrl), pictureObjectKey);
     }
 

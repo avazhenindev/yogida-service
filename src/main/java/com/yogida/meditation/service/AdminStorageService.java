@@ -4,6 +4,7 @@ import com.yogida.meditation.config.r2.R2Properties;
 import com.yogida.meditation.constants.BucketNames;
 import com.yogida.meditation.dto.*;
 import com.yogida.meditation.service.api.AdminStorageApi;
+import com.yogida.meditation.service.storage.S3Objects;
 import com.yogida.meditation.service.api.R2StorageApi;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -170,14 +171,6 @@ public class AdminStorageService implements AdminStorageApi {
 
     @Override
     public boolean objectExists(String bucketName, String objectKey) {
-        try {
-            s3Client.headObject(HeadObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(objectKey)
-                    .build());
-            return true;
-        } catch (NoSuchKeyException e) {
-            return false;
-        }
+        return S3Objects.exists(s3Client, bucketName, objectKey);
     }
 }

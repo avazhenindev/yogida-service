@@ -8,6 +8,7 @@ import com.yogida.meditation.service.api.AdminStorageApi;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
@@ -79,6 +80,24 @@ public class S3ObjectService {
      * where the commit may in fact have succeeded and deleting would destroy a live object
      * belonging to a committed row.
      */
+    /**
+     * Uploads an object and stages its removal should the surrounding transaction roll back.
+     *
+     * <p>The pair is a rule, not a convention: an upload whose rollback is never registered leaves
+     * an object in R2 that no row points at, and because {@code unique(bucket, base_url, uri)}
+     * keys on the URI, that orphan permanently blocks its own key. Every upload path in the
+     * service went through these two calls in sequence and each one could have forgotten the
+     * second, so they are one call now.
+     *
+     * <p>Registering the object rather than the row is deliberate — the caller decides how the
+     * object is recorded afterwards, which differs by bucket (a public base URL, an empty one, or
+     * the media-specific factory).
+     */
+    public void uploadStaged(String bucketName, String objectKey, MultipartFile file) {
+        adminStorageApi.uploadObject(bucketName, objectKey, file);
+        deleteObjectOnRollback(bucketName, objectKey);
+    }
+
     public void deleteObjectOnRollback(String bucketName, String objectKey) {
         if (bucketName == null || objectKey == null) {
             return;

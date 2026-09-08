@@ -3,13 +3,11 @@ package com.yogida.meditation.service;
 import com.yogida.meditation.dto.MediaCreateRequest;
 import com.yogida.meditation.dto.MediaDto;
 import com.yogida.meditation.dto.MediaUpdateRequest;
-import com.yogida.meditation.dto.ObjectMetadataDto;
 import com.yogida.meditation.dto.S3ObjectDto;
 import com.yogida.meditation.entity.MediaEntity;
 import com.yogida.meditation.entity.S3ObjectEntity;
 import com.yogida.meditation.enums.MediaStatus;
 import com.yogida.meditation.repository.MediaRepository;
-import com.yogida.meditation.service.api.AdminStorageApi;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -19,7 +17,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 
-import java.time.Instant;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,9 +32,6 @@ class MediaFacadeServiceTest {
 
     @Mock
     private MediaService mediaApi;
-
-    @Mock
-    private AdminStorageApi adminStorageApi;
 
     @Mock
     private MediaPictureStorageService mediaPictureStorageService;
@@ -91,8 +85,6 @@ class MediaFacadeServiceTest {
         );
 
         // The key is generated server-side now, so it cannot be matched as a literal.
-        when(adminStorageApi.uploadObject(eq("audio"), mediaObjectKeyCaptor.capture(), eq(audioFile)))
-                .thenReturn(new ObjectMetadataDto("generated", 5L, Instant.now(), "etag-audio", "https://acct.r2.cloudflarestorage.com/audio/generated"));
         S3ObjectEntity mediaObject = s3Object(31L, "audio", "https://acct.r2.cloudflarestorage.com/audio", "focus.mp3");
         S3ObjectEntity pictureObject = s3Object(32L, "pictures", PUBLIC_PICTURE_BASE_URL, "media/generated-cover.png");
         when(s3ObjectService.createMediaObject(eq("audio"), anyString())).thenReturn(mediaObject);
@@ -109,6 +101,7 @@ class MediaFacadeServiceTest {
         // The key must be generated, not taken from the upload's filename: two media items whose
         // files are both called "focus.mp3" used to resolve to one R2 object, so the second
         // upload overwrote the first item's audio.
+        verify(s3ObjectService).uploadStaged(eq("audio"), mediaObjectKeyCaptor.capture(), eq(audioFile));
         String generatedKey = mediaObjectKeyCaptor.getValue();
         assertThat(generatedKey)
                 .startsWith("media/")
@@ -143,9 +136,6 @@ class MediaFacadeServiceTest {
                 false
         );
 
-        // The key is generated server-side now, so it cannot be matched as a literal.
-        when(adminStorageApi.uploadObject(eq("audio"), mediaObjectKeyCaptor.capture(), eq(audioFile)))
-                .thenReturn(new ObjectMetadataDto("generated", 5L, Instant.now(), "etag-audio", "https://acct.r2.cloudflarestorage.com/audio/generated"));
         when(s3ObjectService.createMediaObject(eq("audio"), anyString()))
                 .thenReturn(s3Object(31L, "audio", "https://acct.r2.cloudflarestorage.com/audio", "generated"));
         when(mediaPictureStorageService.uploadPicture(eq(pictureFile)))

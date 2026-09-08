@@ -4,7 +4,6 @@ import com.yogida.meditation.constants.BucketNames;
 import com.yogida.meditation.service.storage.StorageConfigs;
 import com.yogida.meditation.service.storage.StorageKeys;
 import com.yogida.meditation.entity.S3ObjectEntity;
-import com.yogida.meditation.service.api.AdminStorageApi;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -32,7 +31,6 @@ public class BreathingStorageService {
 
     private static final String PUBLIC_BUCKET = BucketNames.PUBLIC;
 
-    private final AdminStorageApi adminStorageApi;
     private final S3ObjectService s3ObjectService;
 
     @Value("${cloudflare.r2.public-picture-base-url:}")
@@ -55,8 +53,7 @@ public class BreathingStorageService {
             throw new IllegalArgumentException("Icon file must not be empty");
         }
         String key = BucketNames.BREATHING_ICONS_PREFIX + UUID.randomUUID() + "-" + StorageKeys.sanitise(iconFile.getOriginalFilename(), "file");
-        adminStorageApi.uploadObject(PUBLIC_BUCKET, key, iconFile);
-        s3ObjectService.deleteObjectOnRollback(PUBLIC_BUCKET, key);
+        s3ObjectService.uploadStaged(PUBLIC_BUCKET, key, iconFile);
         return s3ObjectService.createObject(PUBLIC_BUCKET, StorageConfigs.normalizeBaseUrl(publicBaseUrl), key);
     }
 
@@ -76,8 +73,7 @@ public class BreathingStorageService {
             throw new IllegalArgumentException("Audio file must not be empty");
         }
         String key = BucketNames.BREATHING_AUDIO_PREFIX + UUID.randomUUID() + "-" + StorageKeys.sanitise(audioFile.getOriginalFilename(), "file");
-        adminStorageApi.uploadObject(bucket, key, audioFile);
-        s3ObjectService.deleteObjectOnRollback(bucket, key);
+        s3ObjectService.uploadStaged(bucket, key, audioFile);
         return s3ObjectService.createObject(bucket, "", key);
     }
 
