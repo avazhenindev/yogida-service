@@ -44,6 +44,7 @@ public class MediaPictureStorageService {
 
         String pictureObjectKey = buildPictureObjectKey(picture);
         adminStorageApi.uploadObject(PICTURE_BUCKET_NAME, pictureObjectKey, picture);
+        s3ObjectService.deleteObjectOnRollback(PICTURE_BUCKET_NAME, pictureObjectKey);
         return s3ObjectService.createObject(PICTURE_BUCKET_NAME, normalizeBaseUrl(publicPictureBaseUrl), pictureObjectKey);
     }
 

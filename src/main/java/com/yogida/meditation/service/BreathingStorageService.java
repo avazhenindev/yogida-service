@@ -54,6 +54,7 @@ public class BreathingStorageService {
         }
         String key = BucketNames.BREATHING_ICONS_PREFIX + UUID.randomUUID() + "-" + sanitizeFilename(iconFile);
         adminStorageApi.uploadObject(PUBLIC_BUCKET, key, iconFile);
+        s3ObjectService.deleteObjectOnRollback(PUBLIC_BUCKET, key);
         return s3ObjectService.createObject(PUBLIC_BUCKET, normalizeBaseUrl(publicBaseUrl), key);
     }
 
@@ -74,6 +75,7 @@ public class BreathingStorageService {
         }
         String key = BucketNames.BREATHING_AUDIO_PREFIX + UUID.randomUUID() + "-" + sanitizeFilename(audioFile);
         adminStorageApi.uploadObject(bucket, key, audioFile);
+        s3ObjectService.deleteObjectOnRollback(bucket, key);
         return s3ObjectService.createObject(bucket, "", key);
     }
 

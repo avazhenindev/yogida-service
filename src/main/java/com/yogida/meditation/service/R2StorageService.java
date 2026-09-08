@@ -66,7 +66,12 @@ public class R2StorageService implements R2StorageApi {
 
 
 
-    private List<String> listAllObjectKeys(String bucketName) {
+    /**
+     * Already existed as a private helper with correct pagination; promoted to the interface for
+     * the reconciliation report rather than writing a second implementation of the same loop.
+     */
+    @Override
+    public List<String> listObjectKeys(String bucketName) {
         List<String> keys = new ArrayList<>();
         String continuationToken = null;
         do {

@@ -23,4 +23,12 @@ public interface R2StorageApi {
 
 
     String[] parseS3Url(String s3Url);
+
+    /**
+     * Every object key in a bucket, following pagination to the end.
+     *
+     * <p>Used only by the reconciliation report, which compares key sets against
+     * {@code s3_object.object_uri}.
+     */
+    List<String> listObjectKeys(String bucketName);
 }

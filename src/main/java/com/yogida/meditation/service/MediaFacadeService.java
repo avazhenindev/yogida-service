@@ -61,6 +61,9 @@ public class MediaFacadeService implements MediaFacadeApi {
         // silently overwrote another item's audio.
         String objectKey = StorageKeys.mediaKey(request.file() == null ? null : request.file().getOriginalFilename());
         adminStorageApi.uploadObject(request.bucketName(), objectKey, request.file());
+        // If anything after this point fails — validation, ffprobe, a constraint — the object
+        // would otherwise stay in R2 with no row pointing at it, and permanently hold its key.
+        s3ObjectService.deleteObjectOnRollback(request.bucketName(), objectKey);
         S3ObjectEntity mediaObject = s3ObjectService.createMediaObject(request.bucketName(), objectKey);
 
         S3ObjectEntity pictureObject = mediaPictureStorageService.uploadPicture(request.picture());
@@ -93,6 +96,7 @@ public class MediaFacadeService implements MediaFacadeApi {
             // reported success. With server-generated keys there is no same-name case left.
             String objectKey = StorageKeys.mediaKey(request.file().getOriginalFilename());
             adminStorageApi.uploadObject(request.bucketName(), objectKey, request.file());
+            s3ObjectService.deleteObjectOnRollback(request.bucketName(), objectKey);
             newMediaObject = s3ObjectService.createMediaObject(request.bucketName(), objectKey);
         }
 

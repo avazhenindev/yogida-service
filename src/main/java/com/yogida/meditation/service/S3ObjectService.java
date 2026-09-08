@@ -12,6 +12,7 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDateTime;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Log4j2
 @Service
@@ -45,17 +46,97 @@ public class S3ObjectService {
         if (object == null) {
             return;
         }
+        deleteObject(object.getBucketName(), object.getObjectUri());
+    }
 
+    /**
+     * Deletes an object by coordinates rather than by row, for objects that have no row yet.
+     * Never throws: cleanup failing must not mask the error that triggered it.
+     */
+    public void deleteObject(String bucketName, String objectKey) {
         try {
-            adminStorageApi.deleteObject(object.getBucketName(), object.getObjectUri());
+            adminStorageApi.deleteObject(bucketName, objectKey);
         } catch (Exception e) {
             log.warn("Failed to delete S3 object [bucket={}, objectUri={}]: {}",
-                    object.getBucketName(), object.getObjectUri(), e.getMessage());
+                    bucketName, objectKey, e.getMessage());
         }
     }
 
+    /**
+     * Arranges for a just-uploaded object to be removed if the surrounding transaction rolls back.
+     *
+     * <p>Uploads happen before the row that references them is committed, so a later failure —
+     * a validation error, a constraint violation, an ffprobe rejection — used to leave the object
+     * in R2 with nothing pointing at it. Those orphans accumulate, and because
+     * {@code unique(bucket, base_url, uri)} keys on the object URI, one of them permanently
+     * blocks its own key from being reused.
+     *
+     * <p>Two details matter and both were got wrong in the first design.
+     *
+     * <p>There is no {@code afterRollback} callback on {@link TransactionSynchronization}; the
+     * hook is {@code afterCompletion(int)}. And it must fire ONLY on
+     * {@link TransactionSynchronization#STATUS_ROLLED_BACK} — never on {@code STATUS_UNKNOWN},
+     * where the commit may in fact have succeeded and deleting would destroy a live object
+     * belonging to a committed row.
+     */
+    public void deleteObjectOnRollback(String bucketName, String objectKey) {
+        if (bucketName == null || objectKey == null) {
+            return;
+        }
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            // Nothing to roll back; the caller is responsible for its own cleanup.
+            log.debug("S3ObjectService > No active transaction; skipping rollback registration for {}/{}",
+                    bucketName, objectKey);
+            return;
+        }
+
+        // Guards against a second registration for the same key firing twice.
+        AtomicBoolean settled = new AtomicBoolean(false);
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                if (status != TransactionSynchronization.STATUS_ROLLED_BACK) {
+                    return;
+                }
+                if (!settled.compareAndSet(false, true)) {
+                    return;
+                }
+                log.info("S3ObjectService > Transaction rolled back; removing staged object {}/{}",
+                        bucketName, objectKey);
+                deleteObject(bucketName, objectKey);
+            }
+        });
+    }
+
+    /**
+     * Removes an object from storage once the surrounding transaction commits, and drops its
+     * {@code s3_object} row if nothing references it any more.
+     *
+     * <p>The row deletion happens now, inside the transaction, because after commit there is no
+     * transaction left to delete it in. The storage deletion happens after commit, because until
+     * then the transaction might still roll back and the object would still be needed.
+     *
+     * <p><b>Callers must have deleted and flushed the referencing row first.</b> The referent
+     * count is what decides whether the row is an orphan, so a caller that registers cleanup
+     * before deleting its own reference sees a count of one, concludes the object is still in
+     * use, and leaves the row behind for ever. Two call sites in {@code BreathingService} did
+     * exactly that.
+     *
+     * <p>Rows accumulating here is not merely untidy: {@code unique(bucket, base_url, uri)} means
+     * an orphan permanently blocks its own key from being written again.
+     */
     public void deleteObjectAfterCommit(S3ObjectEntity object) {
         if (object == null) {
+            return;
+        }
+
+        if (object.getId() != null && s3ObjectRepository.countReferents(object.getId()) == 0) {
+            s3ObjectRepository.delete(object);
+            log.debug("S3ObjectService > Removed orphaned s3_object row id={}", object.getId());
+        } else if (object.getId() != null) {
+            // Still referenced elsewhere — leave both the row and the object alone.
+            log.debug("S3ObjectService > s3_object row id={} still has referents; keeping the object",
+                    object.getId());
             return;
         }
 

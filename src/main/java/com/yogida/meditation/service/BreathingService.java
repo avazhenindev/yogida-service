@@ -112,11 +112,17 @@ public class BreathingService implements BreathingApi {
             existingPhases.stream()
                     .filter(p -> !keptIds.contains(p.getId()))
                     .forEach(p -> {
-                        p.getAudioFiles().stream()
+                        // The referencing rows must be gone and flushed BEFORE the object
+                        // cleanup is registered: it counts remaining referents to decide whether
+                        // the s3_object row can go too, and would otherwise still see this one.
+                        List<S3ObjectEntity> orphanCandidates = p.getAudioFiles().stream()
                                 .map(BreathingPhaseAudioEntity::getAudioObject)
-                                .forEach(s3ObjectService::deleteObjectAfterCommit);
+                                .filter(java.util.Objects::nonNull)
+                                .toList();
                         entity.getPhases().remove(p);
                         breathingPhaseRepository.delete(p);
+                        breathingPhaseRepository.flush();
+                        orphanCandidates.forEach(s3ObjectService::deleteObjectAfterCommit);
                     });
 
             // Process each phase in the request (ordered by request position = new displayOrder)
@@ -144,8 +150,11 @@ public class BreathingService implements BreathingApi {
                             breathingPhaseAudioRepository
                                     .findByPhaseIdAndAudioObjectId(existing.getId(), audioObjId)
                                     .ifPresent(entry -> {
-                                        s3ObjectService.deleteObjectAfterCommit(entry.getAudioObject());
+                                        // Same ordering requirement as above.
+                                        S3ObjectEntity orphanCandidate = entry.getAudioObject();
                                         breathingPhaseAudioRepository.delete(entry);
+                                        breathingPhaseAudioRepository.flush();
+                                        s3ObjectService.deleteObjectAfterCommit(orphanCandidate);
                                     });
                         }
                     }
