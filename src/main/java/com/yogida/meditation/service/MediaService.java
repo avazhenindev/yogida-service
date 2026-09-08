@@ -8,6 +8,7 @@ import com.yogida.meditation.entity.S3ObjectEntity;
 import com.yogida.meditation.entity.TagEntity;
 import com.yogida.meditation.enums.MediaStatus;
 import com.yogida.meditation.exception.EntityNotFoundException;
+import com.yogida.meditation.repository.Repositories;
 import com.yogida.meditation.mapper.MediaMapper;
 import com.yogida.meditation.repository.MediaCategoryRepository;
 import com.yogida.meditation.repository.MediaRepository;
@@ -88,10 +89,7 @@ public class MediaService {
 
     @Transactional
     public void delete(Long id) {
-        if (!mediaRepository.existsById(id)) {
-            throw new EntityNotFoundException("Media", id);
-        }
-        mediaRepository.deleteById(id);
+        Repositories.deleteOrThrow(mediaRepository, id, "Media");
         log.info("MediaService > Deleted media id={}", id);
     }
 

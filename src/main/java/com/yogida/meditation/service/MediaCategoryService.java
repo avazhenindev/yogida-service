@@ -5,6 +5,7 @@ import com.yogida.meditation.dto.MediaCategoryDto;
 import com.yogida.meditation.dto.MediaCategoryUpdateRequest;
 import com.yogida.meditation.entity.MediaCategoryEntity;
 import com.yogida.meditation.exception.EntityNotFoundException;
+import com.yogida.meditation.repository.Repositories;
 import com.yogida.meditation.mapper.MediaCategoryMapper;
 import com.yogida.meditation.repository.MediaCategoryRepository;
 import lombok.RequiredArgsConstructor;
@@ -54,10 +55,7 @@ public class MediaCategoryService {
 
     @Transactional
     public void delete(Long id) {
-        if (!mediaCategoryRepository.existsById(id)) {
-            throw new EntityNotFoundException("MediaCategory", id);
-        }
-        mediaCategoryRepository.deleteById(id);
+        Repositories.deleteOrThrow(mediaCategoryRepository, id, "MediaCategory");
         log.info("MediaCategoryService > Deleted media category id={}", id);
     }
 }

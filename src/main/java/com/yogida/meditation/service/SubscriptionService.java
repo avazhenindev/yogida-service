@@ -3,6 +3,7 @@ package com.yogida.meditation.service;
 import com.yogida.meditation.dto.SubscriptionDto;
 import com.yogida.meditation.entity.SubscriptionEntity;
 import com.yogida.meditation.exception.EntityNotFoundException;
+import com.yogida.meditation.repository.Repositories;
 import com.yogida.meditation.mapper.SubscriptionMapper;
 import com.yogida.meditation.repository.SubscriptionRepository;
 import lombok.RequiredArgsConstructor;
@@ -60,10 +61,7 @@ public class SubscriptionService {
 
     @Transactional
     public void delete(Long id) {
-        if (!subscriptionRepository.existsById(id)) {
-            throw new EntityNotFoundException("Subscription", id);
-        }
-        subscriptionRepository.deleteById(id);
+        Repositories.deleteOrThrow(subscriptionRepository, id, "Subscription");
         log.info("SubscriptionService > Deleted subscription plan with id: {}", id);
     }
 }
