@@ -2,16 +2,13 @@ package com.yogida.meditation.service;
 
 import com.yogida.meditation.dto.MediaDto;
 import com.yogida.meditation.dto.MediaUpdateRequest;
-import com.yogida.meditation.entity.FavouriteEntity;
 import com.yogida.meditation.entity.MediaEntity;
 import com.yogida.meditation.entity.MediaCategoryEntity;
 import com.yogida.meditation.entity.S3ObjectEntity;
 import com.yogida.meditation.entity.TagEntity;
-import com.yogida.meditation.enums.ContentType;
 import com.yogida.meditation.enums.MediaStatus;
 import com.yogida.meditation.exception.EntityNotFoundException;
 import com.yogida.meditation.mapper.MediaMapper;
-import com.yogida.meditation.repository.FavouriteRepository;
 import com.yogida.meditation.repository.MediaCategoryRepository;
 import com.yogida.meditation.repository.MediaRepository;
 import com.yogida.meditation.repository.S3ObjectRepository;
@@ -25,10 +22,8 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Log4j2
 @Service
@@ -39,7 +34,6 @@ public class MediaService {
     private final MediaCategoryRepository mediaCategoryRepository;
     private final S3ObjectRepository s3ObjectRepository;
     private final TagRepository tagRepository;
-    private final FavouriteRepository favouriteRepository;
     private final MediaMapper mediaMapper;
 
     @Transactional(readOnly = true)

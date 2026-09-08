@@ -19,9 +19,5 @@ public interface FavouriteRepository extends JpaRepository<FavouriteEntity, Long
      */
     Optional<FavouriteEntity> findByUserUserIdAndContentTypeAndContentId(Long userId, String contentType, Long contentId);
 
-    /**
-     * Check if a favourite exists for the given user, content type, and content ID.
-     */
-    boolean existsByUserUserIdAndContentTypeAndContentId(Long userId, String contentType, Long contentId);
 }
 

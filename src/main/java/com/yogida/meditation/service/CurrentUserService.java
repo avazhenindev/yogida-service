@@ -23,32 +23,6 @@ public class CurrentUserService {
     private final JwtUserProvisioner provisioner;
 
     /**
-     * Resolves the current authenticated user from the JWT token.
-     * The 'sub' claim contains the Keycloak user ID.
-     *
-     * @return Optional containing the AppUserEntity if authenticated and found in database
-     */
-    @Transactional(readOnly = true)
-    public Optional<AppUserEntity> getCurrentUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return Optional.empty();
-        }
-
-        if (!(authentication.getPrincipal() instanceof Jwt jwt)) {
-            return Optional.empty();
-        }
-
-        String keycloakUserId = jwt.getSubject();
-        if (keycloakUserId == null || keycloakUserId.isBlank()) {
-            return Optional.empty();
-        }
-
-        return appUserRepository.findByKeycloakUserId(keycloakUserId);
-    }
-
-    /**
      * Resolves the current authenticated user, creating the local record on first sight.
      *
      * <p>A valid token whose subject had no row used to throw, which the error handler turned

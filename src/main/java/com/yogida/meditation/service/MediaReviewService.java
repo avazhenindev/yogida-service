@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Log4j2
@@ -75,16 +74,6 @@ public class MediaReviewService {
             throw new EntityNotFoundException("Media", mediaId);
         }
         return mediaReviewRepository.findAllByMediaId(mediaId, pageable)
-                .map(this::toResponse);
-    }
-
-    @Transactional(readOnly = true)
-    public Optional<MediaReviewResponse> findUserReview(Long mediaId, Long userId) {
-        MediaEntity media = mediaRepository.findById(mediaId)
-                .orElseThrow(() -> new EntityNotFoundException("Media", mediaId));
-        AppUserEntity user = appUserRepository.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException("AppUser", userId));
-        return mediaReviewRepository.findByUserAndMedia(user, media)
                 .map(this::toResponse);
     }
 
