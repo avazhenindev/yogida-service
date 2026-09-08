@@ -5,7 +5,6 @@ import com.yogida.meditation.constants.BucketNames;
 import com.yogida.meditation.dto.*;
 import com.yogida.meditation.service.api.AdminStorageApi;
 import com.yogida.meditation.service.storage.S3Objects;
-import com.yogida.meditation.service.api.R2StorageApi;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,7 +27,6 @@ import java.util.List;
 public class AdminStorageService implements AdminStorageApi {
 
     private final S3Client s3Client;
-    private final R2StorageApi r2StorageApi;
     private final R2Properties r2Properties;
 
     @Override

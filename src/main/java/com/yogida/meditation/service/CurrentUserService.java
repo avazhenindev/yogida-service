@@ -1,7 +1,6 @@
 package com.yogida.meditation.service;
 
 import com.yogida.meditation.entity.AppUserEntity;
-import com.yogida.meditation.repository.AppUserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,7 +18,6 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class CurrentUserService {
 
-    private final AppUserRepository appUserRepository;
     private final JwtUserProvisioner provisioner;
 
     /**

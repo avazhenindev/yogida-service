@@ -1,6 +1,5 @@
 package com.yogida.meditation.service;
 
-import com.yogida.meditation.config.r2.R2Properties;
 import com.yogida.meditation.service.api.R2StorageApi;
 import com.yogida.meditation.service.storage.S3Objects;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +21,6 @@ public class R2StorageService implements R2StorageApi {
 
     private final S3Client s3Client;
     private final S3Presigner s3Presigner;
-    private final R2Properties r2Properties;
 
     @Value("${app.audio.presigned-url-duration-minutes:60}")
     private long presignedUrlDurationMinutes;

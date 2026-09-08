@@ -30,8 +30,6 @@ public class MediaUserMapper {
     private final MediaMapper mediaMapper;
     private final EntitlementService entitlementService;
     private final FavouriteRepository favouriteRepository;
-    private final S3ObjectMapper s3ObjectMapper;
-    private final MediaCategoryMapper mediaCategoryMapper;
 
     /**
      * Converts a MediaEntity to a user-facing MediaDto with entitlement applied and favourite data populated.
