@@ -6,16 +6,15 @@ import com.yogida.meditation.entity.BreathingEntity;
 import com.yogida.meditation.entity.BreathingPhaseAudioEntity;
 import com.yogida.meditation.entity.BreathingPhaseEntity;
 import com.yogida.meditation.entity.S3ObjectEntity;
+import com.yogida.meditation.service.storage.StorageConfigs;
 import com.yogida.meditation.repository.BreathingRepository;
 import com.yogida.meditation.repository.S3ObjectRepository;
 import com.yogida.meditation.service.api.AdminStorageApi;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -58,7 +57,7 @@ public class BreathingAudioMigrationService {
      */
     @Transactional
     public BreathingAudioMigrationResult migrateToPrivateBucket(boolean dryRun) {
-        String target = requirePrivateBucket();
+        String target = StorageConfigs.requireBucketName(privateBucket, "cloudflare.r2.bucket", "private audio bucket");
 
         List<String> moved = new ArrayList<>();
         List<String> skipped = new ArrayList<>();
@@ -136,15 +135,4 @@ public class BreathingAudioMigrationService {
         return "s3_object#" + object.getId() + " " + object.getBucketName() + "/" + object.getObjectUri();
     }
 
-    private String requirePrivateBucket() {
-        if (privateBucket == null || privateBucket.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                    "cloudflare.r2.bucket (private audio bucket) is not configured");
-        }
-        if (privateBucket.contains("://") || privateBucket.contains("/")) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                    "cloudflare.r2.bucket must be a bucket name, not a URL (got: " + privateBucket + ")");
-        }
-        return privateBucket;
-    }
 }

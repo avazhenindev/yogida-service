@@ -32,7 +32,7 @@ public class FavouriteService {
      */
     @Transactional(readOnly = true)
     public List<FavouriteDto> findAll() {
-        return favouriteRepository.findByUserUserId(currentUserId()).stream()
+        return favouriteRepository.findByUserUserId(currentUserService.getCurrentUserId()).stream()
                 .map(favouriteMapper::toDto)
                 .toList();
     }
@@ -49,7 +49,7 @@ public class FavouriteService {
     @Transactional
     public FavouriteDto create(FavouriteDto dto) {
         // Ownership comes from the token. Whatever userId the body carries is ignored.
-        Long ownerId = currentUserId();
+        Long ownerId = currentUserService.getCurrentUserId();
         dto.setUserId(ownerId);
         validateContentData(dto);
 
@@ -94,9 +94,6 @@ public class FavouriteService {
 
 
 
-    private Long currentUserId() {
-        return currentUserService.getCurrentUserOrThrow().getUserId();
-    }
 
     /**
      * Loads a favourite only if it belongs to the caller. Reports "not found" for someone
@@ -104,7 +101,7 @@ public class FavouriteService {
      */
     private FavouriteEntity findOwnedOrThrow(Long id) {
         return favouriteRepository.findById(id)
-                .filter(f -> f.getUser() != null && currentUserId().equals(f.getUser().getUserId()))
+                .filter(f -> f.getUser() != null && currentUserService.getCurrentUserId().equals(f.getUser().getUserId()))
                 .orElseThrow(() -> new EntityNotFoundException("Favourite", id));
     }
 

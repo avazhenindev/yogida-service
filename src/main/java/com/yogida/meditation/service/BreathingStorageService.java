@@ -1,6 +1,8 @@
 package com.yogida.meditation.service;
 
 import com.yogida.meditation.constants.BucketNames;
+import com.yogida.meditation.service.storage.StorageConfigs;
+import com.yogida.meditation.service.storage.StorageKeys;
 import com.yogida.meditation.entity.S3ObjectEntity;
 import com.yogida.meditation.service.api.AdminStorageApi;
 import lombok.RequiredArgsConstructor;
@@ -52,10 +54,10 @@ public class BreathingStorageService {
         if (iconFile == null || iconFile.isEmpty()) {
             throw new IllegalArgumentException("Icon file must not be empty");
         }
-        String key = BucketNames.BREATHING_ICONS_PREFIX + UUID.randomUUID() + "-" + sanitizeFilename(iconFile);
+        String key = BucketNames.BREATHING_ICONS_PREFIX + UUID.randomUUID() + "-" + StorageKeys.sanitise(iconFile.getOriginalFilename(), "file");
         adminStorageApi.uploadObject(PUBLIC_BUCKET, key, iconFile);
         s3ObjectService.deleteObjectOnRollback(PUBLIC_BUCKET, key);
-        return s3ObjectService.createObject(PUBLIC_BUCKET, normalizeBaseUrl(publicBaseUrl), key);
+        return s3ObjectService.createObject(PUBLIC_BUCKET, StorageConfigs.normalizeBaseUrl(publicBaseUrl), key);
     }
 
     /**
@@ -69,11 +71,11 @@ public class BreathingStorageService {
      * @return the persisted {@link S3ObjectEntity}
      */
     public S3ObjectEntity uploadAudio(MultipartFile audioFile) {
-        String bucket = requirePrivateBucket();
+        String bucket = StorageConfigs.requireBucketName(privateBucket, "cloudflare.r2.bucket", "private audio bucket");
         if (audioFile == null || audioFile.isEmpty()) {
             throw new IllegalArgumentException("Audio file must not be empty");
         }
-        String key = BucketNames.BREATHING_AUDIO_PREFIX + UUID.randomUUID() + "-" + sanitizeFilename(audioFile);
+        String key = BucketNames.BREATHING_AUDIO_PREFIX + UUID.randomUUID() + "-" + StorageKeys.sanitise(audioFile.getOriginalFilename(), "file");
         adminStorageApi.uploadObject(bucket, key, audioFile);
         s3ObjectService.deleteObjectOnRollback(bucket, key);
         return s3ObjectService.createObject(bucket, "", key);
@@ -91,18 +93,6 @@ public class BreathingStorageService {
      * {@code GlobalExceptionHandler} maps to a 401 "Authenticated user is not provisioned" —
      * a misconfigured bucket would otherwise read to an administrator as a sign-in problem.
      */
-    private String requirePrivateBucket() {
-        if (privateBucket == null || privateBucket.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                    "cloudflare.r2.bucket (private audio bucket) is not configured");
-        }
-        if (privateBucket.contains("://") || privateBucket.contains("/")) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                    "cloudflare.r2.bucket must be a bucket name, not a URL (got: " + privateBucket + ")");
-        }
-        return privateBucket;
-    }
-
     private void requireConfigured() {
         if (publicBaseUrl == null || publicBaseUrl.isBlank()) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
@@ -110,21 +100,4 @@ public class BreathingStorageService {
         }
     }
 
-    private String sanitizeFilename(MultipartFile file) {
-        String name = file.getOriginalFilename();
-        if (name == null || name.isBlank()) {
-            return "file";
-        }
-        name = name.substring(Math.max(name.lastIndexOf('/'), name.lastIndexOf('\\')) + 1);
-        name = name.replaceAll("[^A-Za-z0-9._-]", "_");
-        return name.isBlank() ? "file" : name;
-    }
-
-    private String normalizeBaseUrl(String baseUrl) {
-        String normalized = baseUrl.trim();
-        while (normalized.endsWith("/")) {
-            normalized = normalized.substring(0, normalized.length() - 1);
-        }
-        return normalized;
-    }
 }

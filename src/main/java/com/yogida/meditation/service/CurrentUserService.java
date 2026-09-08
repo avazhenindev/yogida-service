@@ -53,4 +53,17 @@ public class CurrentUserService {
     }
 
 
+
+    /**
+     * The current user's local row id.
+     *
+     * <p>Here rather than as a private helper per service: three call sites derived it
+     * independently, and the provisioning that {@link #getCurrentUserOrThrow()} performs on first
+     * sight is easy to bypass by reaching for the repository instead.
+     */
+    @Transactional
+    public Long getCurrentUserId() {
+        return getCurrentUserOrThrow().getUserId();
+    }
+
 }

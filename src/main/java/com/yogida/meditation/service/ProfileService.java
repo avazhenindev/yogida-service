@@ -35,7 +35,7 @@ public class ProfileService {
      */
     @Transactional(readOnly = true)
     public List<ProfileDto> findAll() {
-        return profileRepository.findByUserUserId(currentUserId()).stream()
+        return profileRepository.findByUserUserId(currentUserService.getCurrentUserId()).stream()
                 .map(profileMapper::toDto)
                 .toList();
     }
@@ -59,7 +59,7 @@ public class ProfileService {
      */
     @Transactional
     public ProfileDto create(ProfileDto dto) {
-        Long userId = currentUserId();
+        Long userId = currentUserService.getCurrentUserId();
 
         Optional<ProfileEntity> existing = profileRepository.findFirstByUserUserIdOrderByProfileIdAsc(userId);
         if (existing.isPresent()) {
@@ -96,13 +96,10 @@ public class ProfileService {
         log.info("ProfileService > Deleted profile with id: {}", id);
     }
 
-    private Long currentUserId() {
-        return currentUserService.getCurrentUserOrThrow().getUserId();
-    }
 
     private ProfileEntity findOwnedOrThrow(Long id) {
         return profileRepository.findById(id)
-                .filter(p -> p.getUser() != null && currentUserId().equals(p.getUser().getUserId()))
+                .filter(p -> p.getUser() != null && currentUserService.getCurrentUserId().equals(p.getUser().getUserId()))
                 .orElseThrow(() -> new EntityNotFoundException("Profile", id));
     }
 }

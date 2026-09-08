@@ -3,6 +3,8 @@ package com.yogida.meditation.service;
 import com.yogida.meditation.constants.BucketNames;
 import com.yogida.meditation.entity.S3ObjectEntity;
 import com.yogida.meditation.service.api.AdminStorageApi;
+import com.yogida.meditation.service.storage.StorageConfigs;
+import com.yogida.meditation.service.storage.StorageKeys;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -42,30 +44,13 @@ public class MediaPictureStorageService {
             throw new IllegalStateException("Public picture base URL is not configured");
         }
 
-        String pictureObjectKey = buildPictureObjectKey(picture);
+        String pictureObjectKey = PICTURE_KEY_PREFIX + UUID.randomUUID() + "-"
+                + StorageKeys.sanitise(picture.getOriginalFilename(), "picture");
         adminStorageApi.uploadObject(PICTURE_BUCKET_NAME, pictureObjectKey, picture);
         s3ObjectService.deleteObjectOnRollback(PICTURE_BUCKET_NAME, pictureObjectKey);
-        return s3ObjectService.createObject(PICTURE_BUCKET_NAME, normalizeBaseUrl(publicPictureBaseUrl), pictureObjectKey);
+        return s3ObjectService.createObject(PICTURE_BUCKET_NAME, StorageConfigs.normalizeBaseUrl(publicPictureBaseUrl), pictureObjectKey);
     }
 
-    private String buildPictureObjectKey(MultipartFile picture) {
-        String originalFilename = picture.getOriginalFilename();
-        String filename = hasText(originalFilename) ? originalFilename : "picture";
-        filename = filename.substring(Math.max(filename.lastIndexOf('/'), filename.lastIndexOf('\\')) + 1);
-        filename = filename.replaceAll("[^A-Za-z0-9._-]", "_");
-        if (!hasText(filename)) {
-            filename = "picture";
-        }
-        return PICTURE_KEY_PREFIX + UUID.randomUUID() + "-" + filename;
-    }
-
-    private String normalizeBaseUrl(String baseUrl) {
-        String normalized = baseUrl.trim();
-        while (normalized.endsWith("/")) {
-            normalized = normalized.substring(0, normalized.length() - 1);
-        }
-        return normalized;
-    }
 
 
     private boolean hasText(String value) {

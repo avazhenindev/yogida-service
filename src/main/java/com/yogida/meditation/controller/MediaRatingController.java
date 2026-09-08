@@ -22,7 +22,7 @@ public class MediaRatingController implements MediaRatingControllerApi {
     @Override
     public ResponseEntity<MediaReviewResponse> save(Long mediaId, MediaReviewSaveRequest request) {
         // The author is whoever holds the token, never whoever the body claims.
-        Long authorId = currentUserService.getCurrentUserOrThrow().getUserId();
+        Long authorId = currentUserService.getCurrentUserId();
         return ResponseEntity.ok(
                 mediaReviewApi.save(mediaId, authorId, request.rating(), request.reviewText()));
     }
