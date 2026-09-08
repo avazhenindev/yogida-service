@@ -52,6 +52,7 @@ public class AppUserService {
         return appUserMapper.toDto(saved);
     }
 
+    @Transactional
     public AppUserDto update(Long id, AppUserDto dto) {
         AppUserEntity existing = appUserRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("AppUser", id));
@@ -71,7 +72,13 @@ public class AppUserService {
      * and the row would outlive the account — and then be found by the next account issued that
      * same subject, which is exactly the kind of stale-entitlement bug the projection exists to
      * prevent.
+     *
+     * <p>Transactional because that removal is three writes — the user row, the projection row and
+     * the cache eviction — and they have to succeed or fail together. Untransacted, a failure
+     * between the first and second leaves exactly the orphaned projection this method exists to
+     * avoid. Its siblings on this class were already annotated; these two were missed.
      */
+    @Transactional
     public void delete(Long id) {
         AppUserEntity user = appUserRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("AppUser", id));
