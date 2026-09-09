@@ -3,7 +3,6 @@ package com.yogida.meditation.service.api;
 import com.yogida.meditation.dto.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.nio.file.Path;
 import java.util.List;
 
 public interface AdminStorageApi {
@@ -15,13 +14,7 @@ public interface AdminStorageApi {
     void deleteBucket(String bucketName);
 
 
-    ObjectMetadataDto uploadObject(String bucketName, String objectKey, MultipartFile file);
-
-    /**
-     * Uploads a file already materialised on disk. The bytes stream from the file, so object
-     * size does not affect heap and the SDK can re-read them for payload signing and retries.
-     */
-    ObjectMetadataDto uploadObject(String bucketName, String objectKey, Path file, String contentType);
+    void uploadObject(String bucketName, String objectKey, MultipartFile file);
 
     void deleteObject(String bucketName, String objectKey);
 
