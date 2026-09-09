@@ -19,12 +19,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * Mapper for converting MediaEntity to user-facing MediaDto with entitlement logic and favourite data applied.
- * Sets isPremium based on whether the user has access to the media.
- * Withholds the mediaObject.url if the user is not entitled and the media is premium.
- * Populates isFavourite and favouriteId based on user's favourites.
- */
-/**
  * Builds the user-facing {@link com.yogida.meditation.dto.MediaDto} — the DTO plus everything that
  * depends on WHO is asking: entitlement, the caller's favourite id, and whether the media URL may
  * be shown at all.
@@ -43,10 +37,12 @@ public class MediaUserAssembler {
     private final FavouriteRepository favouriteRepository;
 
     /**
-     * Converts a MediaEntity to a user-facing MediaDto with entitlement applied and favourite data populated.
-     * - Sets isPremium based on media subscriptions (not database field)
-     * - Withholds media URL if not entitled to premium media
-     * - Populates isFavourite and favouriteId based on user's favourites
+     * Converts a MediaEntity to a user-facing MediaDto with entitlement applied and favourite
+     * data populated.
+     *
+     * <p>Note what {@code isPremium} means on the way out: not "this item is premium" but "this
+     * item is locked for this caller". A premium item an entitled caller may play leaves here
+     * with {@code isPremium = false}.
      *
      * @param entity the media entity
      * @param user the app user
@@ -75,14 +71,18 @@ public class MediaUserAssembler {
         // Suppress admin-only field from user-facing responses
         dto.setRequiresPremiumSubscription(null);
 
-        boolean isPremium = entitlementService.isPremium(entity);
         // Free media short-circuits before the supplier is touched, which is what keeps a
         // catalogue containing no premium items at zero entitlement resolutions.
-        boolean isEntitled = !isPremium || premiumUser.getAsBoolean();
+        //
+        // Spelled as one positive. It was `isEntitled = !isPremium || premiumUser` and then
+        // `isPremium && !isEntitled` twice — a local that existed only to be negated, and which
+        // reduces to exactly this. Same short-circuit, same result, and it now reads identically
+        // to the sibling gate in BreathingUserFacadeService.
+        boolean locked = entitlementService.isPremium(entity) && !premiumUser.getAsBoolean();
 
-        dto.setIsPremium(isPremium && !isEntitled);
+        dto.setIsPremium(locked);
 
-        if (isPremium && !isEntitled && dto.getMediaObject() != null) {
+        if (locked && dto.getMediaObject() != null) {
             dto.getMediaObject().setUrl(null);
         }
         return dto;

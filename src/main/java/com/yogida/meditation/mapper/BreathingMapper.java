@@ -51,6 +51,8 @@ public interface BreathingMapper {
 
     @Mapping(target = "duration", source = "durationSeconds")
     @Mapping(target = "audioFiles", source = "audioFiles")
+    // Same reason as withLocked/withPhases above: a copy method, not a target property.
+    @Mapping(target = "withAudioFiles", ignore = true)
     BreathingPhaseDto toPhaseDto(BreathingPhaseEntity phase);
 
     /**

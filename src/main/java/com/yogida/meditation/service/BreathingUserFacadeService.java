@@ -108,9 +108,7 @@ public class BreathingUserFacadeService {
         }
 
         return dto.phases().stream()
-                .map(phase -> new BreathingPhaseDto(
-                        phase.id(), phase.name(), phase.label(), phase.duration(),
-                        phase.color(), phase.displayOrder(),
+                .map(phase -> phase.withAudioFiles(
                         phase.audioFiles() == null ? List.of() : phase.audioFiles().stream()
                                 .map(audio -> new BreathingPhaseAudioDto(
                                         audio.id(), presign(objectsById.get(audio.id()))))
