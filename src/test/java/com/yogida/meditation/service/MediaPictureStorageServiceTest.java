@@ -12,6 +12,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.server.ResponseStatusException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -85,9 +86,13 @@ class MediaPictureStorageServiceTest {
                 "picture".getBytes()
         );
 
+        // Was IllegalStateException with a message that named nothing on the wire: the handler for
+        // that type narrowed to NotProvisionedException, so it fell to the catch-all and answered
+        // "Internal server error". Now it matches the sibling breathing path — a 500 naming the
+        // property an operator has to fix.
         assertThatThrownBy(() -> mediaPictureStorageService.uploadPicture(pictureFile))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessage("Public picture base URL is not configured");
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("cloudflare.r2.public-picture-base-url is not configured");
     }
 
 }

@@ -30,7 +30,22 @@ public final class StorageKeys {
      * whoever has to read a bucket listing later.
      */
     public static String mediaKey(String originalFilename) {
-        return MEDIA_PREFIX + UUID.randomUUID() + "-" + sanitise(originalFilename, "audio");
+        return key(MEDIA_PREFIX, originalFilename, "audio");
+    }
+
+    /**
+     * Builds a collision-free key under {@code prefix}, preserving a recognisable filename.
+     *
+     * <p>Three of the four upload paths spelled this concatenation out themselves and only reached
+     * in here for {@code sanitise}, which left the part that must not vary — the UUID that makes
+     * the key collision-free — restated at each site.
+     *
+     * @param prefix           key prefix, including its trailing slash
+     * @param originalFilename the client-supplied name, never trusted verbatim
+     * @param fallback         name to use when the client supplied nothing usable
+     */
+    public static String key(String prefix, String originalFilename, String fallback) {
+        return prefix + UUID.randomUUID() + "-" + sanitise(originalFilename, fallback);
     }
 
     /**

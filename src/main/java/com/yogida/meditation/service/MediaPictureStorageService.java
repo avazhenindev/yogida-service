@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -55,21 +54,15 @@ public class MediaPictureStorageService {
 
         validateSize(picture);
 
-        if (!hasText(publicPictureBaseUrl)) {
-            throw new IllegalStateException("Public picture base URL is not configured");
-        }
+        StorageConfigs.requireBaseUrl(publicPictureBaseUrl, "cloudflare.r2.public-picture-base-url");
 
-        String pictureObjectKey = PICTURE_KEY_PREFIX + UUID.randomUUID() + "-"
-                + StorageKeys.sanitise(picture.getOriginalFilename(), "picture");
+        String pictureObjectKey = StorageKeys.key(
+                PICTURE_KEY_PREFIX, picture.getOriginalFilename(), "picture");
         s3ObjectService.uploadStaged(PICTURE_BUCKET_NAME, pictureObjectKey, picture);
         return s3ObjectService.createObject(PICTURE_BUCKET_NAME, StorageConfigs.normalizeBaseUrl(publicPictureBaseUrl), pictureObjectKey);
     }
 
 
-
-    private boolean hasText(String value) {
-        return value != null && !value.isBlank();
-    }
 }
 
 

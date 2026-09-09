@@ -32,9 +32,9 @@ public final class StorageConfigs {
     /**
      * Returns a configured bucket name, or fails naming the property that is wrong.
      *
-     * <p>Deliberately a 500 rather than {@code IllegalStateException}, which
-     * {@code GlobalExceptionHandler} maps to a 401 "Authenticated user is not provisioned" — a
-     * misconfigured bucket would otherwise read to an administrator as a sign-in problem.
+     * <p>A 500 naming the property, not {@code IllegalStateException}: the handler for that has
+     * since narrowed to {@code NotProvisionedException}, so an IllegalStateException falls to the
+     * catch-all and answers "Internal server error" — which tells an operator nothing.
      *
      * @param value      the configured value, possibly null or blank
      * @param property   the property name, used verbatim in the failure message
@@ -48,6 +48,25 @@ public final class StorageConfigs {
         if (value.contains("://") || value.contains("/")) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
                     property + " must be a bucket name, not a URL (got: " + value + ")");
+        }
+        return value;
+    }
+
+    /**
+     * Returns a configured public base URL, or fails naming the property that is wrong.
+     *
+     * <p>The same rule was written twice with different outcomes. One path threw a 500 naming the
+     * property; the other threw {@code IllegalStateException}, which now falls through to the
+     * catch-all and answers "Internal server error" — same misconfiguration, same status, but only
+     * one of the two answers is diagnosable.
+     *
+     * @param value    the configured value, possibly null or blank
+     * @param property the property name, used verbatim in the failure message
+     */
+    public static String requireBaseUrl(String value, String property) {
+        if (value == null || value.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    property + " is not configured");
         }
         return value;
     }
