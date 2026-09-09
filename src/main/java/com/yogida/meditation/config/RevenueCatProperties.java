@@ -37,24 +37,19 @@ public record RevenueCatProperties(
     Duration webhookLedgerRetention,
     Duration outageSuppression
 ) {
+    // Defaults live in application.properties, not here. webhookAuthToken and apiKey are
+    // deliberately unvalidated: both default to empty so a local stack runs without RevenueCat
+    // credentials, and the webhook path checks the secret itself.
     public RevenueCatProperties {
-        if (entitlementId == null || entitlementId.isBlank()) {
-            entitlementId = "premium";
-        }
-        if (apiBaseUrl == null || apiBaseUrl.isBlank()) {
-            apiBaseUrl = "https://api.revenuecat.com/v1";
-        }
-        if (entitlementCacheTtl == null || entitlementCacheTtl.isNegative() || entitlementCacheTtl.isZero()) {
-            entitlementCacheTtl = Duration.ofHours(24);
-        }
-        if (projectionMaxAge == null || projectionMaxAge.isNegative() || projectionMaxAge.isZero()) {
-            projectionMaxAge = Duration.ofHours(24);
-        }
-        if (webhookLedgerRetention == null || webhookLedgerRetention.isNegative() || webhookLedgerRetention.isZero()) {
-            webhookLedgerRetention = Duration.ofDays(30);
-        }
-        if (outageSuppression == null || outageSuppression.isNegative() || outageSuppression.isZero()) {
-            outageSuppression = Duration.ofSeconds(30);
-        }
+        entitlementId = ConfigValues.requireText(entitlementId, "app.revenuecat.entitlement-id");
+        apiBaseUrl = ConfigValues.requireText(apiBaseUrl, "app.revenuecat.api-base-url");
+        entitlementCacheTtl = ConfigValues.requirePositive(
+                entitlementCacheTtl, "app.revenuecat.entitlement-cache-ttl");
+        projectionMaxAge = ConfigValues.requirePositive(
+                projectionMaxAge, "app.revenuecat.projection-max-age");
+        webhookLedgerRetention = ConfigValues.requirePositive(
+                webhookLedgerRetention, "app.revenuecat.webhook-ledger-retention");
+        outageSuppression = ConfigValues.requirePositive(
+                outageSuppression, "app.revenuecat.outage-suppression");
     }
 }

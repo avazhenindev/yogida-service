@@ -16,12 +16,9 @@ import java.time.Duration;
  */
 @ConfigurationProperties(prefix = "app.media.duration")
 public record MediaDurationProperties(String ffprobePath, Duration timeout) {
+    // Defaults live in application.properties, not here.
     public MediaDurationProperties {
-        if (ffprobePath == null || ffprobePath.isBlank()) {
-            ffprobePath = "ffprobe";
-        }
-        if (timeout == null || timeout.isNegative() || timeout.isZero()) {
-            timeout = Duration.ofSeconds(30);
-        }
+        ffprobePath = ConfigValues.requireText(ffprobePath, "app.media.duration.ffprobe-path");
+        timeout = ConfigValues.requirePositive(timeout, "app.media.duration.timeout");
     }
 }
