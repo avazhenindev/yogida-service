@@ -9,8 +9,6 @@ import org.mapstruct.MappingTarget;
 import org.mapstruct.Named;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 
-import java.util.List;
-
 @Mapper(componentModel = "spring", nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
 public interface ProfileMapper {
 
@@ -19,8 +17,6 @@ public interface ProfileMapper {
 
     @Mapping(source = "userId", target = "user", qualifiedByName = "userIdToUser")
     ProfileEntity toEntity(ProfileDto dto);
-
-    List<ProfileDto> toDtoList(List<ProfileEntity> entities);
 
     /**
      * Merges non-null DTO fields into the existing entity.

@@ -2,7 +2,6 @@ package com.yogida.meditation.service;
 
 import com.yogida.meditation.config.r2.R2Properties;
 import com.yogida.meditation.entity.S3ObjectEntity;
-import com.yogida.meditation.exception.EntityNotFoundException;
 import com.yogida.meditation.repository.S3ObjectRepository;
 import com.yogida.meditation.service.api.AdminStorageApi;
 import lombok.RequiredArgsConstructor;
@@ -50,11 +49,6 @@ public class S3ObjectService {
         object.setObjectUri(objectUri);
         object.setCreatedAt(LocalDateTime.now());
         return s3ObjectRepository.save(object);
-    }
-
-    public S3ObjectEntity findById(Long id) {
-        return s3ObjectRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("S3Object", id));
     }
 
     public void deleteObject(S3ObjectEntity object) {

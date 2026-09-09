@@ -9,8 +9,6 @@ import org.mapstruct.MappingTarget;
 import org.mapstruct.Named;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 
-import java.util.List;
-
 @Mapper(componentModel = "spring", nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
 public interface FavouriteMapper {
 
@@ -20,9 +18,6 @@ public interface FavouriteMapper {
     @Mapping(source = "userId", target = "user", qualifiedByName = "userIdToUser")
     FavouriteEntity toEntity(FavouriteDto dto);
 
-    List<FavouriteDto> toDtoList(List<FavouriteEntity> entities);
-
-    /** Merges non-null DTO fields into the existing entity. Skips server-managed timestamps. */
     /**
      * Merges non-null DTO fields into the existing entity.
      *

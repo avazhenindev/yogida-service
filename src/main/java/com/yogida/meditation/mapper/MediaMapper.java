@@ -27,12 +27,6 @@ public interface MediaMapper {
     @Mapping(source = "tags", target = "tags", qualifiedByName = "tagEntitiesToNames")
     MediaDto toDto(MediaEntity entity);
 
-    @Mapping(target = "category", ignore = true)
-    @Mapping(target = "mediaObject", ignore = true)
-    @Mapping(target = "pictureObject", ignore = true)
-    @Mapping(target = "tags", ignore = true)
-    MediaEntity toEntity(MediaDto dto);
-
     List<MediaDto> toDtoList(List<MediaEntity> entities);
 
     @Named("tagEntitiesToNames")
