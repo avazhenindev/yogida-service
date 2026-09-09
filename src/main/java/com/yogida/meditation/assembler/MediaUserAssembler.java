@@ -1,7 +1,8 @@
-package com.yogida.meditation.mapper;
+package com.yogida.meditation.assembler;
 
 import com.yogida.meditation.dto.MediaDto;
 import com.yogida.meditation.entity.AppUserEntity;
+import com.yogida.meditation.mapper.MediaMapper;
 import com.yogida.meditation.entity.FavouriteEntity;
 import com.yogida.meditation.entity.MediaEntity;
 import com.yogida.meditation.enums.ContentType;
@@ -23,9 +24,19 @@ import java.util.stream.Collectors;
  * Withholds the mediaObject.url if the user is not entitled and the media is premium.
  * Populates isFavourite and favouriteId based on user's favourites.
  */
+/**
+ * Builds the user-facing {@link com.yogida.meditation.dto.MediaDto} — the DTO plus everything that
+ * depends on WHO is asking: entitlement, the caller's favourite id, and whether the media URL may
+ * be shown at all.
+ *
+ * <p>Named an assembler and moved out of {@code mapper/} because it is not one. Everything else in
+ * that package is a declarative MapStruct interface with no dependencies; this injects
+ * EntitlementService and FavouriteRepository and issues queries, so a reader who assumed the
+ * package convention would not expect it to touch the database.
+ */
 @Component
 @RequiredArgsConstructor
-public class MediaUserMapper {
+public class MediaUserAssembler {
 
     private final MediaMapper mediaMapper;
     private final EntitlementService entitlementService;

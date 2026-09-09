@@ -26,5 +26,5 @@ public record MediaFileUpdateRequest(
         Integer durationSeconds,
         List<Long> tagIds,
         boolean requiresPremiumSubscription
-) {}
+) implements MediaWriteRequest {}
 

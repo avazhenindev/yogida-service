@@ -2,6 +2,7 @@ package com.yogida.meditation.advice;
 
 import com.yogida.meditation.exception.BreathingNotFoundException;
 import com.yogida.meditation.exception.EntityNotFoundException;
+import com.yogida.meditation.exception.NotProvisionedException;
 import lombok.extern.log4j.Log4j2;
 import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -163,12 +164,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
      * wrong signal. The caller is authenticated but not provisioned, which is a 401 telling the
      * client to complete sign-in, not a server fault.
      *
-     * <p>Note this maps <em>every</em> {@code IllegalStateException} to 401, which is too broad:
-     * a misconfigured storage bucket also reaches it and reads to the caller as a sign-in
-     * problem. Narrowing it needs a dedicated exception type at the throw sites.
+     * <p>Matched on a dedicated type rather than on {@code IllegalStateException}, which this
+     * handler used to catch. That was too broad: a blank
+     * {@code cloudflare.r2.public-picture-base-url} raises an IllegalStateException too, and an
+     * operator hitting it was told the caller was not provisioned and went looking at Keycloak.
+     * A configuration fault now falls through to the 500 it deserves.
      */
-    @ExceptionHandler(IllegalStateException.class)
-    public ProblemDetail handleIllegalState(IllegalStateException ex, WebRequest request) {
+    @ExceptionHandler(NotProvisionedException.class)
+    public ProblemDetail handleNotProvisioned(NotProvisionedException ex, WebRequest request) {
         log.warn("Unresolvable caller on [{}]: {}", request.getDescription(false), ex.getMessage());
         return problem(HttpStatus.UNAUTHORIZED, "Authenticated user is not provisioned", "Not Provisioned");
     }

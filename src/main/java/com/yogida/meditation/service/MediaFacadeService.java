@@ -61,10 +61,9 @@ public class MediaFacadeService {
                 ? request.durationSeconds()
                 : mediaDurationService.extractDurationSeconds(request.file());
 
-        MediaUpdateRequest mediaRequest = new MediaUpdateRequest(
-            request.name(), mediaObject.getId(), pictureObject == null ? null : pictureObject.getId(),
-            request.description(), request.categoryId(), request.status(),
-            durationSeconds, request.tagIds(), request.requiresPremiumSubscription());
+        MediaUpdateRequest mediaRequest = MediaUpdateRequest.from(
+            request, mediaObject.getId(),
+            pictureObject == null ? null : pictureObject.getId(), durationSeconds);
 
         MediaDto dto = mediaService.create(mediaRequest);
         dto.setAverageRating(0.0);
@@ -106,10 +105,9 @@ public class MediaFacadeService {
             durationSeconds = existingEntity.getDurationSeconds();
         }
 
-        MediaUpdateRequest mediaRequest = new MediaUpdateRequest(
-            request.name(), newMediaObject.getId(), newPictureObject == null ? null : newPictureObject.getId(),
-            request.description(), request.categoryId(), request.status(),
-            durationSeconds, request.tagIds(), request.requiresPremiumSubscription());
+        MediaUpdateRequest mediaRequest = MediaUpdateRequest.from(
+            request, newMediaObject.getId(),
+            newPictureObject == null ? null : newPictureObject.getId(), durationSeconds);
         MediaDto dto = mediaService.update(id, mediaRequest);
 
         if (!newMediaObject.getId().equals(oldMediaObject.getId())) {

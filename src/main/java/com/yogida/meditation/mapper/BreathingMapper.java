@@ -40,6 +40,11 @@ public interface BreathingMapper {
     // This mapper serves the admin path, which is never locked out of its own content.
     // The user-facing path goes through BreathingUserFacadeService, which re-derives it.
     @Mapping(target = "locked", constant = "false")
+    // BreathingDto's withLocked/withPhases copy methods look like fluent setters to MapStruct, so
+    // unmappedTargetPolicy = ERROR counts them as target properties nobody maps. They are not
+    // properties; ignoring them keeps the policy strict for the ones that are.
+    @Mapping(target = "withLocked", ignore = true)
+    @Mapping(target = "withPhases", ignore = true)
     BreathingDto toDto(BreathingEntity entity);
 
     List<BreathingDto> toDtoList(List<BreathingEntity> entities);

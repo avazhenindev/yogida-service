@@ -5,7 +5,7 @@ import com.yogida.meditation.entity.AppUserEntity;
 import com.yogida.meditation.entity.MediaEntity;
 import com.yogida.meditation.enums.MediaStatus;
 import com.yogida.meditation.exception.EntityNotFoundException;
-import com.yogida.meditation.mapper.MediaUserMapper;
+import com.yogida.meditation.assembler.MediaUserAssembler;
 import com.yogida.meditation.repository.MediaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,7 +25,7 @@ public class UserMediaFacadeService {
 
     private final MediaRepository mediaRepository;
     private final CurrentUserService currentUserService;
-    private final MediaUserMapper mediaUserMapper;
+    private final MediaUserAssembler mediaUserAssembler;
 
     /**
      * Returns all active media with entitlement applied for the current user.
@@ -38,7 +38,7 @@ public class UserMediaFacadeService {
     public List<MediaDto> findAllActive() {
         AppUserEntity currentUser = currentUserService.getCurrentUserOrThrow();
         List<MediaEntity> allActive = mediaRepository.findAllByStatusEqualsOrderByIdAsc(MediaStatus.ACTIVE);
-        return mediaUserMapper.toDtoListForUser(allActive, currentUser);
+        return mediaUserAssembler.toDtoListForUser(allActive, currentUser);
     }
 
     /**
@@ -52,7 +52,7 @@ public class UserMediaFacadeService {
         AppUserEntity currentUser = currentUserService.getCurrentUserOrThrow();
         Optional<MediaEntity> media = mediaRepository.findById(id)
             .filter(m -> m.getStatus() == MediaStatus.ACTIVE);
-        return media.map(entity -> mediaUserMapper.toDtoForUser(entity, currentUser));
+        return media.map(entity -> mediaUserAssembler.toDtoForUser(entity, currentUser));
     }
 
 }

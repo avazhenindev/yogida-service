@@ -25,5 +25,5 @@ public record MediaCreateRequest(
         Integer durationSeconds,
         List<Long> tagIds,
         boolean requiresPremiumSubscription
-) {}
+) implements MediaWriteRequest {}
 

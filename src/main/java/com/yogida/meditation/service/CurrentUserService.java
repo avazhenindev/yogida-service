@@ -1,6 +1,7 @@
 package com.yogida.meditation.service;
 
 import com.yogida.meditation.entity.AppUserEntity;
+import com.yogida.meditation.exception.NotProvisionedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -28,13 +29,13 @@ public class CurrentUserService {
      * claim any identity. The token is authoritative now: if the identity provider vouches for
      * this subject, the row is created here.
      *
-     * @throws IllegalStateException when there is no authenticated JWT at all
+     * @throws NotProvisionedException when there is no authenticated JWT at all
      */
     @Transactional
     public AppUserEntity getCurrentUserOrThrow() {
         return currentJwt()
             .map(provisioner::provision)
-            .orElseThrow(() -> new IllegalStateException(
+            .orElseThrow(() -> new NotProvisionedException(
                 "Current user not found or not authenticated"
             ));
     }

@@ -18,6 +18,20 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Log4j2
 @Service
 @RequiredArgsConstructor
+/**
+ * Tracks the {@code s3_object} rows that mirror what is actually in R2.
+ *
+ * <p><strong>Every method here requires an active transaction supplied by the caller.</strong>
+ * That is deliberate and load-bearing rather than an omission: {@link #deleteObjectOnRollback}
+ * registers a {@link org.springframework.transaction.support.TransactionSynchronization}, which
+ * silently does nothing outside one — so annotating this class would not help, and calling it
+ * from an untransacted path loses the rollback cleanup without any error. The write methods are
+ * unannotated so they join the caller's transaction rather than appearing to own one.
+ *
+ * <p>All current callers — MediaFacadeService, BreathingStorageService,
+ * MediaPictureStorageService, BreathingService — are {@code @Transactional}. A new caller that is
+ * not will compile, run, and quietly leak objects into R2.
+ */
 public class S3ObjectService {
 
     private final S3ObjectRepository s3ObjectRepository;

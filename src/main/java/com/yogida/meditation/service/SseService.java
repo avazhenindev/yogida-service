@@ -1,14 +1,15 @@
 package com.yogida.meditation.service;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.scheduling.annotation.Scheduled;
+import com.yogida.meditation.service.sse.PendingEventQueue;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedDeque;
 
 /**
  * Manages per-user SSE emitter registrations and publishes entitlement update events.
@@ -24,7 +25,10 @@ import java.util.concurrent.ConcurrentLinkedDeque;
  */
 @Log4j2
 @Service
+@RequiredArgsConstructor
 public class SseService {
+
+    private final PendingEventQueue pendingEvents;
 
     /**
      * The SSE event name every entitlement notification is published under.
@@ -38,13 +42,10 @@ public class SseService {
     /**
      * Upper bound of undelivered events retained per user; oldest are dropped first.
      */
-    private static final int MAX_PENDING_EVENTS_PER_USER = 20;
 
     private final ConcurrentHashMap<String, ConcurrentHashMap<String, SseEmitter>> registry =
         new ConcurrentHashMap<>();
 
-    private final ConcurrentHashMap<String, ConcurrentLinkedDeque<String>> pendingEvents =
-        new ConcurrentHashMap<>();
 
     public SseEmitter subscribe(String keycloakUserId, String clientId) {
         SseEmitter emitter = new SseEmitter(0L);
@@ -95,7 +96,7 @@ public class SseService {
         String payload = eventType == null ? "" : eventType;
         ConcurrentHashMap<String, SseEmitter> userEmitters = registry.get(keycloakUserId);
         if (userEmitters == null || userEmitters.isEmpty()) {
-            enqueuePendingEvent(keycloakUserId, payload);
+            pendingEvents.enqueue(keycloakUserId, payload);
             return;
         }
 
@@ -117,7 +118,7 @@ public class SseService {
         }
 
         if (sent == 0) {
-            enqueuePendingEvent(keycloakUserId, payload);
+            pendingEvents.enqueue(keycloakUserId, payload);
             return;
         }
 
@@ -135,26 +136,11 @@ public class SseService {
         }
     }
 
-    private void enqueuePendingEvent(String keycloakUserId, String event) {
-        ConcurrentLinkedDeque<String> queue =
-            pendingEvents.computeIfAbsent(keycloakUserId, k -> new ConcurrentLinkedDeque<>());
-        queue.offerLast(event);
-        while (queue.size() > MAX_PENDING_EVENTS_PER_USER) {
-            queue.pollFirst(); // drop oldest
-        }
-        log.info("SseService > No deliverable SSE connection for user {}; event queued (pending: {})",
-            keycloakUserId, queue.size());
-    }
 
     private void flushPendingEvents(String keycloakUserId, String clientId, SseEmitter emitter) {
-        ConcurrentLinkedDeque<String> queue = pendingEvents.get(keycloakUserId);
-        if (queue == null || queue.isEmpty()) {
-            return;
-        }
-
         int flushed = 0;
         String event;
-        while ((event = queue.pollFirst()) != null) {
+        while ((event = pendingEvents.poll(keycloakUserId)) != null) {
             log.debug("SseService > Flushing pending event to user {} client {}: {}",
                 keycloakUserId, clientId, event);
             try {
@@ -163,7 +149,7 @@ public class SseService {
                     .data(event));
                 flushed++;
             } catch (IOException | IllegalStateException e) {
-                queue.offerFirst(event); // keep order; retry on the next reconnect
+                pendingEvents.returnToFront(keycloakUserId, event);
                 log.debug("SseService > Flush interrupted for user {} client {}: {}",
                     keycloakUserId, clientId, e.getMessage());
                 removeEmitter(keycloakUserId, clientId, emitter);
@@ -173,7 +159,7 @@ public class SseService {
 
         if (flushed > 0) {
             log.info("SseService > Flushed {} pending event(s) to user {} client {}; remaining: {}",
-                flushed, keycloakUserId, clientId, queue.size());
+                flushed, keycloakUserId, clientId, pendingEvents.size(keycloakUserId));
         }
     }
 

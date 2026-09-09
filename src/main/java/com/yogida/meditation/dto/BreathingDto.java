@@ -24,4 +24,24 @@ public record BreathingDto(
         LocalDateTime createdAt,
         LocalDateTime updatedAt,
         List<BreathingPhaseDto> phases
-) {}
+) {
+
+    /**
+     * A copy with {@code locked} replaced.
+     *
+     * <p>Here rather than in the facade that needs it: rebuilding all twelve components by hand at
+     * the call site means every component added to this record has to be threaded through those
+     * copies too, and the compiler only complains if the count changes — not if two arguments of
+     * the same type are swapped.
+     */
+    public BreathingDto withLocked(boolean locked) {
+        return new BreathingDto(id, name, icon, description, color, cycles, isPremium, locked,
+                displayOrder, createdAt, updatedAt, phases);
+    }
+
+    /** A copy with {@code phases} replaced — used to swap in presigned audio URLs. */
+    public BreathingDto withPhases(List<BreathingPhaseDto> phases) {
+        return new BreathingDto(id, name, icon, description, color, cycles, isPremium, locked,
+                displayOrder, createdAt, updatedAt, phases);
+    }
+}

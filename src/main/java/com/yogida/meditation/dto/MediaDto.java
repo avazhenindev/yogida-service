@@ -8,6 +8,25 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * The media catalogue entry as returned to a caller.
+ *
+ * <p>Mutable, and deliberately so — this is one of six {@code @Data} DTOs among twenty-three
+ * records, which reads as drift and is not. The records are request bodies and responses that are
+ * complete when constructed. This one is <em>enriched per request</em> after mapping: the facade
+ * fills in {@code averageRating} from a second query, and MediaUserAssembler overwrites
+ * {@code isPremium}, {@code isFavourite}, {@code favouriteId} and the nested media object's URL
+ * according to who is asking. Fourteen call sites, one of them mutating the nested S3ObjectDto.
+ *
+ * <p>Making it a record would replace those with fourteen copy-constructions of a seventeen-
+ * component record, threaded through the assembler's per-item loops — harder to read than the
+ * mutation it removed, and slower on the list path. The DTOs that are NOT enriched
+ * (AppUserDto, SubscriptionDto) could be records today; converting only those would leave the
+ * split in place while gaining nothing.
+ *
+ * <p>If this does become a record, do it together with S3ObjectDto and give both withers, the way
+ * BreathingDto has them.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

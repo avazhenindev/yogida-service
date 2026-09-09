@@ -84,9 +84,9 @@ public class BreathingUserFacadeService {
 
         if (locked) {
             // The mapper already leaves every audio url null; nothing to strip.
-            return withLocked(dto, true);
+            return dto.withLocked(true);
         }
-        return withPhases(withLocked(dto, false), signedPhases(dto, entity));
+        return dto.withLocked(false).withPhases(signedPhases(dto, entity));
     }
 
     /**
@@ -142,15 +142,5 @@ public class BreathingUserFacadeService {
         }
     }
 
-    private BreathingDto withLocked(BreathingDto dto, boolean locked) {
-        return new BreathingDto(dto.id(), dto.name(), dto.icon(), dto.description(), dto.color(),
-                dto.cycles(), dto.isPremium(), locked, dto.displayOrder(),
-                dto.createdAt(), dto.updatedAt(), dto.phases());
-    }
 
-    private BreathingDto withPhases(BreathingDto dto, List<BreathingPhaseDto> phases) {
-        return new BreathingDto(dto.id(), dto.name(), dto.icon(), dto.description(), dto.color(),
-                dto.cycles(), dto.isPremium(), dto.locked(), dto.displayOrder(),
-                dto.createdAt(), dto.updatedAt(), phases);
-    }
 }
