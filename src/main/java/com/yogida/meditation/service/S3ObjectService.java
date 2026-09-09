@@ -38,7 +38,7 @@ public class S3ObjectService {
     private final R2Properties r2Properties;
 
     public S3ObjectEntity createMediaObject(String bucketName, String objectUri) {
-        String baseUrl = "https://" + r2Properties.accountId() + ".r2.cloudflarestorage.com/" + bucketName;
+        String baseUrl = r2Properties.s3Endpoint() + "/" + bucketName;
         return createObject(bucketName, baseUrl, objectUri);
     }
 

@@ -22,7 +22,7 @@ public class R2ClientConfig {
         );
 
         return S3Client.builder()
-            .endpointOverride(URI.create("https://" + props.accountId() + ".r2.cloudflarestorage.com"))
+            .endpointOverride(URI.create(props.s3Endpoint()))
             .region(Region.of("auto"))
             .credentialsProvider(StaticCredentialsProvider.create(credentials))
             .serviceConfiguration(S3Configuration.builder()
@@ -40,7 +40,7 @@ public class R2ClientConfig {
         );
 
         return S3Presigner.builder()
-            .endpointOverride(URI.create("https://" + props.accountId() + ".r2.cloudflarestorage.com"))
+            .endpointOverride(URI.create(props.s3Endpoint()))
             .region(Region.of("auto"))
             .credentialsProvider(StaticCredentialsProvider.create(credentials))
             .serviceConfiguration(S3Configuration.builder()
