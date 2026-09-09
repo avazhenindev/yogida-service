@@ -2,6 +2,7 @@ package com.yogida.meditation.service;
 
 import com.yogida.meditation.dto.FavouriteDto;
 import com.yogida.meditation.entity.FavouriteEntity;
+import com.yogida.meditation.enums.ContentType;
 import com.yogida.meditation.exception.EntityNotFoundException;
 import com.yogida.meditation.mapper.FavouriteMapper;
 import com.yogida.meditation.repository.FavouriteRepository;
@@ -78,6 +79,10 @@ public class FavouriteService {
     @Transactional
     public FavouriteDto update(Long id, FavouriteDto dto) {
         FavouriteEntity existing = findOwnedOrThrow(id);
+        // Partial update: the mapper ignores nulls, so only normalise what the caller sent.
+        if (dto.getContentType() != null) {
+            dto.setContentType(normaliseContentType(dto.getContentType()));
+        }
         // The mapper ignores the owner, so an update cannot reassign the row.
         favouriteMapper.updateEntity(dto, existing);
         FavouriteEntity saved = favouriteRepository.save(existing);
@@ -111,6 +116,24 @@ public class FavouriteService {
         }
         if (dto.getContentId() == null) {
             throw new IllegalArgumentException("Content ID cannot be null");
+        }
+        dto.setContentType(normaliseContentType(dto.getContentType()));
+    }
+
+    /**
+     * Canonicalises the client's content type through {@link ContentType}.
+     *
+     * <p>Nothing called {@code fromValue} before, so the raw string went straight into the
+     * case-sensitive duplicate lookup and then into the entity. A client sending {@code "media"}
+     * missed the duplicate check and failed {@code chk_favourite_content_type} at flush, which
+     * surfaced as a 409 describing nothing. Changeset 037 documents this normalisation as the
+     * rule the application follows; now it does.
+     */
+    private String normaliseContentType(String value) {
+        try {
+            return ContentType.fromValue(value).value();
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("Unsupported content type: " + value);
         }
     }
 }
