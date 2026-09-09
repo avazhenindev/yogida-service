@@ -41,7 +41,9 @@ import java.util.Set;
 @Slf4j
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity(securedEnabled = true)
+// prePostEnabled is on by default, which is what @PreAuthorize needs. securedEnabled was
+// set for @Secured, which appears nowhere in this codebase.
+@EnableMethodSecurity
 public class SecurityConfig {
 
     private final JwtProperties jwtProperties;
@@ -77,14 +79,12 @@ public class SecurityConfig {
                 .requestMatchers("/webhooks/revenuecat").permitAll()
                 // Admin endpoints require the Keycloak realm role 'admin'
                 .requestMatchers("/admin/**").hasRole("ADMIN")
-                // User-facing endpoints require a valid JWT
-                // "/media-subscriptions/**" was listed here with no controller, entity,
-                // repository or DTO behind it anywhere. Removing it changes nothing:
-                // anyRequest().authenticated() below already covers any path not named.
-                .requestMatchers("/media/**", "/entitlement/**", "/media-categories/**", "/users/**",
-                    "/favourites/**", "/profiles/**", "/subscriptions/**")
-                .authenticated()
-                // Deny-by-default for any future endpoints
+                // Everything else needs a valid JWT. There was a second list naming seven
+                // path prefixes as .authenticated() immediately above this line, which is what
+                // anyRequest() already says. It could only ever go stale, and had: /breathing/**
+                // was absent yet protected, and a phantom /media-subscriptions/** had already
+                // been deleted from it for the same reason. Worse, it read like the place
+                // authorization is decided, so an entry sitting in it looked deliberate.
                 .anyRequest().authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2.authenticationManagerResolver(authenticationManagerResolver));

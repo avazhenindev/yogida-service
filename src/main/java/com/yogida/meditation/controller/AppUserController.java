@@ -30,7 +30,6 @@ public class AppUserController implements AppUserControllerApi {
      * record, so no client has a reason to reach the others.
      */
     @Override
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<AppUserDto> getCurrentUser() {
         return ResponseEntity.ok(appUserMapper.toDto(currentUserService.getCurrentUserOrThrow()));
     }

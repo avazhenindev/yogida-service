@@ -5,7 +5,6 @@ import com.yogida.meditation.dto.BreathingDto;
 import com.yogida.meditation.service.BreathingUserFacadeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -20,13 +19,11 @@ public class BreathingController implements BreathingControllerApi {
     private final BreathingUserFacadeService breathingUserFacadeService;
 
     @Override
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<BreathingDto>> getAll() {
         return ResponseEntity.ok(breathingUserFacadeService.findAllForCurrentUser());
     }
 
     @Override
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<BreathingDto> getById(Long id) {
         return ResponseEntity.ok(breathingUserFacadeService.findByIdForCurrentUser(id));
     }

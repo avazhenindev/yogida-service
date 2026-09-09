@@ -8,7 +8,6 @@ import com.yogida.meditation.service.SecureStreamService;
 import com.yogida.meditation.service.UserMediaFacadeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -22,13 +21,11 @@ public class MediaController implements MediaControllerApi {
     private final SecureStreamService secureStreamService;
 
     @Override
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<MediaDto>> getAll() {
         return ResponseEntity.ok(userMediaFacadeService.findAllActive());
     }
 
     @Override
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<MediaDto> getById(Long id) {
         return userMediaFacadeService.findById(id)
             .map(ResponseEntity::ok)
@@ -36,7 +33,6 @@ public class MediaController implements MediaControllerApi {
     }
 
     @Override
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Map<String, String>> getStreamUrl(S3ObjectDto s3ObjectDto) {
         return ResponseEntity.ok(secureStreamService.generateSecureStreamingUrl(s3ObjectDto));
     }
