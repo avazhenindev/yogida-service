@@ -299,6 +299,12 @@
       },
       "Event": {
         "properties": {
+          "aliases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
           "app_user_id": {
             "type": "string"
           },
@@ -330,6 +336,18 @@
           },
           "store": {
             "type": "string"
+          },
+          "transferred_from": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "transferred_to": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
           },
           "type": {
             "type": "string"
