@@ -48,7 +48,8 @@ class EntitlementServiceTest {
         cacheManager = new ConcurrentMapCacheManager(
                 CacheConfig.ENTITLEMENT_CACHE, CacheConfig.ENTITLEMENT_OUTAGE_CACHE);
         RevenueCatProperties properties = new RevenueCatProperties(
-                ENTITLEMENT_ID, "token", "key", "https://api.revenuecat.com/v1",
+                ENTITLEMENT_ID, "token", "signing-secret", Duration.ofMinutes(5),
+                "key", "https://api.revenuecat.com/v1",
                 Duration.ofHours(24), Duration.ofHours(24), Duration.ofDays(30),
                 Duration.ofSeconds(30));
         service = new EntitlementService(subscriberClient, properties, projectionService, cacheManager);

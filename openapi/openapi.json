@@ -3084,12 +3084,21 @@
     },
     "/webhooks/revenuecat": {
       "post": {
-        "description": "Authenticated by a shared secret in the Authorization header. Idempotent per event id.",
+        "description": "Authenticated by a shared secret in the Authorization header and, when a signing secret is configured, by the HMAC-SHA256 signature in X-RevenueCat-Webhook-Signature. Idempotent per event id.",
         "operationId": "handleRevenueCatWebhook",
         "parameters": [
           {
             "in": "header",
             "name": "Authorization",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "t=<unix_seconds>,v1=<hmac_sha256_hex>, the HMAC-SHA256 of \"<t>.<raw_body>\" under the signing secret. Required whenever app.revenuecat.webhook-signing-secret is set.",
+            "in": "header",
+            "name": "X-RevenueCat-Webhook-Signature",
             "required": false,
             "schema": {
               "type": "string"
@@ -3104,14 +3113,18 @@
               }
             }
           },
+          "description": "RevenueCat event payload. Bound as a byte array so the HMAC can be taken over the bytes as sent; the schema below is what those bytes parse into.",
           "required": true
         },
         "responses": {
           "200": {
             "description": "Event accepted"
           },
+          "400": {
+            "description": "Body is not a readable RevenueCat event"
+          },
           "401": {
-            "description": "Missing or invalid webhook authorization"
+            "description": "Missing or invalid webhook authorization or signature"
           }
         },
         "summary": "Process a RevenueCat webhook event",
