@@ -4,10 +4,14 @@ import com.yogida.meditation.config.RevenueCatProperties;
 import com.yogida.meditation.dto.RevenueCatSubscriberResponse;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
+
+import java.net.http.HttpClient;
+import java.time.Duration;
 
 /**
  * Thin client for the RevenueCat Subscriber API — the single source of truth for entitlement.
@@ -20,10 +24,20 @@ import org.springframework.web.client.RestClientException;
 @Component
 public class RevenueCatSubscriberClient {
 
+    // Without these a hung Subscriber API call has no bound at all. The webhook refresh runs
+    // before the event is forwarded, so one stalled call would hold up the push; on the read path
+    // a timeout becomes Unavailable, which denies premium and briefly suppresses retries.
+    private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(5);
+    private static final Duration READ_TIMEOUT = Duration.ofSeconds(10);
+
     private final RestClient restClient;
 
     public RevenueCatSubscriberClient(RevenueCatProperties properties) {
+        JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(
+                HttpClient.newBuilder().connectTimeout(CONNECT_TIMEOUT).build());
+        requestFactory.setReadTimeout(READ_TIMEOUT);
         this.restClient = RestClient.builder()
+                .requestFactory(requestFactory)
                 .baseUrl(properties.apiBaseUrl())
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + properties.apiKey())
                 .build();
