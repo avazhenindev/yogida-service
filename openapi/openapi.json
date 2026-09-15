@@ -308,6 +308,9 @@
           "app_user_id": {
             "type": "string"
           },
+          "cancel_reason": {
+            "type": "string"
+          },
           "entitlement_ids": {
             "items": {
               "type": "string"
@@ -317,14 +320,34 @@
           "environment": {
             "type": "string"
           },
+          "event_timestamp_ms": {
+            "format": "int64",
+            "type": "integer"
+          },
           "expiration_at_ms": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "expiration_reason": {
+            "type": "string"
+          },
+          "grace_period_expiration_at_ms": {
             "format": "int64",
             "type": "integer"
           },
           "id": {
             "type": "string"
           },
+          "is_trial_conversion": {
+            "type": "boolean"
+          },
+          "new_product_id": {
+            "type": "string"
+          },
           "original_app_user_id": {
+            "type": "string"
+          },
+          "period_type": {
             "type": "string"
           },
           "product_id": {
@@ -332,6 +355,10 @@
           },
           "purchased_at_ms": {
             "format": "int64",
+            "type": "integer"
+          },
+          "renewal_number": {
+            "format": "int32",
             "type": "integer"
           },
           "store": {
@@ -1742,7 +1769,7 @@
     },
     "/entitlement/stream": {
       "get": {
-        "description": "Opens a per-user SSE stream. The authenticated user receives a push event whenever their RevenueCat entitlement changes (purchase, renewal, cancellation, expiration, etc.).",
+        "description": "Opens a per-user SSE stream. It starts with an empty connected event, then carries one entitlement-update event, with a single line of JSON as its data, for each accepted RevenueCat webhook event about the authenticated user.",
         "operationId": "subscribeToEntitlementStream",
         "parameters": [
           {

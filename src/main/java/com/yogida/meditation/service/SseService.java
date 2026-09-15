@@ -1,18 +1,22 @@
 package com.yogida.meditation.service;
 
+import com.yogida.meditation.dto.EntitlementEventMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.scheduling.annotation.Scheduled;
 import com.yogida.meditation.service.sse.PendingEventQueue;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
 
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Manages per-user SSE emitter registrations and publishes entitlement update events.
+ * Manages per-user SSE emitter registrations and publishes entitlement events.
  *
  * <p>The emitter registry is keyed by {@code keycloakUserId}, with a nested map keyed by
  * {@code clientId} (a stable per-app-instance identifier sent by the client). A reconnect
@@ -20,8 +24,15 @@ import java.util.concurrent.ConcurrentHashMap;
  * distinct clients (multiple devices) coexist. Emitters are removed automatically on
  * completion, timeout, or error.
  *
- * <p>Events that cannot be delivered (no active connection, or all sends fail) are kept in
- * a bounded per-user pending queue and flushed to the client on its next subscribe.
+ * <p>Each event goes out as one {@code entitlement-update} frame whose data is a single line of
+ * {@link EntitlementEventMessage} JSON. Events that cannot be delivered (no active connection, or
+ * all sends fail) are kept in a bounded per-user pending queue and flushed to the client on its
+ * next subscribe.
+ *
+ * <p>Delivery is best effort, not guaranteed. A send into a half-open socket — a backgrounded
+ * phone the server has not yet noticed is gone — succeeds and counts as delivered. What makes that
+ * acceptable is the empty {@code connected} frame every subscribe starts with: the app re-reads its
+ * entitlement on it, so state converges even when an individual frame, and its banner, is lost.
  */
 @Log4j2
 @Service
@@ -29,6 +40,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SseService {
 
     private final PendingEventQueue pendingEvents;
+    // Jackson 3's mapper (tools.jackson), the bean Spring Boot 4 auto-configures.
+    private final ObjectMapper objectMapper;
 
     /**
      * The SSE event name every entitlement notification is published under.
@@ -38,10 +51,6 @@ public class SseService {
      * interface could be deleted.
      */
     public static final String ENTITLEMENT_UPDATE_EVENT = "entitlement-update";
-
-    /**
-     * Upper bound of undelivered events retained per user; oldest are dropped first.
-     */
 
     private final ConcurrentHashMap<String, ConcurrentHashMap<String, SseEmitter>> registry =
         new ConcurrentHashMap<>();
@@ -86,17 +95,31 @@ public class SseService {
         return emitter;
     }
 
-    public void publishToUser(String keycloakUserId, String eventType) {
-        // Deliberately does not log the RevenueCat event object. It carries the app user id,
-        // product id, store and entitlement ids, and this logger defaults to DEBUG in every
-        // environment — so logging it here would leak subscriber data into the request log
-        // regardless of what the controller does upstream.
-        log.debug("SseService > Publishing entitlement update to user {} (event type {})",
-            keycloakUserId, eventType);
-        String payload = eventType == null ? "" : eventType;
+    public void publishToUser(String keycloakUserId, EntitlementEventMessage message) {
+        // Only the event id and type are ever logged, never the frame. It carries product, store
+        // and entitlement ids, and this logger defaults to DEBUG in every environment — so logging
+        // it would leak subscriber data into the request log.
+        String json;
+        try {
+            // Pinned off rather than inherited, so a frame stays one compact data: line even if
+            // indented output is ever switched on for the shared mapper.
+            json = objectMapper.writer()
+                .without(SerializationFeature.INDENT_OUTPUT)
+                .writeValueAsString(message);
+        } catch (JacksonException e) {
+            // Must never break the publishing caller (e.g. the RevenueCat webhook). The exception
+            // message is not logged, because it can quote the value being written.
+            log.warn("SseService > Could not serialize event {} ({}) for user {}; not sent ({})",
+                message.eventId(), message.type(), keycloakUserId, e.getClass().getSimpleName());
+            return;
+        }
+        PendingEventQueue.Entry event = new PendingEventQueue.Entry(message.eventId(), message.type(), json);
+
+        log.debug("SseService > Publishing event {} ({}) to user {}",
+            event.eventId(), event.type(), keycloakUserId);
         ConcurrentHashMap<String, SseEmitter> userEmitters = registry.get(keycloakUserId);
         if (userEmitters == null || userEmitters.isEmpty()) {
-            pendingEvents.enqueue(keycloakUserId, payload);
+            pendingEvents.enqueue(keycloakUserId, event);
             return;
         }
 
@@ -105,7 +128,7 @@ public class SseService {
             try {
                 entry.getValue().send(SseEmitter.event()
                     .name(ENTITLEMENT_UPDATE_EVENT)
-                    .data(payload));
+                    .data(event.json()));
                 sent++;
             } catch (IOException | IllegalStateException e) {
                 // Dead client (broken pipe surfaces as IllegalStateException from
@@ -118,12 +141,12 @@ public class SseService {
         }
 
         if (sent == 0) {
-            pendingEvents.enqueue(keycloakUserId, payload);
+            pendingEvents.enqueue(keycloakUserId, event);
             return;
         }
 
-        log.info("SseService > Pushed entitlement update to {} connection(s) for user {}",
-            sent, keycloakUserId);
+        log.info("SseService > Pushed event {} ({}) to {} connection(s) for user {}",
+            event.eventId(), event.type(), sent, keycloakUserId);
     }
 
     private void removeEmitter(String keycloakUserId, String clientId, SseEmitter emitter) {
@@ -139,14 +162,14 @@ public class SseService {
 
     private void flushPendingEvents(String keycloakUserId, String clientId, SseEmitter emitter) {
         int flushed = 0;
-        String event;
+        PendingEventQueue.Entry event;
         while ((event = pendingEvents.poll(keycloakUserId)) != null) {
-            log.debug("SseService > Flushing pending event to user {} client {}: {}",
-                keycloakUserId, clientId, event);
+            log.debug("SseService > Flushing pending event {} ({}) to user {} client {}",
+                event.eventId(), event.type(), keycloakUserId, clientId);
             try {
                 emitter.send(SseEmitter.event()
                     .name(ENTITLEMENT_UPDATE_EVENT)
-                    .data(event));
+                    .data(event.json()));
                 flushed++;
             } catch (IOException | IllegalStateException e) {
                 pendingEvents.returnToFront(keycloakUserId, event);

@@ -18,13 +18,14 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @RequestMapping("/entitlement")
 public interface SseControllerApi {
 
-    /** Data payload sent by the connectivity-check endpoint. */
+    /** Event type sent by the connectivity-check endpoint. */
     String TEST_EVENT_TYPE = "TEST";
 
     @Operation(
             summary = "Subscribe to entitlement updates",
-            description = "Opens a per-user SSE stream. The authenticated user receives a push event "
-                    + "whenever their RevenueCat entitlement changes (purchase, renewal, cancellation, expiration, etc.).",
+            description = "Opens a per-user SSE stream. It starts with an empty connected event, then "
+                    + "carries one entitlement-update event, with a single line of JSON as its data, for each "
+                    + "accepted RevenueCat webhook event about the authenticated user.",
             operationId = "subscribeToEntitlementStream"
     )
     @ApiResponses({

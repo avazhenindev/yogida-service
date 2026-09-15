@@ -121,17 +121,24 @@ public enum RevenueCatEventType {
 
     /**
      * Event types that signal a potential change in a user's entitlement status.
-     * When one of these events arrives, the entitlement cache must be evicted and
-     * any connected SSE clients notified with fresh customer info.
+     *
+     * <p>This set decides one thing: whether the user's entitlement is re-read from RevenueCat
+     * into the projection before the event is forwarded. It no longer decides whether the event
+     * is forwarded at all — every event that resolves to a known user reaches the app, including
+     * types outside this set and types this enum does not know.
      *
      * <p>Inclusion rationale:
      * <ul>
      *   <li>{@code BILLING_ISSUE} — a billing failure can lead to access loss;
      *       clients benefit from knowing immediately even though access is not yet revoked.</li>
      *   <li>{@code SUBSCRIPTION_PAUSED} — pause does not revoke access during the current
-     *       period, but entitlement state will change at period end; notify early.</li>
+     *       period, but entitlement state will change at period end; refresh early.</li>
      *   <li>{@code TEMPORARY_ENTITLEMENT_GRANT} — temporary access granted during store
      *       outages represents a real entitlement change.</li>
+     *   <li>{@code REFUND_REVERSED} — a refund arrives as a {@code CANCELLATION} and leaves a
+     *       not-entitled projection with no expiry. Without a refresh on the reversal, premium
+     *       stays locked on the server until the cache and projection go stale — a day at the
+     *       defaults.</li>
      * </ul>
      */
     private static final Set<RevenueCatEventType> ENTITLEMENT_AFFECTING = Set.of(
@@ -146,6 +153,7 @@ public enum RevenueCatEventType {
             PRODUCT_CHANGE,
             SUBSCRIPTION_EXTENDED,
             TEMPORARY_ENTITLEMENT_GRANT,
+            REFUND_REVERSED,
             TRANSFER
     );
 

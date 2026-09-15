@@ -1,0 +1,60 @@
+{
+  "api_version": "1.0",
+  "event": {
+    "id": "00000000-0000-4000-8000-00000000e001",
+    "type": "PRODUCT_CHANGE",
+    "event_timestamp_ms": 1767225600000,
+    "app_id": "app-synthetic-0001",
+    "app_user_id": "synthetic-app-user-0001",
+    "original_app_user_id": "$RCAnonymousID:synthetic0001",
+    "aliases": [
+      "$RCAnonymousID:synthetic0001",
+      "synthetic-app-user-0001"
+    ],
+    "transferred_from": [
+      "synthetic-transferred-from"
+    ],
+    "transferred_to": [
+      "synthetic-transferred-to"
+    ],
+    "product_id": "synthetic.weekly",
+    "new_product_id": "synthetic.monthly",
+    "entitlement_ids": [
+      "premium"
+    ],
+    "entitlement_id": null,
+    "period_type": "NORMAL",
+    "purchased_at_ms": 1767225000000,
+    "expiration_at_ms": 1767829800000,
+    "grace_period_expiration_at_ms": null,
+    "store": "APP_STORE",
+    "environment": "SANDBOX",
+    "is_family_share": false,
+    "is_trial_conversion": false,
+    "renewal_number": 3,
+    "country_code": "ZZ",
+    "currency": "XTS",
+    "price": 4.99,
+    "price_in_purchased_currency": 4.99,
+    "tax_percentage": 0.2,
+    "commission_percentage": 0.15,
+    "takehome_percentage": 0.65,
+    "offer_code": "SYNTHETIC-OFFER",
+    "presented_offering_id": "synthetic-offering",
+    "transaction_id": "synthetic-transaction-0001",
+    "original_transaction_id": "synthetic-original-transaction-0001",
+    "subscriber_attributes": {
+      "$email": {
+        "value": "synthetic.subscriber@example.invalid",
+        "updated_at_ms": 1767225000000
+      },
+      "$displayName": {
+        "value": "Synthetic Subscriber",
+        "updated_at_ms": 1767225000000
+      }
+    },
+    "metadata": {
+      "synthetic_key": "synthetic-metadata-value"
+    }
+  }
+}

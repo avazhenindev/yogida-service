@@ -31,6 +31,17 @@ final class ConfigValues {
         return value;
     }
 
+    /**
+     * An empty environment variable binds a Boolean to null rather than to its default. Unchecked,
+     * that surfaces as a NullPointerException on the first use instead of at startup.
+     */
+    static Boolean requireFlag(Boolean value, String property) {
+        if (value == null) {
+            throw new IllegalArgumentException(property + " must be true or false");
+        }
+        return value;
+    }
+
     static Duration requirePositive(Duration value, String property) {
         if (value == null || value.isNegative() || value.isZero()) {
             throw new IllegalArgumentException(

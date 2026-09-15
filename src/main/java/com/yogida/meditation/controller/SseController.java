@@ -1,6 +1,7 @@
 package com.yogida.meditation.controller;
 
 import com.yogida.meditation.controller.api.SseControllerApi;
+import com.yogida.meditation.dto.EntitlementEventMessage;
 import com.yogida.meditation.service.CurrentUserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -40,7 +41,7 @@ public class SseController implements SseControllerApi {
     public ResponseEntity<Void> sendTestMessage() {
         String keycloakUserId = currentUserService.getCurrentUserOrThrow().getKeycloakUserId();
         log.info("SseController > Sending TEST message to user {}", keycloakUserId);
-        sseService.publishToUser(keycloakUserId, TEST_EVENT_TYPE);
+        sseService.publishToUser(keycloakUserId, EntitlementEventMessage.diagnostic(TEST_EVENT_TYPE));
         return ResponseEntity.noContent().build();
     }
 }

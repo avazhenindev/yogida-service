@@ -16,8 +16,8 @@ import java.util.concurrent.ConcurrentLinkedDeque;
  * <p>The per-user cap is the invariant worth isolating. Without it a user who never reconnects
  * accumulates events for the lifetime of the process, and entitlement events are published on
  * every RevenueCat webhook — so a single lapsed subscriber becomes an unbounded queue. Oldest are
- * dropped first: an entitlement update supersedes the one before it, so the newest is the one that
- * matters.
+ * dropped first. Dropping one loses at most a banner, never state: the app re-reads its
+ * entitlement whenever the stream sends {@code connected}, which it does before any flush.
  */
 @Log4j2
 @Component
@@ -25,24 +25,31 @@ public class PendingEventQueue {
 
     private static final int MAX_PENDING_EVENTS_PER_USER = 20;
 
-    private final ConcurrentHashMap<String, ConcurrentLinkedDeque<String>> pending =
+    /**
+     * One held frame. {@code eventId} and {@code type} travel alongside the serialized JSON so the
+     * logs can name the event without ever printing its data.
+     */
+    public record Entry(String eventId, String type, String json) {
+    }
+
+    private final ConcurrentHashMap<String, ConcurrentLinkedDeque<Entry>> pending =
         new ConcurrentHashMap<>();
 
     /** Holds an event for a user, dropping the oldest once the cap is reached. */
-    public void enqueue(String keycloakUserId, String event) {
-        ConcurrentLinkedDeque<String> queue =
+    public void enqueue(String keycloakUserId, Entry event) {
+        ConcurrentLinkedDeque<Entry> queue =
             pending.computeIfAbsent(keycloakUserId, k -> new ConcurrentLinkedDeque<>());
         queue.offerLast(event);
         while (queue.size() > MAX_PENDING_EVENTS_PER_USER) {
             queue.pollFirst();
         }
-        log.info("PendingEventQueue > No deliverable SSE connection for user {}; event queued (pending: {})",
-            keycloakUserId, queue.size());
+        log.info("PendingEventQueue > No deliverable SSE connection for user {}; event {} ({}) queued (pending: {})",
+            keycloakUserId, event.eventId(), event.type(), queue.size());
     }
 
     /** The next held event for a user, or null when there are none. */
-    public String poll(String keycloakUserId) {
-        ConcurrentLinkedDeque<String> queue = pending.get(keycloakUserId);
+    public Entry poll(String keycloakUserId) {
+        ConcurrentLinkedDeque<Entry> queue = pending.get(keycloakUserId);
         return queue == null ? null : queue.pollFirst();
     }
 
@@ -53,13 +60,13 @@ public class PendingEventQueue {
      * goes back to the front rather than the end, the order the user eventually sees is the order
      * they were published in.
      */
-    public void returnToFront(String keycloakUserId, String event) {
+    public void returnToFront(String keycloakUserId, Entry event) {
         pending.computeIfAbsent(keycloakUserId, k -> new ConcurrentLinkedDeque<>()).offerFirst(event);
     }
 
     /** How many events are still held for a user. */
     public int size(String keycloakUserId) {
-        ConcurrentLinkedDeque<String> queue = pending.get(keycloakUserId);
+        ConcurrentLinkedDeque<Entry> queue = pending.get(keycloakUserId);
         return queue == null ? 0 : queue.size();
     }
 }
