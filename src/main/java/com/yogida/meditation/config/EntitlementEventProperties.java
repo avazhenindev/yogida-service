@@ -21,10 +21,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "app.entitlement-events")
 public record EntitlementEventProperties(Boolean bannerEnabled, Boolean sandboxBannerEnabled) {
     // Defaults live in application.properties, not here.
-    public EntitlementEventProperties {p.entitlement-events.sandbox-banner-enabl
+    public EntitlementEventProperties {
         bannerEnabled = ConfigValues.requireFlag(bannerEnabled, "app.entitlement-events.banner-enabled");
         sandboxBannerEnabled = ConfigValues.requireFlag(
-                sandboxBannerEnabled, "aped");
+                sandboxBannerEnabled, "app.entitlement-events.sandbox-banner-enabled");
     }
 
     /**
