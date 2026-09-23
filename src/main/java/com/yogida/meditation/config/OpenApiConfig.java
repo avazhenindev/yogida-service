@@ -7,6 +7,7 @@ import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -16,6 +17,17 @@ import java.util.List;
 public class OpenApiConfig {
 
     private static final String BEARER_SCHEME = "bearerAuth";
+
+    /**
+     * The API's PUBLIC path, which Swagger UI's "Try it out" sends requests to. It is not the
+     * context path: the edge mounts the service under a prefix (/yogida/api) and strips it, so
+     * the service cannot see it and the value has to be configured.
+     */
+    private final String serverUrl;
+
+    public OpenApiConfig(@Value("${app.openapi.server-url}") String serverUrl) {
+        this.serverUrl = serverUrl;
+    }
 
     @Bean
     public OpenAPI meditationServiceOpenAPI() {
@@ -31,7 +43,7 @@ public class OpenApiConfig {
                     .name("Yogida Team")
                     .url("https://github.com/yogida")))
             .servers(List.of(
-                new Server().url("/api").description("Current environment")))
+                new Server().url(serverUrl).description("Current environment")))
             // Declared so the document says how to authenticate. Without it the spec presented
             // every endpoint as anonymous, Swagger UI offered no way to send a token, and a
             // generated client had nothing to attach credentials to — for an API that is

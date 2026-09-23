@@ -16,6 +16,14 @@ import org.springframework.validation.annotation.Validated;
  * <p>{@code issuer} must match Keycloak's {@code KC_HOSTNAME} exactly. Any difference,
  * including a trailing slash or {@code http} versus {@code https}, makes every token fail
  * validation with an error that points at the token rather than at the configuration.
+ *
+ * <p>{@code previousIssuer} and {@code previousAdminIssuer} exist for a change of Keycloak's
+ * public URL, such as the move from {@code https://yogida.org/zxcasdqwe} to
+ * {@code https://yogida.org/yogida/zxcasdqwe}. Keycloak mints the new {@code iss} from the moment
+ * {@code KC_HOSTNAME} changes, while tokens issued before it stay valid until they expire. Set the
+ * new URL as the issuer and the old one here, deploy, switch Keycloak over, and clear these once
+ * the longest token lifetime has passed. The realm's signing keys do not depend on its URL, so
+ * a previous issuer's tokens are verified against the same JWK set as the current one.
  */
 @Validated
 @ConfigurationProperties(prefix = "app.security.jwt")
@@ -40,7 +48,13 @@ public record JwtProperties(
     String jwkSetUri,
 
     /** Optional. Derived from {@link #adminIssuer} when blank. */
-    String adminJwkSetUri
+    String adminJwkSetUri,
+
+    /** Optional. An earlier URL of the mobile realm, still accepted. Blank means none. */
+    String previousIssuer,
+
+    /** Optional. An earlier URL of the admin realm, still accepted. Blank means none. */
+    String previousAdminIssuer
 ) {
 
     public String resolvedJwkSetUri() {

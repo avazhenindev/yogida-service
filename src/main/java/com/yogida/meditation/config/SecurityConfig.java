@@ -94,7 +94,8 @@ public class SecurityConfig {
 
     /**
      * Resolves the authentication manager per JWT issuer, supporting both the
-     * mobile realm ({@code yogida}) and the admin realm ({@code yogida-admin}).
+     * mobile realm ({@code yogida}) and the admin realm ({@code yogida-admin}), each under its
+     * current URL and, while one is configured, its previous URL.
      * Tokens from any other issuer are rejected.
      */
     @Bean
@@ -105,19 +106,35 @@ public class SecurityConfig {
         // that carried a resource_access.yogida-admin entry would have been granted ROLE_ADMIN
         // — the mobile realm deciding who is an administrator.
         Map<String, AuthenticationManager> managersByIssuer = new LinkedHashMap<>();
-        managersByIssuer.put(jwtProperties.issuer(), jwtAuthenticationManager(
-            jwtProperties.issuer(),
-            jwtProperties.resolvedJwkSetUri(),
-            jwtAuthenticationConverter(jwtProperties.clientId())));
-        managersByIssuer.putIfAbsent(jwtProperties.adminIssuer(), jwtAuthenticationManager(
-            jwtProperties.adminIssuer(),
-            jwtProperties.resolvedAdminJwkSetUri(),
-            jwtAuthenticationConverter(jwtProperties.adminClientId())));
+        for (String issuer : acceptedIssuers(jwtProperties.issuer(), jwtProperties.previousIssuer())) {
+            managersByIssuer.putIfAbsent(issuer, jwtAuthenticationManager(
+                issuer,
+                jwtProperties.resolvedJwkSetUri(),
+                jwtAuthenticationConverter(jwtProperties.clientId())));
+        }
+        for (String issuer : acceptedIssuers(jwtProperties.adminIssuer(), jwtProperties.previousAdminIssuer())) {
+            managersByIssuer.putIfAbsent(issuer, jwtAuthenticationManager(
+                issuer,
+                jwtProperties.resolvedAdminJwkSetUri(),
+                jwtAuthenticationConverter(jwtProperties.adminClientId())));
+        }
+        log.info("Accepting JWTs from issuers: {}", managersByIssuer.keySet());
 
         return new JwtIssuerAuthenticationManagerResolver(issuer -> {
             log.debug("Resolving JWT authentication manager for issuer: {}", issuer);
             return managersByIssuer.get(issuer);
         });
+    }
+
+    /**
+     * The current issuer, then the previous one when it is set and differs. The previous one
+     * shares the realm, so it shares the realm's keys and client.
+     */
+    static List<String> acceptedIssuers(String current, String previous) {
+        if (previous == null || previous.isBlank() || previous.equals(current)) {
+            return List.of(current);
+        }
+        return List.of(current, previous);
     }
 
     /**
